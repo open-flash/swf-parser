@@ -1,0 +1,32 @@
+{
+  "name": "swf-parser",
+  "version": "0.0.1",
+  "description": "SWF parser based on Shumway",
+  "private": true,
+  "keywords": [],
+  "license": "MIT",
+  "scripts": {
+    "prepare": "gulp all:tsconfig.json && gulp :tslint.json && gulp all:dist",
+    "test": "gulp :lint && gulp lib-test",
+    "prestart": "gulp main:build",
+    "start": "node build/main/main/main.js",
+    "prepublishOnly": "npm test",
+    ":lint": "gulp :lint"
+  },
+  "dependencies": {
+    "@types/left-pad": "^1.1.1",
+    "bluebird": "^3.5.0",
+    "incident": "^2.0.0",
+    "kryo": "^0.5.0-alpha.5",
+    "left-pad": "^1.1.3"
+  },
+  "devDependencies": {
+    "@types/chai": "^3.4.35",
+    "@types/mocha": "^2.2.40",
+    "@types/node": "^7.0.12",
+    "chai": "^3.5.0",
+    "demurgos-web-build-tools": "0.13.1",
+    "gulp": "github:gulpjs/gulp#4.0",
+    "typescript": "^2.2.2"
+  }
+}
