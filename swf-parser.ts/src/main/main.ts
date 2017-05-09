@@ -13,7 +13,7 @@ async function main(): Promise<void> {
   const absFilePath: string = sysPath.resolve(filePath);
   const data: Buffer = fs.readFileSync(absFilePath);
   const byteStream: Stream = new Stream(data);
-  const result: SwfFile = parseSwfFile(byteStream);
+  const result: SwfFile = await parseSwfFile(byteStream);
   console.log(JSON.stringify(SwfFile.type.write("json", result), null, 2));
 }
 

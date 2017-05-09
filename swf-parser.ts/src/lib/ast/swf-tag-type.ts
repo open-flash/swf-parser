@@ -1,4 +1,4 @@
-import {CaseStyle, DocumentType, SimpleEnumType} from "kryo";
+import {CaseStyle, SimpleEnumType} from "kryo";
 
 export enum SwfTagType {
   DefineSceneAndFrameLabelData,

@@ -3,6 +3,7 @@ import * as swfTags from "./swf-tags/index";
 
 export type SwfTag =
   swfTags.DefineSceneAndFrameLabelData
+  | swfTags.DoAction
   | swfTags.End
   | swfTags.FileAttributes
   | swfTags.SetBackgroundColor
@@ -12,6 +13,7 @@ export type SwfTag =
 export namespace SwfTag {
   export type Json =
     swfTags.DefineSceneAndFrameLabelData.Json
+    | swfTags.DoAction.Json
     | swfTags.End.Json
     | swfTags.FileAttributes.Json
     | swfTags.SetBackgroundColor.Json
@@ -21,6 +23,7 @@ export namespace SwfTag {
   export const type: TaggedUnionType<SwfTag> = new TaggedUnionType<SwfTag>({
     variants: [
       swfTags.DefineSceneAndFrameLabelData.type,
+      swfTags.DoAction.type,
       swfTags.End.type,
       swfTags.FileAttributes.type,
       swfTags.SetBackgroundColor.type,

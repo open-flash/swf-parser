@@ -29,9 +29,12 @@ def test_typescript(swf_path: str, expected_json_path: str, actual_json_path: st
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT
     )
-    with open(actual_json_path, "w") as actual_json_file:
-        actual_json_file.buffer.write(completed_process.stdout)
-        # sys.stdout.buffer.write(completed_process.stdout)
+    if completed_process.returncode != 0:
+        print("Error")
+    else:
+        with open(actual_json_path, "w") as actual_json_file:
+            actual_json_file.buffer.write(completed_process.stdout)
+            # sys.stdout.buffer.write(completed_process.stdout)
 
 
 class TestItem:
@@ -47,7 +50,7 @@ class TestItem:
             test_rust(self.swf_path, self.expected_path, self.actual_rs_path)
         if self.actual_ts_path is not None:
             print(self.actual_ts_path)
-            test_rust(self.swf_path, self.expected_path, self.actual_ts_path)
+            test_typescript(self.swf_path, self.expected_path, self.actual_ts_path)
 
 
 test_items = [
@@ -59,8 +62,14 @@ test_items = [
     ),
     TestItem(
         os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.swf"),
-        os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.actual.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.expected.json"),
         os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.rs.actual.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.ts.actual.json"),
+    ),
+    TestItem(
+        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.swf"),
+        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.expected.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.rs.actual.json"),
         None,
     )
 ]

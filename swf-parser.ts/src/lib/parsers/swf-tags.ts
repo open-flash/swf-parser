@@ -6,6 +6,7 @@ import {SwfTagType} from "../ast/swf-tag-type";
 import {parseRgb} from "./basic-data-types";
 import {Scene} from "../ast/scene";
 import {Label} from "../ast/label";
+import {parseActionsString} from "./avm1";
 
 interface SwfTagHeader {
   tagCode: Uint16;
@@ -69,11 +70,13 @@ export function parseSwfTag(byteStream: Stream): SwfTag {
 
   switch (tagCode) {
     case 0:
-      return parseEnd(swfTagStream);
+      return {type: SwfTagType.End};
     case 1:
-      return parseShowFrame(swfTagStream);
+      return {type: SwfTagType.ShowFrame};
     case 9:
       return parseSetBackgroundColor(swfTagStream);
+    case 12:
+      return parseDoAction(swfTagStream);
     case 69:
       return parseFileAttributes(swfTagStream);
     case 86:
@@ -106,10 +109,6 @@ export function parseDefineSceneAndFrameLabelData(byteStream: Stream): swfTags.D
   };
 }
 
-export function parseEnd(byteStream: Stream): swfTags.End {
-  return {type: SwfTagType.End};
-}
-
 export function parseFileAttributes(byteStream: Stream): swfTags.FileAttributes {
   const flags: Uint8 = byteStream.readUint8LE();
   byteStream.skip(3);
@@ -130,6 +129,6 @@ export function parseSetBackgroundColor(byteStream: Stream): swfTags.SetBackgrou
   return {type: SwfTagType.SetBackgroundColor, color: parseRgb(byteStream)};
 }
 
-export function parseShowFrame(byteStream: Stream): swfTags.ShowFrame {
-  return {type: SwfTagType.ShowFrame};
+export function parseDoAction(byteStream: Stream): swfTags.DoAction {
+  return {type: SwfTagType.DoAction, actions: parseActionsString(byteStream)};
 }

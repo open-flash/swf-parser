@@ -25,5 +25,32 @@
         "bit-pos": 0
       }
     }
+  },
+  {
+    "input": {
+      "buffer": "0x(465753,22,35000000,7800055f00000fa000,0018,0100)4411080000004302ffffffbf150b00000001005363656e652031000040000000",
+      "byte-pos": 0,
+      "bit-pos": 0
+    },
+    "expected": {
+      "result": {
+        "compression-method": "none",
+        "swf-version": 34,
+        "uncompressed-file-length": 53,
+        "frame-size": {
+          "x-min": 0,
+          "x-max": 11000,
+          "y-min": 0,
+          "y-max": 8000
+        },
+        "frame-rate": "+0x18.00",
+        "frame-count": 1
+      },
+      "stream": {
+        "buffer": "0x4411080000004302ffffffbf150b00000001005363656e652031000040000000",
+        "byte-pos": 0,
+        "bit-pos": 0
+      }
+    }
   }
 ]

@@ -35,6 +35,10 @@ export class Stream {
     return new Stream(this.bytes.buffer.slice(this.bytePos), 0, this.bitPos);
   }
 
+  toBuffer(): Buffer {
+    return Buffer.from(this.bytes.buffer.slice(this.bytePos, this.byteEnd));
+  }
+
   take(length: number): Stream {
     const result: Stream = new Stream(this.bytes.buffer.slice(this.bytePos, this.bytePos + length), 0, 0);
     this.bytePos += length;
