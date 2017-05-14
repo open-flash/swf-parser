@@ -410,7 +410,7 @@ fn parse_action(input: &[u8]) -> IResult<&[u8], ast::Action> {
           0x88 => map!(remaining_input, parse_constant_pool_action, |a| ast::Action::ConstantPool(a)),
           0x8a => map!(remaining_input, parse_wait_for_frame_action, |a| ast::Action::WaitForFrame(a)),
           0x8b => map!(remaining_input, parse_set_target_action, |a| ast::Action::SetTarget(a)),
-          0x8c => map!(remaining_input, parse_go_to_label_action, |a| ast::Action::GoToLabel(a)),
+          0x8c => map!(remaining_input, parse_go_to_label_action, |a| ast::Action::GotoLabel(a)),
           0x8d => map!(remaining_input, parse_wait_for_frame2_action, |a| ast::Action::WaitForFrame2(a)),
           0x8e => map!(remaining_input, parse_define_function2_action, |a| ast::Action::DefineFunction2(a)),
           0x8f => map!(remaining_input, parse_try_action, |a| ast::Action::Try(a)),

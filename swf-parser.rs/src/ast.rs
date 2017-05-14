@@ -351,7 +351,7 @@ pub enum Action {
   ConstantPool(action::ConstantPool), // 0x88
   WaitForFrame(action::WaitForFrame), // 0x8a
   SetTarget(action::SetTarget), // 0x8b
-  GoToLabel(action::GoToLabel), // 0x8c
+  GotoLabel(action::GoToLabel), // 0x8c
   WaitForFrame2(action::WaitForFrame2), // 0x8d
   DefineFunction2(action::DefineFunction2), // 0x8e
   Try(action::Try), // 0x8f
