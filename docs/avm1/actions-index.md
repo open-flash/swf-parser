@@ -66,7 +66,7 @@
 - [Or][or]
 - [Play][play]
 - [Pop][pop]
-- [Previous][previous-frame]
+- [PreviousFrame][previous-frame]
 - [Push][push]
 - [PushDuplicate][push-duplicate]
 - [RandomNumber][random-number]
@@ -75,7 +75,7 @@
 - [SetMember][set-member]
 - [SetProperty][set-property]
 - [SetTarget][set-target]
-- [SetTarget2][set-target-2]
+- [SetTarget2][set-target2]
 - [SetVariable][set-variable]
 - [StackSwap][stack-swap]
 - [StartDrag][start-drag]
@@ -109,7 +109,7 @@
 - `0x00` EndOfActions
 - `0x01` - `0x03` INVALID
 - [`0x04` NextFrame][next-frame]
-- [`0x05` Previous][previous-frame]
+- [`0x05` PreviousFrame][previous-frame]
 - [`0x06` Play][play]
 - [`0x07` Stop][stop]
 - [`0x08` ToggleQuality][toggle-quality]
@@ -133,7 +133,7 @@
 - [`0x1c` GetVariable][get-variable]
 - [`0x1d` SetVariable][set-variable]
 - `0x1e` - `0x1f` INVALID
-- [`0x20` SetTarget2][set-target-2]
+- [`0x20` SetTarget2][set-target2]
 - [`0x21` StringAdd][string-add]
 - [`0x22` GetProperty][get-property]
 - [`0x23` SetProperty][set-property]
@@ -297,7 +297,7 @@
 [set-member]: ./actions/set-member.md
 [set-property]: ./actions/set-property.md
 [set-target]: ./actions/set-target.md
-[set-target-2]: ./actions/set-target-2.md
+[set-target2]: ./actions/set-target2.md
 [set-variable]: ./actions/set-variable.md
 [stack-swap]: ./actions/stack-swap.md
 [start-drag]: ./actions/start-drag.md

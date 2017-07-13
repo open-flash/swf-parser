@@ -1,10 +1,6 @@
 import {Incident} from "incident";
-import {CompressionMethod} from "../ast/compression-method";
-import {Rect} from "../ast/rect";
-import {SwfHeader} from "../ast/swf-header";
-import {SwfSignature} from "../ast/swf-signature";
+import {CompressionMethod, Header, Rect, SwfSignature, Ufixed8P8} from "swf-tree";
 import {IncompleteStreamError} from "../errors/incomplete-stream";
-import {Ufixed8P8} from "../fixed-point/ufixed8p8";
 import {Uint16, Uint32, Uint8} from "../integer-names";
 import {Stream} from "../stream";
 import {parseRect} from "./basic-data-types";
@@ -45,13 +41,13 @@ export function parseSwfSignature(byteStream: Stream): SwfSignature {
   }
 
   const compressionMethod: CompressionMethod = parseCompressionMethod(byteStream);
-  const swfVersion: Uint8 = byteStream.readUint8LE();
+  const swfVersion: Uint8 = byteStream.readUint8();
   const uncompressedFileLength: Uint32 = byteStream.readUint32LE();
 
   return {compressionMethod, swfVersion, uncompressedFileLength};
 }
 
-export function parseSwfHeader(byteStream: Stream): SwfHeader {
+export function parseSwfHeader(byteStream: Stream): Header {
   const signature: SwfSignature = parseSwfSignature(byteStream);
   const frameSize: Rect = parseRect(byteStream);
   const frameRate: Ufixed8P8 = byteStream.readUfixed8P8LE();

@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as sysPath from "path";
-import {Stream} from "../lib/stream";
-import {SwfFile} from "../lib/ast/swf-file";
+import {SwfFile} from "swf-tree";
 import {parseSwfFile} from "../lib/parsers/swf-file";
+import {Stream} from "../lib/stream";
 
 async function main(): Promise<void> {
   if (process.argv.length < 3) {

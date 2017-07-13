@@ -1,7 +1,7 @@
 export enum Type {
   Done,
   Incomplete,
-  Error
+  Error,
 }
 
 export interface Done<T> {

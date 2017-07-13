@@ -70,8 +70,14 @@ test_items = [
         os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.swf"),
         os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.expected.json"),
         os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.rs.actual.json"),
-        None,
-    )
+        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.ts.actual.json"),
+    ),
+    TestItem(
+        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.swf"),
+        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.expected.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.rs.actual.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.ts.actual.json"),
+    ),
 ]
 
 

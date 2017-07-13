@@ -1,10 +1,7 @@
 import {Incident} from "incident";
-import {Fixed16P16} from "./fixed-point/fixed16p16";
-import {Fixed8P8} from "./fixed-point/fixed8p8";
-import {Ufixed16P16} from "./fixed-point/ufixed16p16";
-import {Ufixed8P8} from "./fixed-point/ufixed8p8";
-import {Float16, Float32, Float64, Int16, Int32, Int8, Uint16, Uint32, Uint8} from "./integer-names";
+import {Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8} from "swf-tree";
 import {IncompleteStreamError} from "./errors/incomplete-stream";
+import {Float16, Float32, Float64, Int16, Int32, Int8, Uint16, Uint32, Uint8} from "./integer-names";
 
 export class Stream {
   bytes: Uint8Array;
@@ -33,6 +30,10 @@ export class Stream {
 
   tail(): Stream {
     return new Stream(this.bytes.buffer.slice(this.bytePos), 0, this.bitPos);
+  }
+
+  available(): number {
+    return this.byteEnd - this.bytePos;
   }
 
   toBuffer(): Buffer {
@@ -67,8 +68,12 @@ export class Stream {
     return result;
   }
 
-  readUint8LE(): Uint8 {
+  readUint8(): Uint8 {
     return this.view.getUint8(this.bytePos++);
+  }
+
+  peekUint8(): Uint8 {
+    return this.view.getUint8(this.bytePos);
   }
 
   readUint16LE(): Uint16 {
@@ -103,8 +108,20 @@ export class Stream {
     return result;
   }
 
+  readFloat32LE(): Float32 {
+    const result: Float32 = this.view.getFloat32(this.bytePos, true);
+    this.bytePos += 4;
+    return result;
+  }
+
   readFloat64BE(): Float64 {
     const result: Float64 = this.view.getFloat64(this.bytePos, false);
+    this.bytePos += 8;
+    return result;
+  }
+
+  readFloat64LE(): Float64 {
+    const result: Float64 = this.view.getFloat64(this.bytePos, true);
     this.bytePos += 8;
     return result;
   }
@@ -129,41 +146,9 @@ export class Stream {
     this.bytePos += size;
   }
 
-  private readUintBits(n: number): number {
-    if (n > 32) {
-      throw new Incident("BitOverflow", "Cannot read above 32 bits without overflow");
-    }
-    let result: number = 0;
-    while (n > 0) {
-      if (this.bitPos + n < 8) {
-        const endBitPos: number = this.bitPos + n;
-        const shift: number = 1 << endBitPos - this.bitPos;
-        const cur: number = (this.bytes[this.bytePos] >>> 8 - endBitPos) & (shift - 1);
-        result = result * shift + cur;
-        n = 0;
-        this.bitPos = endBitPos;
-      } else {
-        const shift: number = 1 << 8 - this.bitPos;
-        const cur: number = this.bytes[this.bytePos] & (shift - 1);
-        result = result * shift + cur;
-        n -= (8 - this.bitPos);
-        this.bitPos = 0;
-        this.bytePos++;
-      }
-    }
-    return result;
-  }
-
-  private readIntBits(n: number): number {
-    if (n === 0) {
-      return 0;
-    }
-    const unsigned: number = this.readUintBits(n);
-    if (unsigned < Math.pow(2, n - 1)) {
-      return unsigned;
-    } else {
-      return -Math.pow(2, n) + unsigned;
-    }
+  skipBits(n: number): void {
+    // TODO(demurgos): Reverse the dependency between skipBits and readUintBits
+    this.readUintBits(n);
   }
 
   readBoolBits(): boolean {
@@ -204,6 +189,43 @@ export class Stream {
     const result: string = strBuffer.toString("utf8");
     this.bytePos = endOfString + 1;
     return result;
+  }
+
+  private readUintBits(n: number): number {
+    if (n > 32) {
+      throw new Incident("BitOverflow", "Cannot read above 32 bits without overflow");
+    }
+    let result: number = 0;
+    while (n > 0) {
+      if (this.bitPos + n < 8) {
+        const endBitPos: number = this.bitPos + n;
+        const shift: number = 1 << endBitPos - this.bitPos;
+        const cur: number = (this.bytes[this.bytePos] >>> 8 - endBitPos) & (shift - 1);
+        result = result * shift + cur;
+        n = 0;
+        this.bitPos = endBitPos;
+      } else {
+        const shift: number = 1 << 8 - this.bitPos;
+        const cur: number = this.bytes[this.bytePos] & (shift - 1);
+        result = result * shift + cur;
+        n -= (8 - this.bitPos);
+        this.bitPos = 0;
+        this.bytePos++;
+      }
+    }
+    return result;
+  }
+
+  private readIntBits(n: number): number {
+    if (n === 0) {
+      return 0;
+    }
+    const unsigned: number = this.readUintBits(n);
+    if (unsigned < Math.pow(2, n - 1)) {
+      return unsigned;
+    } else {
+      return -Math.pow(2, n) + unsigned;
+    }
   }
 }
 

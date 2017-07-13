@@ -1,16 +1,16 @@
-use ast;
-use fixed_point::fixed_point::{Fixed16P16, Ufixed8P8};
+use swf_tree as ast;
+use swf_tree::fixed_point::{Fixed16P16, Ufixed8P8};
 use nom::{IResult, Needed};
 use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16};
 
 named!(
-  pub parse_argb<ast::Rgba>,
+  pub parse_argb<ast::StraightSRgba>,
   do_parse!(
     a: parse_u8 >>
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
-    (ast::Rgba {r: r, g: g, b: b, a: a})
+    (ast::StraightSRgba {r: r, g: g, b: b, a: a})
   )
 );
 
@@ -19,7 +19,7 @@ pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8]
   if input_slice.len() < 1 {
     IResult::Incomplete(Needed::Size(1))
   } else {
-    let res: bool = input_slice[0] & (1 << bit_pos) > 0;
+    let res: bool = input_slice[0] & (1 << (7 - bit_pos)) > 0;
     if bit_pos == 7 {
       IResult::Done((&input_slice[1..], 0), res)
     } else {
@@ -44,11 +44,11 @@ pub fn parse_encoded_le_u32(input: &[u8]) -> IResult<&[u8], u32> {
       IResult::Done(next_input, next_byte) => {
         result |= ((next_byte as u32) & 0x7f) << (7 * i);
         if next_byte & (1 << 7) == 0 {
-          return IResult::Done(next_input, result)
+          return IResult::Done(next_input, result);
         } else {
           current_input = next_input;
         }
-      },
+      }
       IResult::Error(e) => return IResult::Error(e),
       IResult::Incomplete(_) => return IResult::Incomplete(Needed::Size(i + 1)),
     }
@@ -114,23 +114,23 @@ named!(
 );
 
 named!(
-  pub parse_rgb<ast::Rgb>,
+  pub parse_rgb<ast::SRgb>,
   do_parse!(
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
-    (ast::Rgb {r: r, g: g, b: b})
+    (ast::SRgb {r: r, g: g, b: b})
   )
 );
 
 named!(
-  pub parse_rgba<ast::Rgba>,
+  pub parse_rgba<ast::StraightSRgba>,
   do_parse!(
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
     a: parse_u8 >>
-    (ast::Rgba {r: r, g: g, b: b, a: a})
+    (ast::StraightSRgba {r: r, g: g, b: b, a: a})
   )
 );
 
@@ -139,7 +139,7 @@ pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> IResult<(&
   let slice_len: usize = input_slice.len();
   let available_bits: usize = 8 * slice_len - bit_pos;
   let skipped_full_bytes = (bit_pos + n) / 8;
-  let final_bit_pos = bit_pos + n % 8;
+  let final_bit_pos = (bit_pos + n) % 8;
   if available_bits < n {
     let needed_bytes = skipped_full_bytes + if final_bit_pos > 0 { 1 } else { 0 };
     IResult::Incomplete(Needed::Size(needed_bytes))
@@ -152,6 +152,158 @@ pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> IResult<(&
 pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), u16> {
   take_bits!(input, u16, n)
 }
+
+named!(
+  pub parse_matrix<ast::Matrix>,
+  bits!(parse_matrix_bits)
+);
+
+named!(
+  pub parse_matrix_bits<(&[u8], usize), ast::Matrix>,
+  do_parse!(
+    has_scale: call!(parse_bool_bits) >>
+    scale: map!(
+      cond!(has_scale, do_parse!(
+        scale_bits: apply!(parse_u16_bits, 5) >>
+        scale_x: apply!(parse_i32_bits, scale_bits as usize) >>
+        scale_y: apply!(parse_i32_bits, scale_bits as usize) >>
+        (scale_x, scale_y)
+      )),
+      |scale| match scale {
+        Some((scale_x, scale_y)) => (scale_x, scale_y),
+        None => (1, 1),
+      }
+    ) >>
+    skew: map!(
+      cond!(has_scale, do_parse!(
+        skew_bits: apply!(parse_u16_bits, 5) >>
+        skew0: apply!(parse_i32_bits, skew_bits as usize) >>
+        skew1: apply!(parse_i32_bits, skew_bits as usize) >>
+        (skew0, skew1)
+      )),
+      |skew| match skew {
+        Some((skew0, skew1)) => (skew0, skew1),
+        None => (0, 0),
+      }
+    ) >>
+    translate: map!(
+      cond!(has_scale, do_parse!(
+        translate_bits: apply!(parse_u16_bits, 5) >>
+        translate_x: apply!(parse_i32_bits, translate_bits as usize) >>
+        translate_y: apply!(parse_i32_bits, translate_bits as usize) >>
+        (translate_x, translate_y)
+      )),
+      |translate| match translate {
+        Some((translate_x, translate_y)) => (translate_x, translate_y),
+        None => (0, 0),
+      }
+    ) >>
+    (ast::Matrix {
+      scale_x: scale.0,
+      scale_y: scale.1,
+      rotate_skew_0: skew.0,
+      rotate_skew_1: skew.1,
+      translate_x: translate.0,
+      translate_y: translate.1,
+    })
+  )
+);
+
+named!(
+  pub parse_color_transform<ast::ColorTransform>,
+  bits!(parse_color_transform_bits)
+);
+
+named!(
+  pub parse_color_transform_bits<(&[u8], usize), ast::ColorTransform>,
+  do_parse!(
+    has_add: call!(parse_bool_bits) >>
+    has_mult: call!(parse_bool_bits) >>
+    n_bits: apply!(parse_u16_bits, 4) >>
+    mult: map!(
+      cond!(has_mult, do_parse!(
+        r: apply!(parse_i16_bits, n_bits as usize) >>
+        g: apply!(parse_i16_bits, n_bits as usize) >>
+        b: apply!(parse_i16_bits, n_bits as usize) >>
+        (r, g, b)
+      )),
+      |mult| match mult {
+        Some((r, g, b)) => (r, g, b),
+        None => (1, 1, 1),
+      }
+    ) >>
+    add: map!(
+      cond!(has_mult, do_parse!(
+        r: apply!(parse_i16_bits, n_bits as usize) >>
+        g: apply!(parse_i16_bits, n_bits as usize) >>
+        b: apply!(parse_i16_bits, n_bits as usize) >>
+        (r, g, b)
+      )),
+      |add| match add {
+        Some((r, g, b)) => (r, g, b),
+        None => (0, 0, 0),
+      }
+    ) >>
+    (ast::ColorTransform {
+      red_mult: mult.0,
+      green_mult: mult.1,
+      blue_mult: mult.2,
+      red_add: add.0,
+      green_add: add.1,
+      blue_add: add.2,
+    })
+  )
+);
+
+named!(
+  pub parse_color_transform_with_alpha<ast::ColorTransformWithAlpha>,
+  bits!(parse_color_transform_with_alpha_bits)
+);
+
+named!(
+  pub parse_color_transform_with_alpha_bits<(&[u8], usize), ast::ColorTransformWithAlpha>,
+  do_parse!(
+    has_add: call!(parse_bool_bits) >>
+    has_mult: call!(parse_bool_bits) >>
+    n_bits: apply!(parse_u16_bits, 4) >>
+    mult: map!(
+      cond!(has_mult, do_parse!(
+        r: apply!(parse_i16_bits, n_bits as usize) >>
+        g: apply!(parse_i16_bits, n_bits as usize) >>
+        b: apply!(parse_i16_bits, n_bits as usize) >>
+        a: apply!(parse_i16_bits, n_bits as usize) >>
+        (r, g, b, a)
+      )),
+      |mult| match mult {
+        Some((r, g, b, a)) => (r, g, b, a),
+        None => (1, 1, 1, 1),
+      }
+    ) >>
+    add: map!(
+      cond!(has_mult, do_parse!(
+        r: apply!(parse_i16_bits, n_bits as usize) >>
+        g: apply!(parse_i16_bits, n_bits as usize) >>
+        b: apply!(parse_i16_bits, n_bits as usize) >>
+        a: apply!(parse_i16_bits, n_bits as usize) >>
+        (r, g, b, a)
+      )),
+      |add| match add {
+        Some((r, g, b, a)) => (r, g, b, a),
+        None => (0, 0, 0, 0),
+      }
+    ) >>
+    (ast::ColorTransformWithAlpha {
+      red_mult: mult.0,
+      green_mult: mult.1,
+      blue_mult: mult.2,
+      alpha_mult: mult.3,
+      red_add: add.0,
+      green_add: add.1,
+      blue_add: add.2,
+      alpha_add: add.3,
+    })
+  )
+);
 
 #[cfg(test)]
 mod tests {

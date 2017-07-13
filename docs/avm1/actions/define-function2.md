@@ -24,7 +24,6 @@ ActionDefineFunction2 also includes six flags to instruct Flash Player to preloa
 suppress variables. By setting PreloadParentFlag, PreloadRootFlag, PreloadSuperFlag, PreloadArgumentsFlag,
 PreloadThisFlag, or PreloadGlobalFlag, common variables can be preloaded into registers before the function
 executes (_parent, _root, super, arguments, this, or _global, respectively). With flags SuppressSuper,
-
 SuppressArguments, and SuppressThis, common variables super, arguments, and this are not created. By using
 suppress flags, Flash Player avoids pre- evaluating variables, thus saving time and improving performance.
 
@@ -165,7 +164,7 @@ REGISTERPARAM is defined as follows:
   <th>Comment</th>
 </tr>
 <tr>
-  <td>Rehister</td>
+  <td>Register</td>
   <td>UI8</td>
   <td>
     For each parameter to the function, a register can be specified. If the

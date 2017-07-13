@@ -1,23 +1,21 @@
 import {Incident} from "incident";
+import {CompressionMethod, Header, SwfFile, SwfSignature, Tag, TagType} from "swf-tree";
 import * as zlib from "zlib";
-import {SwfFile} from "../ast/swf-file";
-import {SwfHeader} from "../ast/swf-header";
-import {SwfTag} from "../ast/swf-tag";
 import {Stream} from "../stream";
 import {parseSwfHeader, parseSwfSignature} from "./header";
 import {parseSwfTag} from "./swf-tags";
-import {SwfTagType} from "../ast/swf-tag-type";
-import {SwfSignature} from "../ast/swf-signature";
-import {CompressionMethod} from "../ast/compression-method";
 
 export function parseDecompressedSwfFile(byteStream: Stream): SwfFile {
-  const header: SwfHeader = parseSwfHeader(byteStream);
-  const tags: SwfTag[] = [];
-  let cur: SwfTag;
-  do {
-    cur = parseSwfTag(byteStream);
-    tags.push(cur);
-  } while (cur.type !== SwfTagType.End);
+  const header: Header = parseSwfHeader(byteStream);
+  const tags: Tag[] = [];
+  while (byteStream.available() > 0) {
+    // A null byte indicates the end the string of actions
+    if (byteStream.peekUint8() === 0) {
+      byteStream.skip(1);
+      break;
+    }
+    tags.push(parseSwfTag(byteStream));
+  }
   return {header, tags};
 }
 

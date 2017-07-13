@@ -12,6 +12,7 @@ describe("readEncodedUint32LE", function () {
       stream: Stream;
     };
   }
+
   interface ItemJson {
     input: StreamJson;
     expected: {
@@ -27,8 +28,8 @@ describe("readEncodedUint32LE", function () {
       input: readStreamJson(itemJson.input),
       expected: {
         result: itemJson.expected.result,
-        stream: readStreamJson(itemJson.expected.stream)
-      }
+        stream: readStreamJson(itemJson.expected.stream),
+      },
     });
   }
 

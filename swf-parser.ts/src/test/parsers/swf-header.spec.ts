@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {SwfHeader} from "../../lib/ast/swf-header";
+import {SwfHeader} from "../../lib/ast/header/swf-header";
 import {parseSwfHeader} from "../../lib/parsers/header";
 import {Stream} from "../../lib/stream";
 import {readTestJson} from "../_utils";
@@ -13,6 +13,7 @@ describe("parseSwfHeader", function () {
       stream: Stream;
     };
   }
+
   interface ItemJson {
     input: StreamJson;
     expected: {
@@ -28,8 +29,8 @@ describe("parseSwfHeader", function () {
       input: readStreamJson(itemJson.input),
       expected: {
         result: SwfHeader.type.read("json", itemJson.expected.result),
-        stream: readStreamJson(itemJson.expected.stream)
-      }
+        stream: readStreamJson(itemJson.expected.stream),
+      },
     });
   }
 

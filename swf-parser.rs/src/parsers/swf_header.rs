@@ -1,4 +1,4 @@
-use ast;
+use swf_tree as ast;
 use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
 use parsers::basic_data_types::{parse_le_ufixed8_p8_bits, parse_rect};
 
@@ -12,12 +12,12 @@ named!(
 );
 
 named!(
-  pub parse_swf_header_signature<ast::SwfHeaderSignature>,
+  pub parse_swf_header_signature<ast::SwfSignature>,
   do_parse!(
     compression_method: parse_compression_method >>
     swf_version: parse_u8 >>
     uncompressed_file_length: parse_le_u32 >>
-    (ast::SwfHeaderSignature {
+    (ast::SwfSignature {
       compression_method: compression_method,
       swf_version: swf_version,
       uncompressed_file_length: uncompressed_file_length as usize,
@@ -26,13 +26,13 @@ named!(
 );
 
 named!(
-  pub parse_swf_header<ast::SwfHeader>,
+  pub parse_swf_header<ast::Header>,
   do_parse!(
     prolog: parse_swf_header_signature >>
     frame_size: parse_rect >>
     frame_rate: parse_le_ufixed8_p8_bits >>
     frame_count: parse_le_u16 >>
-    (ast::SwfHeader {
+    (ast::Header {
       compression_method: prolog.compression_method,
       swf_version: prolog.swf_version,
       uncompressed_file_length: prolog.uncompressed_file_length,
@@ -61,7 +61,7 @@ mod tests {
     parse_swf_header_signature(&b"FWS\x0f\x08\x00\x00\x00"[..]),
     nom::IResult::Done(
       &[][..],
-      ast::SwfHeaderSignature {
+      ast::HeaderSignature {
         compression_method: ast::CompressionMethod::None,
         swf_version: 15u8,
         uncompressed_file_length: 8
@@ -72,7 +72,7 @@ mod tests {
     parse_swf_header_signature(&b"CWS\x0f\x08\x00\x00\x00"[..]),
     nom::IResult::Done(
       &[][..],
-      ast::SwfHeaderSignature {
+      ast::HeaderSignature {
         compression_method: ast::CompressionMethod::Deflate,
         swf_version: 15u8,
         uncompressed_file_length: 8

@@ -1,1 +1,2 @@
 **/*.actual.*
+**/SymDepend.cache

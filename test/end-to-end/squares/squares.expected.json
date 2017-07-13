@@ -1,0 +1,293 @@
+{
+  "header": {
+    "compression_method": "deflate",
+    "swf_version": 8,
+    "uncompressed_file_length": 47359,
+    "frame_size": {
+      "x_min": 0,
+      "x_max": 11000,
+      "y_min": 0,
+      "y_max": 8000
+    },
+    "frame_rate": "+0x18.00",
+    "frame_count": 1
+  },
+  "tags": [
+    {
+      "type": "file-attributes",
+      "use_direct_blit": false,
+      "use_gpu": false,
+      "has_metadata": true,
+      "use_as3": false,
+      "no_cross_domain_caching": false,
+      "use_relative_urls": false,
+      "use_network": false
+    },
+    {
+      "type": "metadata",
+      "metadata": "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"> <rdf:Description rdf:about=\"\" xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"> <xmp:CreatorTool>Adobe Flash Professional CS6 - build 481</xmp:CreatorTool> <xmp:CreateDate>2017-07-12T08:09:55+02:00</xmp:CreateDate> <xmp:MetadataDate>2017-07-12T18:53:17+02:00</xmp:MetadataDate> <xmp:ModifyDate>2017-07-12T18:53:17+02:00</xmp:ModifyDate> </rdf:Description> <rdf:Description rdf:about=\"\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\"> <dc:format>application/x-shockwave-flash</dc:format> </rdf:Description> <rdf:Description rdf:about=\"\" xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\" xmlns:stRef=\"http://ns.adobe.com/xap/1.0/sType/ResourceRef#\"> <xmpMM:DerivedFrom rdf:parseType=\"Resource\"> <stRef:instanceID>xmp.iid:B1FCE8E32167E71184DCA4BF3009AD8E</stRef:instanceID> <stRef:documentID>xmp.did:D79A1C31C966E71193D182DB454E6DC6</stRef:documentID> <stRef:originalDocumentID>xmp.did:D79A1C31C966E71193D182DB454E6DC6</stRef:originalDocumentID> </xmpMM:DerivedFrom> <xmpMM:DocumentID>xmp.did:B4FCE8E32167E71184DCA4BF3009AD8E</xmpMM:DocumentID> <xmpMM:InstanceID>xmp.iid:B4FCE8E32167E71184DCA4BF3009AD8E</xmpMM:InstanceID> <xmpMM:OriginalDocumentID>xmp.did:D79A1C31C966E71193D182DB454E6DC6</xmpMM:OriginalDocumentID> </rdf:Description> </rdf:RDF> "
+    },
+    {
+      "type": "set-background-color",
+      "color": {
+        "r": 255,
+        "g": 255,
+        "b": 255
+      }
+    },
+    {
+      "type": "define-shape",
+      "id": 1,
+      "bounds": {
+        "x_min": 3099,
+        "x_max": 7439,
+        "y_min": 1700,
+        "y_max": 5600
+      },
+      "edge_bounds": null,
+      "has_fill_winding": false,
+      "has_non_scaling_strokes": false,
+      "has_scaling_strokes": false,
+      "shape": {
+        "fill_styles": [
+          {
+            "type": "solid",
+            "color": {
+              "r": 255,
+              "g": 0,
+              "b": 0,
+              "a": 255
+            }
+          },
+          {
+            "type": "solid",
+            "color": {
+              "r": 0,
+              "g": 0,
+              "b": 255,
+              "a": 255
+            }
+          },
+          {
+            "type": "solid",
+            "color": {
+              "r": 0,
+              "g": 255,
+              "b": 0,
+              "a": 255
+            }
+          },
+          {
+            "type": "solid",
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 0,
+              "a": 255
+            }
+          }
+        ],
+        "line_styles": [],
+        "records": [
+          {
+            "type": "style-change",
+            "delta_x": 6199,
+            "delta_y": 2850,
+            "left_fill": null,
+            "right_fill": 2,
+            "line_style": null,
+            "fill_styles": null,
+            "line_styles": null
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 1240,
+            "delta_y": 0
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": 2750
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": -2750,
+            "delta_y": 0
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": -1380
+          },
+          {
+            "type": "style-change",
+            "delta_x": 0,
+            "delta_y": 0,
+            "left_fill": null,
+            "right_fill": 1,
+            "line_style": null,
+            "fill_styles": null,
+            "line_styles": null
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": -1590,
+            "delta_y": 0
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": -2520
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 3100,
+            "delta_y": 0
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": 1150
+          },
+          {
+            "type": "style-change",
+            "delta_x": 0,
+            "delta_y": 0,
+            "left_fill": 2,
+            "right_fill": null,
+            "line_style": null,
+            "fill_styles": null,
+            "line_styles": null
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": -830,
+            "delta_y": 0
+          },
+          {
+            "type": "style-change",
+            "delta_x": 0,
+            "delta_y": 0,
+            "left_fill": null,
+            "right_fill": 3,
+            "line_style": null,
+            "fill_styles": null,
+            "line_styles": null
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": 800
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": -680,
+            "delta_y": 0
+          },
+          {
+            "type": "style-change",
+            "delta_x": 0,
+            "delta_y": 0,
+            "left_fill": null,
+            "right_fill": 1,
+            "line_style": null,
+            "fill_styles": null,
+            "line_styles": null
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": 570
+          },
+          {
+            "type": "style-change",
+            "delta_x": 4689,
+            "delta_y": 3650,
+            "left_fill": 1,
+            "right_fill": 3,
+            "line_style": null,
+            "fill_styles": null,
+            "line_styles": null
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": -650,
+            "delta_y": 0
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": -1330
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 1330,
+            "delta_y": 0
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": 530
+          },
+          {
+            "type": "style-change",
+            "delta_x": 6229,
+            "delta_y": 4680,
+            "left_fill": 2,
+            "right_fill": 4,
+            "line_style": null,
+            "fill_styles": null,
+            "line_styles": null
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": 370
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": -370,
+            "delta_y": 0
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 0,
+            "delta_y": -370
+          },
+          {
+            "type": "straight-edge",
+            "delta_x": 370,
+            "delta_y": 0
+          }
+        ]
+      }
+    },
+    {
+      "type": "place-object",
+      "depth": 1,
+      "character_id": 1,
+      "class_name": null,
+      "matrix": {
+        "scale_x": 1,
+        "scale_y": 1,
+        "rotate_skew_0": 0,
+        "rotate_skew_1": 0,
+        "translate_x": 0,
+        "translate_y": 0
+      },
+      "color_transform": null,
+      "ratio": null,
+      "name": null,
+      "clip_depth": null,
+      "filters": [],
+      "blend_mode": null,
+      "bitmap_cache": null,
+      "visible": null,
+      "background_color": null,
+      "clip_actions": []
+    },
+    {
+      "type": "show-frame"
+    }
+  ]
+}

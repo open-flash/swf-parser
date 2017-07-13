@@ -1,26 +1,28 @@
-use ast;
+use swf_tree as ast;
 use nom::{IResult, Needed};
 use libflate;
 use std::io;
 use std::io::Read;
-use parsers::swf_tags::{parse_swf_tag};
+use parsers::swf_tags::parse_swf_tag;
 use parsers::swf_header::{parse_swf_header, parse_swf_header_signature};
 
-pub fn parse_swf_tags_string(input: &[u8]) -> IResult<&[u8], Vec<ast::SwfTag>> {
-  let mut result: Vec<ast::SwfTag> = Vec::new();
+pub fn parse_swf_tags_string(input: &[u8]) -> IResult<&[u8], Vec<ast::Tag>> {
+  let mut result: Vec<ast::Tag> = Vec::new();
   let mut current_input: &[u8] = input;
-  loop {
+  while current_input.len() > 0 {
+    // A null byte indicates the end of the string of actions
+    if current_input[0] == 0 {
+      current_input = &current_input[1..];
+      break;
+    }
     match parse_swf_tag(current_input) {
       IResult::Done(next_input, swf_tag) => {
         current_input = next_input;
-        match swf_tag {
-          ast::SwfTag::End => {result.push(swf_tag); break},
-          _ => result.push(swf_tag)
-        }
-      },
+        result.push(swf_tag);
+      }
       IResult::Error(e) => return IResult::Error(e),
       IResult::Incomplete(_) => return IResult::Incomplete(Needed::Unknown),
-    }
+    };
   }
   IResult::Done(current_input, result)
 }
@@ -29,14 +31,10 @@ named!(
   pub parse_decompressed_swf_file<ast::SwfFile>,
   do_parse!(
     header: parse_swf_header >>
-    tag0: parse_swf_tag >>
-    tag1: parse_swf_tag >>
-    tag2: parse_swf_tag >>
-    tag3: parse_swf_tag >>
-    tag4: parse_swf_tag >>
+    tags: parse_swf_tags_string >>
     (ast::SwfFile {
       header: header,
-      tags: vec![tag0, tag1, tag2, tag3, tag4],
+      tags: tags,
     })
   )
 );

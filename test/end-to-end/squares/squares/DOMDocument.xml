@@ -1,0 +1,46 @@
+<DOMDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" currentTimeline="1" xflVersion="2.2" creatorInfo="Adobe Flash Professional CS6" platform="Windows" versionInfo="Saved by Adobe Flash Windows 12.0 build 481" majorVersion="12" buildNumber="481" nextSceneIdentifier="2" playOptionsPlayLoop="false" playOptionsPlayPages="false" playOptionsPlayFrameActions="false">
+     <timelines>
+          <DOMTimeline name="Scene 1">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#4FFF4F" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <elements>
+                                        <DOMShape>
+                                             <fills>
+                                                  <FillStyle index="1">
+                                                       <SolidColor color="#FF0000"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="2">
+                                                       <SolidColor color="#0000FF"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="3">
+                                                       <SolidColor color="#00FF00"/>
+                                                  </FillStyle>
+                                                  <FillStyle index="4">
+                                                       <SolidColor color="#FFFF00"/>
+                                                  </FillStyle>
+                                             </fills>
+                                             <edges>
+                                                  <Edge fillStyle1="2" edges="!6199 2850|7439 2850!7439 2850|7439 5600!7439 5600|4689 5600!4689 5600|4689 4220"/>
+                                                  <Edge fillStyle1="1" edges="!4689 4220|3099 4220!3099 4220|3099 1700!3099 1700|6199 1700!6199 1700|6199 2850"/>
+                                                  <Edge fillStyle0="1" fillStyle1="3" edges="!4689 3650|4039 3650!4039 3650|4039 2320!4039 2320|5369 2320!5369 2320|5369 2850"/>
+                                                  <Edge fillStyle0="1" fillStyle1="2" edges="!5369 2850|6199 2850"/>
+                                                  <Edge fillStyle0="2" fillStyle1="3" edges="!5369 2850|5369 3650!5369 3650|4689 3650"/>
+                                                  <Edge fillStyle0="2" fillStyle1="1" edges="!4689 3650|4689 4220"/>
+                                                  <Edge fillStyle0="2" fillStyle1="4" edges="!6229 4680|6229 5050!6229 5050|5859 5050!5859 5050|5859 4680!5859 4680|6229 4680"/>
+                                             </edges>
+                                        </DOMShape>
+                                   </elements>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timelines>
+     <PrinterSettings/>
+     <publishHistory>
+          <PublishItem publishSize="707" publishTime="1499878254"/>
+          <PublishItem publishSize="702" publishTime="1499878091"/>
+     </publishHistory>
+</DOMDocument>

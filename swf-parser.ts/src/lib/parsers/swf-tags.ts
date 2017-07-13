@@ -1,12 +1,8 @@
-import {Stream} from "../stream";
-import {SwfTag} from "../ast/swf-tag";
-import * as swfTags from "../ast/swf-tags/index";
+import {Label, Scene, Tag, tags, TagType} from "swf-tree";
 import {Uint16, Uint32, Uint8} from "../integer-names";
-import {SwfTagType} from "../ast/swf-tag-type";
-import {parseRgb} from "./basic-data-types";
-import {Scene} from "../ast/scene";
-import {Label} from "../ast/label";
+import {Stream} from "../stream";
 import {parseActionsString} from "./avm1";
+import {parseRgb} from "./basic-data-types";
 
 interface SwfTagHeader {
   tagCode: Uint16;
@@ -17,62 +13,24 @@ function parseSwfTagHeader(byteStream: Stream): SwfTagHeader {
   const codeAndLength: Uint16 = byteStream.readUint16LE();
   const tagCode: Uint16 = codeAndLength >> 6;
   const maxLength: number = (1 << 6) - 1;
-  const length = codeAndLength & maxLength;
+  const length: number = codeAndLength & maxLength;
 
-  if (length == maxLength) {
+  if (length === maxLength) {
     return {tagCode, length: byteStream.readUint32LE()};
   } else {
     return {tagCode, length};
   }
 }
 
-/*
-
- fn swf_tag(input: &[u8]) -> IResult<&[u8], ast::SwfTag> {
- match record_header(input) {
- IResult::Done(remaining_input, rh) => {
- if remaining_input.len() < rh.length {
- let record_header_length = input.len() - remaining_input.len();
- IResult::Incomplete(Needed::Size(record_header_length + rh.length))
- } else {
- let record_data: &[u8] = &remaining_input[..rh.length];
- let remaining_input: &[u8] = &remaining_input[rh.length..];
- let record_result = match rh.tag_code {
- 0 => IResult::Done(&record_data[rh.length..], ast::SwfTag::End(ast::EndTag {})),
- 1 => IResult::Done(&record_data[rh.length..], ast::SwfTag::ShowFrame(ast::ShowFrameTag {})),
- 9 => map!(record_data, set_background_color_tag, |t| ast::SwfTag::SetBackgroundColor(t)),
- // TODO: Ignore DoAction if version >= 9 && use_as3
- 12 => map!(record_data, do_action_tag, |t| ast::SwfTag::DoAction(t)),
- // TODO: 59 => DoInitAction
- 69 => map!(record_data, file_attributes_tag, |t| ast::SwfTag::FileAttributes(t)),
- 86 => map!(record_data, define_scene_and_frame_label_data_tag, |t| ast::SwfTag::DefineSceneAndFrameLabelData(t)),
- _ => {
- IResult::Done(&[][..], ast::SwfTag::Unknown(ast::UnknownTag { tag_code: rh.tag_code, data: record_data.to_vec() }))
- }
- };
- match record_result {
- IResult::Done(_, o) => IResult::Done(remaining_input, o),
- IResult::Error(e) => IResult::Error(e),
- IResult::Incomplete(n) => IResult::Incomplete(n),
- }
- }
- }
- IResult::Error(e) => IResult::Error(e),
- IResult::Incomplete(n) => IResult::Incomplete(n),
- }
- }
-
- */
-
-export function parseSwfTag(byteStream: Stream): SwfTag {
+export function parseSwfTag(byteStream: Stream): Tag {
   const {tagCode, length}: SwfTagHeader = parseSwfTagHeader(byteStream);
   const swfTagStream: Stream = byteStream.take(length);
 
   switch (tagCode) {
     case 0:
-      return {type: SwfTagType.End};
+      throw new Error("EndOfTags");
     case 1:
-      return {type: SwfTagType.ShowFrame};
+      return {type: TagType.ShowFrame};
     case 9:
       return parseSetBackgroundColor(swfTagStream);
     case 12:
@@ -82,11 +40,11 @@ export function parseSwfTag(byteStream: Stream): SwfTag {
     case 86:
       return parseDefineSceneAndFrameLabelData(swfTagStream);
     default:
-      return {type: SwfTagType.Unknown};
+      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(swfTagStream.bytes)};
   }
 }
 
-export function parseDefineSceneAndFrameLabelData(byteStream: Stream): swfTags.DefineSceneAndFrameLabelData {
+export function parseDefineSceneAndFrameLabelData(byteStream: Stream): tags.DefineSceneAndFrameLabelData {
   const sceneCount: Uint32 = byteStream.readEncodedUint32LE();
   const scenes: Scene[] = [];
   for (let i: number = 0; i < sceneCount; i++) {
@@ -103,32 +61,32 @@ export function parseDefineSceneAndFrameLabelData(byteStream: Stream): swfTags.D
   }
 
   return {
-    type: SwfTagType.DefineSceneAndFrameLabelData,
+    type: TagType.DefineSceneAndFrameLabelData,
     scenes,
-    labels
+    labels,
   };
 }
 
-export function parseFileAttributes(byteStream: Stream): swfTags.FileAttributes {
-  const flags: Uint8 = byteStream.readUint8LE();
+export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
+  const flags: Uint8 = byteStream.readUint8();
   byteStream.skip(3);
 
   return {
-    type: SwfTagType.FileAttributes,
+    type: TagType.FileAttributes,
     useDirectBlit: ((flags >> 6) & 1) > 0,
     useGpu: ((flags >> 5) & 1) > 0,
     hasMetadata: ((flags >> 4) & 1) > 0,
     useAs3: ((flags >> 3) & 1) > 0,
     noCrossDomainCaching: ((flags >> 2) & 1) > 0,
     useRelativeUrls: ((flags >> 1) & 1) > 0,
-    useNetwork: ((flags >> 0) & 1) > 0
+    useNetwork: ((flags >> 0) & 1) > 0,
   };
 }
 
-export function parseSetBackgroundColor(byteStream: Stream): swfTags.SetBackgroundColor {
-  return {type: SwfTagType.SetBackgroundColor, color: parseRgb(byteStream)};
+export function parseSetBackgroundColor(byteStream: Stream): tags.SetBackgroundColor {
+  return {type: TagType.SetBackgroundColor, color: parseRgb(byteStream)};
 }
 
-export function parseDoAction(byteStream: Stream): swfTags.DoAction {
-  return {type: SwfTagType.DoAction, actions: parseActionsString(byteStream)};
+export function parseDoAction(byteStream: Stream): tags.DoAction {
+  return {type: TagType.DoAction, actions: parseActionsString(byteStream)};
 }

@@ -1,7 +1,6 @@
-import {Rect} from "../ast/rect";
+import {Rect, SRgb} from "swf-tree";
 import {Int16, UintSize} from "../integer-names";
 import {Stream} from "../stream";
-import {Rgb} from "../ast/rgb";
 
 export function parseRect(byteStream: Stream): Rect {
   const result: Rect = parseRectBits(byteStream);
@@ -18,10 +17,10 @@ export function parseRectBits(bitStream: Stream): Rect {
   return {xMin, xMax, yMin, yMax};
 }
 
-export function parseRgb(byteStream: Stream): Rgb {
+export function parseRgb(byteStream: Stream): SRgb {
   return {
-    r: byteStream.readUint8LE(),
-    g: byteStream.readUint8LE(),
-    b: byteStream.readUint8LE()
+    r: byteStream.readUint8(),
+    g: byteStream.readUint8(),
+    b: byteStream.readUint8(),
   };
 }

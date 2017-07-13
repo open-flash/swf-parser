@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {Rect} from "../../lib/ast/rect";
+import {Rect} from "../../lib/ast/basic-types/rect";
 import {parseRect} from "../../lib/parsers/basic-data-types";
 import {Stream} from "../../lib/stream";
 import {readTestJson} from "../_utils";
@@ -13,6 +13,7 @@ describe("parseRect", function () {
       stream: Stream;
     };
   }
+
   interface ItemJson {
     input: StreamJson;
     expected: {
@@ -28,8 +29,8 @@ describe("parseRect", function () {
       input: readStreamJson(itemJson.input),
       expected: {
         result: Rect.type.read("json", itemJson.expected.result),
-        stream: readStreamJson(itemJson.expected.stream)
-      }
+        stream: readStreamJson(itemJson.expected.stream),
+      },
     });
   }
 
