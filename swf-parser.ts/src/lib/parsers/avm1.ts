@@ -1,6 +1,7 @@
+import {Incident} from "incident";
+import {Uint16, Uint8, UintSize} from "semantic-types";
 import {avm1} from "swf-tree";
 import {IncompleteStreamError} from "../errors/incomplete-stream";
-import {Uint16, Uint8, UintSize} from "../integer-names";
 import {Stream} from "../stream";
 
 export interface ActionHeader {
@@ -323,8 +324,32 @@ export function parseAction(byteStream: Stream): avm1.Action {
     case 0x8e:
       result = parseDefineFunction2Action(byteStream);
       break;
+    case 0x8f:
+      result = parseTryAction(byteStream);
+      break;
+    case 0x94:
+      result = parseWithAction(byteStream);
+      break;
     case 0x96:
       result = parsePushAction(byteStream.take(header.length));
+      break;
+    case 0x99:
+      result = parseJumpAction(byteStream);
+      break;
+    case 0x9a:
+      result = parseGetUrl2Action(byteStream);
+      break;
+    case 0x9b:
+      result = parseDefineFunctionAction(byteStream);
+      break;
+    case 0x9d:
+      result = parseIfAction(byteStream);
+      break;
+    case 0x9e:
+      result = {action: avm1.ActionType.Call};
+      break;
+    case 0x9f:
+      result = parseGotoFrame2Action(byteStream);
       break;
     default:
       result = {action: avm1.ActionType.Unknown, actionCode: header.actionCode};
@@ -453,6 +478,50 @@ export function parseDefineFunction2Action(byteStream: Stream): avm1.actions.Def
   };
 }
 
+function parseCatchTarget(byteStream: Stream, catchInRegister: boolean): avm1.CatchTarget {
+  if (catchInRegister) {
+    return {type: avm1.CatchTargetType.Register, register: byteStream.readUint8()};
+  } else {
+    return {type: avm1.CatchTargetType.Variable, variable: byteStream.readCString()};
+  }
+}
+
+export function parseTryAction(byteStream: Stream): avm1.actions.Try {
+  byteStream.skipBits(5);
+  const catchInRegister: boolean = byteStream.readBoolBits();
+  const hasFinallyBlock: boolean = byteStream.readBoolBits();
+  const hasCatchBlock: boolean = byteStream.readBoolBits();
+  const trySize: Uint16 = byteStream.readUint16LE();
+  const finallySize: Uint16 = byteStream.readUint16LE();
+  const catchSize: Uint16 = byteStream.readUint16LE();
+  const catchTarget: avm1.CatchTarget = parseCatchTarget(byteStream, catchInRegister);
+  const tryBody: avm1.Action[] = parseActionsBlock(byteStream, trySize);
+  let catchBody: avm1.Action[] | undefined = undefined;
+  if (hasCatchBlock) {
+    catchBody = parseActionsBlock(byteStream, catchSize);
+  }
+  let finallyBody: avm1.Action[] | undefined = undefined;
+  if (hasFinallyBlock) {
+    finallyBody = parseActionsBlock(byteStream, finallySize);
+  }
+  return {
+    action: avm1.ActionType.Try,
+    try: tryBody,
+    catch: catchBody,
+    catchTarget: catchTarget,
+    finally: finallyBody,
+  };
+}
+
+export function parseWithAction(byteStream: Stream): avm1.actions.With {
+  const withSize: Uint16 = byteStream.readUint16LE();
+  const withBody: avm1.Action[] = parseActionsBlock(byteStream, withSize);
+  return {
+    action: avm1.ActionType.With,
+    with: withBody,
+  };
+}
+
 export function parsePushAction(byteStream: Stream): avm1.actions.Push {
   const values: avm1.Value[] = [];
   while (byteStream.available() > 0) {
@@ -490,4 +559,76 @@ export function parseActionValue(byteStream: Stream): avm1.Value {
     default:
       throw new Error(`Unknown type code: ${typeCode}`);
   }
+}
+
+export function parseJumpAction(byteStream: Stream): avm1.actions.Jump {
+  const offset: Uint16 = byteStream.readUint16LE();
+  return {
+    action: avm1.ActionType.Jump,
+    offset,
+  };
+}
+
+export function parseGetUrl2Action(byteStream: Stream): avm1.actions.GetUrl2 {
+  let method: avm1.GetUrl2Method;
+  switch (byteStream.readUint16Bits(2)) {
+    case 0:
+      method = avm1.GetUrl2Method.None;
+      break;
+    case 1:
+      method = avm1.GetUrl2Method.Get;
+      break;
+    case 2:
+      method = avm1.GetUrl2Method.Post;
+      break;
+    default:
+      throw new Incident("UnexpectGetUrl2Method", "Unexpected value for the getUrl2 method");
+  }
+  byteStream.skipBits(4);
+  const loadTarget: boolean = byteStream.readBoolBits();
+  const loadVariables: boolean = byteStream.readBoolBits();
+  return {
+    action: avm1.ActionType.GetUrl2,
+    method,
+    loadTarget,
+    loadVariables,
+  };
+}
+
+export function parseDefineFunctionAction(byteStream: Stream): avm1.actions.DefineFunction {
+  const name: string = byteStream.readCString();
+  const parameterCount: UintSize = byteStream.readUint16LE();
+  const parameters: string[] = [];
+  for (let i: number = 0; i < parameterCount; i++) {
+    parameters.push(byteStream.readCString());
+  }
+  const bodySize: UintSize = byteStream.readUint16LE();
+  const body: avm1.Action[] = parseActionsBlock(byteStream, bodySize);
+
+  return {
+    action: avm1.ActionType.DefineFunction,
+    name,
+    parameters,
+    body,
+  };
+}
+
+export function parseIfAction(byteStream: Stream): avm1.actions.If {
+  const offset: Uint16 = byteStream.readUint16LE();
+  return {
+    action: avm1.ActionType.If,
+    offset,
+  };
+}
+
+export function parseGotoFrame2Action(byteStream: Stream): avm1.actions.GotoFrame2 {
+  byteStream.skipBits(6);
+  const hasSceneBias: boolean = byteStream.readBoolBits();
+  const play: boolean = byteStream.readBoolBits();
+  const sceneBias: Uint16 = hasSceneBias ? byteStream.readUint16LE() : 0;
+  return {
+    action: avm1.ActionType.GotoFrame2,
+    play,
+    sceneBias,
+  };
 }

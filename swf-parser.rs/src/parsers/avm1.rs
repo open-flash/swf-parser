@@ -198,14 +198,14 @@ named!(parse_try_action<&[u8], ast::avm1::actions::Try>,
     finally_size: parse_le_u16 >>
     catch_size: parse_le_u16 >>
     catch_target: call!(parse_catch_target, flags.0) >>
-//    try_body: call!(parse_actions_block, try_size as usize) >>
-//    catch_body: cond!(flags.1, call!(parse_actions_block, catch_size as usize)) >>
-//    finally_body: cond!(flags.2, call!(parse_actions_block, finally_size as usize)) >>
+    try_body: call!(parse_actions_block, try_size as usize) >>
+    catch_body: cond!(flags.1, call!(parse_actions_block, catch_size as usize)) >>
+    finally_body: cond!(flags.2, call!(parse_actions_block, finally_size as usize)) >>
     (ast::avm1::actions::Try {
-      try_size: try_size as usize,
+      try: try_body,
       catch_target: catch_target,
-      catch_size: catch_size as usize,
-      finally_size: finally_size as usize,
+      catch: catch_body,
+      finally: finally_body,
     })
   )
 );
@@ -213,9 +213,10 @@ named!(parse_try_action<&[u8], ast::avm1::actions::Try>,
 // Action 0x94
 named!(parse_with_action<&[u8], ast::avm1::actions::With>,
   do_parse!(
-    code_size: parse_le_i16 >>
+    with_size: parse_le_i16 >>
+    with_body: call!(parse_actions_block, with_size as usize) >>
     (ast::avm1::actions::With {
-      code_size: code_size as usize,
+      with: with_body,
     })
   )
 );
@@ -250,7 +251,7 @@ named!(parse_jump_action<&[u8], ast::avm1::actions::Jump>,
   do_parse!(
     branch_offset: parse_le_i16 >>
     (ast::avm1::actions::Jump {
-      branch_offset: branch_offset,
+      offset: branch_offset as isize,
     })
   )
 );
@@ -268,6 +269,7 @@ named!(parse_get_url2_action<&[u8], ast::avm1::actions::GetUrl2>,
         _ => panic!("Unexpected value for `send_vars_method`."),
       }
     ) >>
+    apply!(skip_bits, 4) >>
     load_target: parse_bool_bits >>
     load_variables: parse_bool_bits >>
     (ast::avm1::actions::GetUrl2 {
@@ -303,12 +305,6 @@ named!(parse_if_action<&[u8], ast::avm1::actions::If>,
   )
 );
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
-struct GotoFrame2Flags {
-  pub scene_bias: bool,
-  pub play: bool,
-}
-
 // Action 0x9f
 named!(parse_goto_frame2_action<&[u8], ast::avm1::actions::GotoFrame2>,
   do_parse!(
@@ -321,7 +317,10 @@ named!(parse_goto_frame2_action<&[u8], ast::avm1::actions::GotoFrame2>,
     scene_bias: cond!(flags.0, parse_le_u16) >>
     (ast::avm1::actions::GotoFrame2 {
       play: flags.1,
-      scene_bias: scene_bias.map(|v| v as usize),
+      scene_bias: match scene_bias {
+        Some(b) => b as usize,
+        None => 0,
+      },
     })
   )
 );
@@ -369,6 +368,7 @@ fn parse_action(input: &[u8]) -> IResult<&[u8], ast::avm1::Action> {
           0x2a => IResult::Done(remaining_input, ast::avm1::Action::Throw),
           0x2b => IResult::Done(remaining_input, ast::avm1::Action::CastOp),
           0x2c => IResult::Done(remaining_input, ast::avm1::Action::ImplementsOp),
+          0x2d => IResult::Done(remaining_input, ast::avm1::Action::FsCommand2),
           0x30 => IResult::Done(remaining_input, ast::avm1::Action::RandomNumber),
           0x31 => IResult::Done(remaining_input, ast::avm1::Action::MbStringLength),
           0x32 => IResult::Done(remaining_input, ast::avm1::Action::CharToAscii),
@@ -443,7 +443,7 @@ fn parse_action(input: &[u8]) -> IResult<&[u8], ast::avm1::Action> {
           IResult::Done(remaining_input2, action) => {
             // TODO: Check that we consumed at least ah.length
             IResult::Done(remaining_input2, action)
-          },
+          }
           a => a
         }
       }
@@ -465,7 +465,7 @@ pub fn parse_actions_block(input: &[u8], code_size: usize) -> IResult<&[u8], Vec
       IResult::Done(remaining_input, action) => {
         block.push(action);
         current_input = remaining_input;
-      },
+      }
     }
   }
 
@@ -488,7 +488,7 @@ pub fn parse_actions_string(input: &[u8]) -> IResult<&[u8], Vec<ast::avm1::Actio
       IResult::Done(remaining_input, action) => {
         block.push(action);
         current_input = remaining_input;
-      },
+      }
     }
     if current_input.len() == 0 {
       return IResult::Incomplete(Needed::Unknown);
@@ -581,22 +581,22 @@ mod tests {
     {
       let input = vec![0b00000001, 0b00000000, 0b00000000, 0b00000000];
       assert_eq!(
-      parse_action(&input[..]),
-      nom::IResult::Done(&input[1..], ast::avm1::Action::Unknown(ast::avm1::actions::UnknownAction { code: 0x01, data: Vec::new() }))
+        parse_action(&input[..]),
+        nom::IResult::Done(&input[1..], ast::avm1::Action::Unknown(ast::avm1::actions::UnknownAction { code: 0x01, data: Vec::new() }))
       );
     }
     {
       let input = vec![0b10000000, 0b00000001, 0b00000000, 0b00000011];
       assert_eq!(
-      parse_action(&input[..]),
-      nom::IResult::Done(&input[4..], ast::avm1::Action::Unknown(ast::avm1::actions::UnknownAction { code: 0x80, data: vec![0x03] }))
+        parse_action(&input[..]),
+        nom::IResult::Done(&input[4..], ast::avm1::Action::Unknown(ast::avm1::actions::UnknownAction { code: 0x80, data: vec![0x03] }))
       );
     }
     {
       let input = vec![0b10000000, 0b00000010, 0b00000000, 0b00000011];
       assert_eq!(
-      parse_action(&input[..]),
-      nom::IResult::Incomplete(nom::Needed::Size(5))
+        parse_action(&input[..]),
+        nom::IResult::Incomplete(nom::Needed::Size(5))
       );
     }
   }

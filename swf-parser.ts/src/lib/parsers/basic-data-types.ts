@@ -1,5 +1,5 @@
-import {Rect, SRgb} from "swf-tree";
-import {Int16, UintSize} from "../integer-names";
+import {Sint16, UintSize} from "semantic-types";
+import {ColorTransform, ColorTransformWithAlpha, Fixed16P16, Fixed8P8, Matrix, Rect, SRgb8} from "swf-tree";
 import {Stream} from "../stream";
 
 export function parseRect(byteStream: Stream): Rect {
@@ -10,17 +10,162 @@ export function parseRect(byteStream: Stream): Rect {
 
 export function parseRectBits(bitStream: Stream): Rect {
   const nBits: UintSize = bitStream.readUint16Bits(5);
-  const xMin: Int16 = bitStream.readInt16Bits(nBits);
-  const xMax: Int16 = bitStream.readInt16Bits(nBits);
-  const yMin: Int16 = bitStream.readInt16Bits(nBits);
-  const yMax: Int16 = bitStream.readInt16Bits(nBits);
+  const xMin: Sint16 = bitStream.readInt16Bits(nBits);
+  const xMax: Sint16 = bitStream.readInt16Bits(nBits);
+  const yMin: Sint16 = bitStream.readInt16Bits(nBits);
+  const yMax: Sint16 = bitStream.readInt16Bits(nBits);
   return {xMin, xMax, yMin, yMax};
 }
 
-export function parseRgb(byteStream: Stream): SRgb {
+export function parseRgb(byteStream: Stream): SRgb8 {
   return {
     r: byteStream.readUint8(),
     g: byteStream.readUint8(),
     b: byteStream.readUint8(),
+  };
+}
+
+export function parseMatrix(byteStream: Stream): Matrix {
+  const result: Matrix = parseMatrixBits(byteStream);
+  byteStream.align();
+  return result;
+}
+
+export function parseMatrixBits(bitStream: Stream): Matrix {
+  const hasScale: boolean = bitStream.readBoolBits();
+  let scaleX: Fixed16P16;
+  let scaleY: Fixed16P16;
+  if (hasScale) {
+    const scaleBits: UintSize = bitStream.readUint16Bits(5);
+    scaleX = bitStream.readFixed16P16Bits(scaleBits);
+    scaleY = bitStream.readFixed16P16Bits(scaleBits);
+  } else {
+    scaleX = Fixed16P16.fromValue(1);
+    scaleY = Fixed16P16.fromValue(1);
+  }
+  const hasSkew: boolean = bitStream.readBoolBits();
+  let skew0: Fixed16P16;
+  let skew1: Fixed16P16;
+  if (hasScale) {
+    const skewBits: UintSize = bitStream.readUint16Bits(5);
+    skew0 = bitStream.readFixed16P16Bits(skewBits);
+    skew1 = bitStream.readFixed16P16Bits(skewBits);
+  } else {
+    skew0 = Fixed16P16.fromValue(0);
+    skew1 = Fixed16P16.fromValue(0);
+  }
+  const translateBits: UintSize = bitStream.readUint16Bits(5);
+  const translateX: Sint16 = bitStream.readInt16Bits(translateBits);
+  const translateY: Sint16 = bitStream.readInt16Bits(translateBits);
+
+  return {
+    scaleX,
+    scaleY,
+    rotateSkew0: skew0,
+    rotateSkew1: skew1,
+    translateX,
+    translateY,
+  };
+}
+
+export function parseColorTransform(byteStream: Stream): ColorTransform {
+  const result: ColorTransform = parseColorTransformBits(byteStream);
+  byteStream.align();
+  return result;
+}
+
+export function parseColorTransformBits(bitStream: Stream): ColorTransform {
+  const hasAdd: boolean = bitStream.readBoolBits();
+  const hasMult: boolean = bitStream.readBoolBits();
+  const nBits: UintSize = bitStream.readUint16Bits(4);
+
+  let redMult: Fixed8P8;
+  let greenMult: Fixed8P8;
+  let blueMult: Fixed8P8;
+  if (hasMult) {
+    redMult = Fixed8P8.fromEpsilons(bitStream.readInt16Bits(nBits));
+    greenMult = Fixed8P8.fromEpsilons(bitStream.readInt16Bits(nBits));
+    blueMult = Fixed8P8.fromEpsilons(bitStream.readInt16Bits(nBits));
+  } else {
+    redMult = Fixed16P16.fromValue(1);
+    greenMult = Fixed16P16.fromValue(1);
+    blueMult = Fixed16P16.fromValue(1);
+  }
+
+  let redAdd: Sint16;
+  let greenAdd: Sint16;
+  let blueAdd: Sint16;
+  if (hasAdd) {
+    redAdd = bitStream.readInt16Bits(nBits);
+    greenAdd = bitStream.readInt16Bits(nBits);
+    blueAdd = bitStream.readInt16Bits(nBits);
+  } else {
+    redAdd = 0;
+    greenAdd = 0;
+    blueAdd = 0;
+  }
+
+  return {
+    redMult,
+    greenMult,
+    blueMult,
+    redAdd,
+    greenAdd,
+    blueAdd,
+  };
+}
+
+export function parseColorTransformWithAlpha(byteStream: Stream): ColorTransformWithAlpha {
+  const result: ColorTransformWithAlpha = parseColorTransformWithAlphaBits(byteStream);
+  byteStream.align();
+  return result;
+}
+
+export function parseColorTransformWithAlphaBits(bitStream: Stream): ColorTransformWithAlpha {
+  const hasAdd: boolean = bitStream.readBoolBits();
+  const hasMult: boolean = bitStream.readBoolBits();
+  const nBits: UintSize = bitStream.readUint16Bits(4);
+
+  let redMult: Fixed8P8;
+  let greenMult: Fixed8P8;
+  let blueMult: Fixed8P8;
+  let alphaMult: Fixed8P8;
+  if (hasMult) {
+    redMult = Fixed8P8.fromEpsilons(bitStream.readInt16Bits(nBits));
+    greenMult = Fixed8P8.fromEpsilons(bitStream.readInt16Bits(nBits));
+    blueMult = Fixed8P8.fromEpsilons(bitStream.readInt16Bits(nBits));
+    alphaMult = Fixed8P8.fromEpsilons(bitStream.readInt16Bits(nBits));
+  } else {
+    redMult = Fixed16P16.fromValue(1);
+    greenMult = Fixed16P16.fromValue(1);
+    blueMult = Fixed16P16.fromValue(1);
+    alphaMult = Fixed16P16.fromValue(1);
+  }
+
+  let redAdd: Sint16;
+  let greenAdd: Sint16;
+  let blueAdd: Sint16;
+  let alphaAdd: Sint16;
+  if (hasAdd) {
+    redAdd = bitStream.readInt16Bits(nBits);
+    greenAdd = bitStream.readInt16Bits(nBits);
+    blueAdd = bitStream.readInt16Bits(nBits);
+    alphaAdd = bitStream.readInt16Bits(nBits);
+  } else {
+    redAdd = 0;
+    greenAdd = 0;
+    blueAdd = 0;
+    alphaAdd = 0;
+  }
+
+  return {
+    redMult,
+    greenMult,
+    blueMult,
+    alphaMult,
+    redAdd,
+    greenAdd,
+    blueAdd,
+    alphaAdd,
   };
 }

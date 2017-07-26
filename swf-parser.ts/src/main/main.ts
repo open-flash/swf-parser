@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as sysPath from "path";
-import {SwfFile} from "swf-tree";
-import {parseSwfFile} from "../lib/parsers/swf-file";
+import {Movie} from "swf-tree";
+import {parseMovie} from "../lib/parsers/swf-file";
 import {Stream} from "../lib/stream";
 
 async function main(): Promise<void> {
@@ -13,8 +13,8 @@ async function main(): Promise<void> {
   const absFilePath: string = sysPath.resolve(filePath);
   const data: Buffer = fs.readFileSync(absFilePath);
   const byteStream: Stream = new Stream(data);
-  const result: SwfFile = await parseSwfFile(byteStream);
-  console.log(JSON.stringify(SwfFile.type.write("json", result), null, 2));
+  const result: Movie = await parseMovie(byteStream);
+  console.log(JSON.stringify(Movie.type.write("json", result), null, 2));
 }
 
 main()

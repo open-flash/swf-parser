@@ -14,5 +14,6 @@ pub mod parsers {
   pub mod basic_data_types;
   pub mod swf_file;
   pub mod swf_header;
-  pub mod swf_tags;
 }
+
+pub mod tags;

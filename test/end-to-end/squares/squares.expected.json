@@ -2,7 +2,7 @@
   "header": {
     "compression_method": "deflate",
     "swf_version": 8,
-    "uncompressed_file_length": 47359,
+    "uncompressed_file_length": 1452,
     "frame_size": {
       "x_min": 0,
       "x_max": 11000,
@@ -44,7 +44,6 @@
         "y_min": 1700,
         "y_max": 5600
       },
-      "edge_bounds": null,
       "has_fill_winding": false,
       "has_non_scaling_strokes": false,
       "has_scaling_strokes": false,
@@ -93,11 +92,7 @@
             "type": "style-change",
             "delta_x": 6199,
             "delta_y": 2850,
-            "left_fill": null,
-            "right_fill": 2,
-            "line_style": null,
-            "fill_styles": null,
-            "line_styles": null
+            "right_fill": 2
           },
           {
             "type": "straight-edge",
@@ -123,11 +118,7 @@
             "type": "style-change",
             "delta_x": 0,
             "delta_y": 0,
-            "left_fill": null,
-            "right_fill": 1,
-            "line_style": null,
-            "fill_styles": null,
-            "line_styles": null
+            "right_fill": 1
           },
           {
             "type": "straight-edge",
@@ -153,11 +144,7 @@
             "type": "style-change",
             "delta_x": 0,
             "delta_y": 0,
-            "left_fill": 2,
-            "right_fill": null,
-            "line_style": null,
-            "fill_styles": null,
-            "line_styles": null
+            "left_fill": 2
           },
           {
             "type": "straight-edge",
@@ -168,11 +155,7 @@
             "type": "style-change",
             "delta_x": 0,
             "delta_y": 0,
-            "left_fill": null,
-            "right_fill": 3,
-            "line_style": null,
-            "fill_styles": null,
-            "line_styles": null
+            "right_fill": 3
           },
           {
             "type": "straight-edge",
@@ -188,11 +171,7 @@
             "type": "style-change",
             "delta_x": 0,
             "delta_y": 0,
-            "left_fill": null,
-            "right_fill": 1,
-            "line_style": null,
-            "fill_styles": null,
-            "line_styles": null
+            "right_fill": 1
           },
           {
             "type": "straight-edge",
@@ -204,10 +183,7 @@
             "delta_x": 4689,
             "delta_y": 3650,
             "left_fill": 1,
-            "right_fill": 3,
-            "line_style": null,
-            "fill_styles": null,
-            "line_styles": null
+            "right_fill": 3
           },
           {
             "type": "straight-edge",
@@ -234,10 +210,7 @@
             "delta_x": 6229,
             "delta_y": 4680,
             "left_fill": 2,
-            "right_fill": 4,
-            "line_style": null,
-            "fill_styles": null,
-            "line_styles": null
+            "right_fill": 4
           },
           {
             "type": "straight-edge",
@@ -266,24 +239,15 @@
       "type": "place-object",
       "depth": 1,
       "character_id": 1,
-      "class_name": null,
       "matrix": {
-        "scale_x": 1,
-        "scale_y": 1,
-        "rotate_skew_0": 0,
-        "rotate_skew_1": 0,
+        "scale_x": "+0x0001.0000",
+        "scale_y": "+0x0001.0000",
+        "rotate_skew0": "+0x0000.0000",
+        "rotate_skew1": "+0x0000.0000",
         "translate_x": 0,
         "translate_y": 0
       },
-      "color_transform": null,
-      "ratio": null,
-      "name": null,
-      "clip_depth": null,
       "filters": [],
-      "blend_mode": null,
-      "bitmap_cache": null,
-      "visible": null,
-      "background_color": null,
       "clip_actions": []
     },
     {

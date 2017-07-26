@@ -1,7 +1,7 @@
 {
   "name": "swf-parser",
   "version": "0.0.1",
-  "description": "SWF parser based on Shumway",
+  "description": "SWF parser loosely based on Shumway",
   "private": true,
   "keywords": [],
   "license": "MIT",
@@ -15,18 +15,19 @@
   },
   "dependencies": {
     "incident": "^2.0.0",
-    "kryo": "^0.5.0-alpha.7",
-    "swf-tree": "0.0.2"
+    "kryo": "^0.5.0-alpha.9",
+    "semantic-types": "^0.1.1",
+    "swf-tree": "0.0.4"
   },
   "devDependencies": {
     "@types/chai": "^4.0.1",
     "@types/mocha": "^2.2.40",
-    "@types/node": "^8.0.11",
+    "@types/node": "^8.0.17",
     "bson": "^1.0.4",
     "chai": "^3.5.0",
-    "demurgos-web-build-tools": "^0.14.2",
+    "demurgos-web-build-tools": "^0.14.3",
     "gulp": "github:gulpjs/gulp#4.0",
     "tslint": "^5.5.0",
-    "typescript": "^2.2.2"
+    "typescript": "^2.4.2"
   }
 }

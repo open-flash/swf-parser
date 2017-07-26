@@ -4,13 +4,13 @@ use nom::{IResult, Needed};
 use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16};
 
 named!(
-  pub parse_argb<ast::StraightSRgba>,
+  pub parse_argb<ast::StraightSRgba8>,
   do_parse!(
     a: parse_u8 >>
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
-    (ast::StraightSRgba {r: r, g: g, b: b, a: a})
+    (ast::StraightSRgba8 {r: r, g: g, b: b, a: a})
   )
 );
 
@@ -114,23 +114,23 @@ named!(
 );
 
 named!(
-  pub parse_rgb<ast::SRgb>,
+  pub parse_rgb<ast::SRgb8>,
   do_parse!(
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
-    (ast::SRgb {r: r, g: g, b: b})
+    (ast::SRgb8 {r: r, g: g, b: b})
   )
 );
 
 named!(
-  pub parse_rgba<ast::StraightSRgba>,
+  pub parse_rgba<ast::StraightSRgba8>,
   do_parse!(
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
     a: parse_u8 >>
-    (ast::StraightSRgba {r: r, g: g, b: b, a: a})
+    (ast::StraightSRgba8 {r: r, g: g, b: b, a: a})
   )
 );
 
@@ -154,6 +154,18 @@ pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize)
 }
 
 named!(
+  pub parse_language_code<&[u8], ast::LanguageCode>,
+  switch!(parse_u8,
+    0 => value!(ast::LanguageCode::Auto) |
+    1 => value!(ast::LanguageCode::Latin) |
+    2 => value!(ast::LanguageCode::Japanese) |
+    3 => value!(ast::LanguageCode::Korean) |
+    4 => value!(ast::LanguageCode::SimplifiedChinese) |
+    5 => value!(ast::LanguageCode::TraditionalChinese)
+  )
+);
+
+named!(
   pub parse_matrix<ast::Matrix>,
   bits!(parse_matrix_bits)
 );
@@ -174,8 +186,9 @@ named!(
         None => (1, 1),
       }
     ) >>
+    has_rotate: call!(parse_bool_bits) >>
     skew: map!(
-      cond!(has_scale, do_parse!(
+      cond!(has_rotate, do_parse!(
         skew_bits: apply!(parse_u16_bits, 5) >>
         skew0: apply!(parse_i32_bits, skew_bits as usize) >>
         skew1: apply!(parse_i32_bits, skew_bits as usize) >>
@@ -186,25 +199,28 @@ named!(
         None => (0, 0),
       }
     ) >>
-    translate: map!(
-      cond!(has_scale, do_parse!(
-        translate_bits: apply!(parse_u16_bits, 5) >>
-        translate_x: apply!(parse_i32_bits, translate_bits as usize) >>
-        translate_y: apply!(parse_i32_bits, translate_bits as usize) >>
-        (translate_x, translate_y)
-      )),
-      |translate| match translate {
-        Some((translate_x, translate_y)) => (translate_x, translate_y),
-        None => (0, 0),
-      }
-    ) >>
+    translate_bits: apply!(parse_u16_bits, 5) >>
+    translate_x: apply!(parse_i32_bits, translate_bits as usize) >>
+    translate_y: apply!(parse_i32_bits, translate_bits as usize) >>
     (ast::Matrix {
       scale_x: scale.0,
       scale_y: scale.1,
       rotate_skew_0: skew.0,
       rotate_skew_1: skew.1,
-      translate_x: translate.0,
-      translate_y: translate.1,
+      translate_x: translate_x,
+      translate_y: translate_y,
+    })
+  )
+);
+
+named!(
+  pub parse_named_id<ast::NamedId>,
+  do_parse!(
+    id: parse_le_u16 >>
+    name: parse_c_string >>
+    (ast::NamedId {
+      id: id,
+      name: name,
     })
   )
 );

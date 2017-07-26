@@ -1,7 +1,17 @@
 import {Incident} from "incident";
+import {
+  Float16,
+  Float32,
+  Float64,
+  Sint16,
+  Sint32,
+  Sint8,
+  Uint16,
+  Uint32,
+  Uint8,
+} from "semantic-types";
 import {Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8} from "swf-tree";
 import {IncompleteStreamError} from "./errors/incomplete-stream";
-import {Float16, Float32, Float64, Int16, Int32, Int8, Uint16, Uint32, Uint8} from "./integer-names";
 
 export class Stream {
   bytes: Uint8Array;
@@ -52,18 +62,18 @@ export class Stream {
     return result;
   }
 
-  readInt8(): Int8 {
+  readInt8(): Sint8 {
     return this.view.getInt8(this.bytePos++);
   }
 
-  readInt16LE(): Int16 {
-    const result: Int16 = this.view.getInt16(this.bytePos, true);
+  readInt16LE(): Sint16 {
+    const result: Sint16 = this.view.getInt16(this.bytePos, true);
     this.bytePos += 2;
     return result;
   }
 
-  readInt32LE(): Int32 {
-    const result: Int32 = this.view.getInt32(this.bytePos, true);
+  readInt32LE(): Sint32 {
+    const result: Sint32 = this.view.getInt32(this.bytePos, true);
     this.bytePos += 4;
     return result;
   }
@@ -155,12 +165,20 @@ export class Stream {
     return this.readUintBits(1) > 0;
   }
 
-  readInt16Bits(n: number): Int16 {
+  readInt16Bits(n: number): Sint16 {
+    return this.readIntBits(n);
+  }
+
+  readInt32Bits(n: number): Sint32 {
     return this.readIntBits(n);
   }
 
   readUint16Bits(n: number): Uint16 {
     return this.readUintBits(n);
+  }
+
+  readFixed16P16Bits(n: number): Fixed16P16 {
+    return Fixed16P16.fromEpsilons(this.readIntBits(n));
   }
 
   readEncodedUint32LE(): Uint32 {

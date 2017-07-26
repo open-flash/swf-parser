@@ -1,6 +1,6 @@
 use swf_tree as ast;
 use nom::{IResult, Needed};
-use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
+use nom::{le_i16 as parse_le_i16, le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
 use parsers::avm1::parse_actions_string;
 use parsers::basic_data_types::{
   parse_bool_bits,
@@ -8,12 +8,15 @@ use parsers::basic_data_types::{
   parse_color_transform_with_alpha,
   parse_encoded_le_u32,
   parse_i32_bits,
+  parse_language_code,
   parse_matrix,
+  parse_named_id,
   parse_rect,
   parse_rgb,
   parse_u16_bits,
   skip_bits
 };
+use parsers::swf_file::parse_swf_tags_string;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct SwfTagHeader {
@@ -160,9 +163,10 @@ named!(
       no_h_scale: false,
       no_v_scale: false,
       no_close: false,
+      pixel_hinting: false,
       fill: ast::shapes::FillStyle::Solid(
         ast::shapes::fills::Solid {
-          color: ast::StraightSRgba {
+          color: ast::StraightSRgba8 {
             r: color.r,
             g: color.g,
             b: color.b,
@@ -185,7 +189,7 @@ named!(
     color: parse_rgb >>
     (
       ast::shapes::fills::Solid {
-        color: ast::StraightSRgba {
+        color: ast::StraightSRgba8 {
           r: color.r,
           g: color.g,
           b: color.b,
@@ -201,13 +205,7 @@ named!(parse_fill_style<&[u8], ast::shapes::FillStyle>,
   )
 );
 
-#[derive(Clone)]
-struct StyleChangeMoveTo {
-  delta_x: i32,
-  delta_y: i32,
-}
-
-pub fn parse_style_change_bits(input: (&[u8], usize), fill_style_bits: usize, line_style_bits: usize) -> IResult<(&[u8], usize), ast::shapes::StyleChange> {
+pub fn parse_style_change_bits(input: (&[u8], usize), fill_style_bits: usize, line_style_bits: usize) -> IResult<(&[u8], usize), ast::shapes::records::StyleChange> {
   do_parse!(
     input,
     apply!(skip_bits, 1) >> // Type flag
@@ -221,15 +219,14 @@ pub fn parse_style_change_bits(input: (&[u8], usize), fill_style_bits: usize, li
         move_to_bits: apply!(parse_u16_bits, 5) >>
         delta_x: apply!(parse_i32_bits, move_to_bits as usize) >>
         delta_y: apply!(parse_i32_bits, move_to_bits as usize) >>
-        (StyleChangeMoveTo {delta_x: delta_x, delta_y: delta_y})
+        (delta_x, delta_y)
       )
     ) >>
     left_fill: cond!(change_left_fill_style_flag, apply!(parse_u16_bits, fill_style_bits)) >>
     right_fill: cond!(change_right_fill_style_flag, apply!(parse_u16_bits, fill_style_bits)) >>
     line_style: cond!(change_line_style_flag, apply!(parse_u16_bits, line_style_bits)) >>
-    (ast::shapes::StyleChange {
-        delta_x: move_to.clone().map(|move_to| move_to.delta_x).unwrap_or_default(),
-        delta_y: move_to.map(|move_to| move_to.delta_y).unwrap_or_default(),
+    (ast::shapes::records::StyleChange {
+        move_to: move_to.map(|vector| ast::Vector2D {x: vector.0, y: vector.1}),
         left_fill: left_fill.map(|x| x as usize),
         right_fill: right_fill.map(|x| x as usize),
         line_style: line_style.map(|x| x as usize),
@@ -239,36 +236,33 @@ pub fn parse_style_change_bits(input: (&[u8], usize), fill_style_bits: usize, li
   )
 }
 
-pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::StraightEdge> {
+pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::records::StraightEdge> {
   do_parse!(
     input,
     apply!(skip_bits, 2) >> // Type flag and straight flag
-    delta_bits: apply!(parse_u16_bits, 4) >>
+    n_bits: apply!(parse_u16_bits, 4) >>
     is_diagonal: call!(parse_bool_bits) >>
     is_vertical: map!(cond!(!is_diagonal, call!(parse_bool_bits)), |opt: Option<bool>| opt.unwrap_or_default()) >>
-    delta_x: cond!(is_diagonal || !is_vertical, apply!(parse_i32_bits, (delta_bits + 2) as usize)) >>
-    delta_y: cond!(is_diagonal || is_vertical, apply!(parse_i32_bits, (delta_bits + 2) as usize)) >>
-    (ast::shapes::StraightEdge {
-        delta_x: delta_x.unwrap_or_default(),
-        delta_y: delta_y.unwrap_or_default(),
+    delta_x: cond!(is_diagonal || !is_vertical, apply!(parse_i32_bits, (n_bits + 2) as usize)) >>
+    delta_y: cond!(is_diagonal || is_vertical, apply!(parse_i32_bits, (n_bits + 2) as usize)) >>
+    (ast::shapes::records::StraightEdge {
+      end_delta: ast::Vector2D {x: delta_x.unwrap_or_default(), y: delta_y.unwrap_or_default()},
     })
   )
 }
 
-pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::CurvedEdge> {
+pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::records::CurvedEdge> {
   do_parse!(
     input,
     apply!(skip_bits, 2) >> // Type flag and straight flag
-    delta_bits: apply!(parse_u16_bits, 4) >>
-    control_x: apply!(parse_i32_bits, (delta_bits + 2) as usize) >>
-    control_y: apply!(parse_i32_bits, (delta_bits + 2) as usize) >>
-    delta_x: apply!(parse_i32_bits, (delta_bits + 2) as usize) >>
-    delta_y: apply!(parse_i32_bits, (delta_bits + 2) as usize) >>
-    (ast::shapes::CurvedEdge {
-      control_x: control_x,
-      control_y: control_y,
-      delta_x: delta_x,
-      delta_y: delta_y,
+    n_bits: apply!(parse_u16_bits, 4) >>
+    control_x: apply!(parse_i32_bits, (n_bits + 2) as usize) >>
+    control_y: apply!(parse_i32_bits, (n_bits + 2) as usize) >>
+    delta_x: apply!(parse_i32_bits, (n_bits + 2) as usize) >>
+    delta_y: apply!(parse_i32_bits, (n_bits + 2) as usize) >>
+    (ast::shapes::records::CurvedEdge {
+      control_delta: ast::Vector2D {x: control_x, y: control_y},
+      end_delta: ast::Vector2D {x: control_x, y: control_y},
     })
   )
 }
@@ -292,7 +286,10 @@ pub fn parse_shape_record_list_bits(input: (&[u8], usize)) -> IResult<(&[u8], us
 
   loop {
     match parse_u16_bits(current_input, 6) {
-      IResult::Done(_, record_head) => if record_head == 0 { break },
+      IResult::Done(next_input, record_head) => if record_head == 0 {
+        current_input = next_input;
+        break
+      },
       IResult::Error(e) => return IResult::Error(e),
       IResult::Incomplete(_) => return IResult::Incomplete(Needed::Unknown),
     };
@@ -357,8 +354,7 @@ named!(
     fill_styles: parse_fill_style_list >>
     line_styles: parse_line_style_list >>
     records: bits!(parse_shape_record_list_bits) >>
-    (
-      ast::shapes::Shape {
+    (ast::shapes::Shape {
       fill_styles: fill_styles,
       line_styles: line_styles,
       records: records,
@@ -366,22 +362,12 @@ named!(
   )
 );
 
-/// Parse a Metadata tag (code: 2)
 named!(
-  pub parse_define_shape<ast::tags::DefineShape>,
+  pub parse_glyph<ast::shapes::Glyph>,
   do_parse!(
-    id: parse_le_u16 >>
-    bounds: parse_rect >>
-    shape: parse_shape >>
-    (
-      ast::tags::DefineShape {
-      id: id,
-      bounds: bounds,
-      edge_bounds: Option::None,
-      has_fill_winding: false,
-      has_non_scaling_strokes: false,
-      has_scaling_strokes: false,
-      shape: shape,
+    records: bits!(parse_shape_record_list_bits) >>
+    (ast::shapes::Glyph {
+      records: records,
     })
   )
 );
@@ -448,6 +434,216 @@ named!(
   )
 );
 
+// TODO: Rename to parse_tag_string
+pub fn parse_swf_tag(input: &[u8]) -> IResult<&[u8], ast::Tag> {
+  match parse_swf_tag_header(input) {
+    IResult::Done(remaining_input, rh) => {
+      if remaining_input.len() < rh.length {
+        let record_header_length = input.len() - remaining_input.len();
+        IResult::Incomplete(Needed::Size(record_header_length + rh.length))
+      } else {
+        let record_data: &[u8] = &remaining_input[..rh.length];
+        let remaining_input: &[u8] = &remaining_input[rh.length..];
+        let record_result = match rh.tag_code {
+          1 => IResult::Done(&record_data[rh.length..], ast::Tag::ShowFrame),
+          2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
+          9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
+          // TODO: Ignore DoAction if version >= 9 && use_as3
+          12 => map!(record_data, parse_do_action_tag, |t| ast::Tag::DoAction(t)),
+          26 => map!(record_data, parse_place_object2, |t| ast::Tag::PlaceObject(t)),
+          39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
+          56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
+          // TODO: 59 => DoInitAction
+          69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
+          75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont3(t)),
+          77 => map!(record_data, parse_metadata, |t| ast::Tag::Metadata(t)),
+          86 => map!(record_data, parse_define_scene_and_frame_label_data_tag, |t| ast::Tag::DefineSceneAndFrameLabelData(t)),
+          _ => {
+            IResult::Done(&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() }))
+          }
+        };
+        match record_result {
+          // IResult::Done(left, o) => {
+          //   println!("{:?}", left);
+          //   IResult::Done(remaining_input, o)
+          // }
+          IResult::Done(_, o) => IResult::Done(remaining_input, o),
+          IResult::Error(e) => IResult::Error(e),
+          IResult::Incomplete(n) => IResult::Incomplete(n),
+        }
+      }
+    }
+    IResult::Error(e) => IResult::Error(e),
+    IResult::Incomplete(n) => IResult::Incomplete(n),
+  }
+}
+
+fn parse_offset_glyphs(input: &[u8], glyph_count: usize, use_wide_offsets: bool) -> IResult<&[u8], Vec<ast::shapes::Glyph>> {
+  let parsed_offsets = if use_wide_offsets {
+    pair!(
+      input,
+      length_count!(value!(glyph_count), map!(parse_le_u32, |x| x as usize)),
+      map!(parse_le_u32, |x| x as usize)
+    )
+  } else {
+    pair!(
+      input,
+      length_count!(value!(glyph_count), map!(parse_le_u16, |x| x as usize)),
+      map!(parse_le_u16, |x| x as usize)
+    )
+  };
+  let (offsets, end_offset) = match parsed_offsets {
+    IResult::Done(_, o) => o,
+    IResult::Error(e) => return IResult::Error(e),
+    IResult::Incomplete(n) => return IResult::Incomplete(n),
+  };
+  let mut glyphs: Vec<ast::shapes::Glyph> = Vec::with_capacity(glyph_count);
+  for i in 0..glyph_count {
+    let start_offset = offsets[i];
+    let end_offset = if i + 1 < glyph_count { offsets[i + 1] } else { end_offset };
+    match parse_glyph(&input[start_offset..end_offset]) {
+      IResult::Done(_, o) => glyphs.push(o),
+      IResult::Error(e) => return IResult::Error(e),
+      IResult::Incomplete(n) => return IResult::Incomplete(n),
+    };
+  }
+  value!(&input[end_offset..], glyphs)
+}
+
+named!(
+  pub parse_kerning_record<ast::text::KerningRecord>,
+  do_parse!(
+    left_code_point: parse_le_u16 >>
+    right_code_point: parse_le_u16 >>
+    adjustment: parse_le_i16 >>
+    (ast::text::KerningRecord {
+      left_code_point: left_code_point,
+      right_code_point: right_code_point,
+      adjustment: adjustment,
+    })
+  )
+);
+
+pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> IResult<&[u8], ast::text::FontLayout> {
+  do_parse!(input,
+    ascent: parse_le_u16 >>
+    descent: parse_le_u16 >>
+    leading: parse_le_u16 >>
+    advances: length_count!(value!(glyph_count), parse_le_u16) >>
+    bounds: length_count!(value!(glyph_count), parse_rect) >>
+    kerning: length_count!(parse_le_u16, parse_kerning_record) >>
+    (ast::text::FontLayout {
+      ascent: ascent,
+      descent: descent,
+      leading: leading,
+      advances,
+      bounds,
+      kerning,
+    })
+  )
+}
+
+struct DefineFont3Flags {
+  has_layout: bool,
+  is_shift_jis: bool,
+  is_ansi: bool,
+  is_small: bool,
+  use_wide_offsets: bool,
+  use_wide_codes: bool,
+  is_italic: bool,
+  is_bold: bool,
+}
+
+// https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
+named!(
+  pub parse_define_font3<&[u8], ast::tags::DefineFont3, u32>,
+  do_parse!(
+    id: parse_le_u16 >>
+    flags: bits!(do_parse!(
+      has_layout: call!(parse_bool_bits) >>
+      is_shift_jis: call!(parse_bool_bits) >>
+      is_ansi: call!(parse_bool_bits) >>
+      is_small: call!(parse_bool_bits) >>
+      use_wide_offsets: call!(parse_bool_bits) >>
+      use_wide_codes: call!(parse_bool_bits) >>
+      is_italic: call!(parse_bool_bits) >>
+      is_bold: call!(parse_bool_bits) >>
+      (DefineFont3Flags {
+        has_layout: has_layout,
+        is_shift_jis: is_shift_jis,
+        is_ansi: is_ansi,
+        is_small: is_small,
+        use_wide_offsets: use_wide_offsets,
+        use_wide_codes: use_wide_codes,
+        is_italic: is_italic,
+        is_bold: is_bold,
+      })
+    )) >>
+    language: parse_language_code >>
+    font_name: length_value!(parse_u8, parse_c_string) >>
+    glyph_count: parse_le_u16 >>
+    // TODO: if glyphCount == 0, return
+    glyphs: apply!(parse_offset_glyphs, glyph_count as usize, flags.use_wide_offsets) >>
+    code_units: length_count!(value!(glyph_count), parse_le_u16) >>
+    layout: cond!(flags.has_layout, apply!(parse_font_layout, glyph_count as usize)) >>
+    (ast::tags::DefineFont3 {
+      id: id,
+      font_name: font_name,
+      is_small: flags.is_small,
+      is_shift_jis: flags.is_shift_jis,
+      is_ansi: flags.is_ansi,
+      is_italic: flags.is_italic,
+      is_bold: flags.is_bold,
+      language: language,
+      glyphs: glyphs,
+      code_units: code_units,
+      layout: layout,
+    })
+  )
+);
+
+named!(
+  pub parse_define_shape<ast::tags::DefineShape>,
+  do_parse!(
+    id: parse_le_u16 >>
+    bounds: parse_rect >>
+    shape: parse_shape >>
+    (ast::tags::DefineShape {
+      id: id,
+      bounds: bounds,
+      edge_bounds: Option::None,
+      has_fill_winding: false,
+      has_non_scaling_strokes: false,
+      has_scaling_strokes: false,
+      shape: shape,
+    })
+  )
+);
+
+named!(
+  pub parse_define_sprite<ast::tags::DefineSprite>,
+  do_parse!(
+    id: parse_le_u16 >>
+    frame_count: parse_le_u16 >>
+    tags: parse_swf_tags_string >>
+    (ast::tags::DefineSprite {
+      id: id,
+      frame_count: frame_count as usize,
+      tags: tags,
+    })
+  )
+);
+
+named!(
+  pub parse_export_assets<ast::tags::ExportAssets>,
+  do_parse!(
+    assets: length_count!(parse_le_u16, parse_named_id) >>
+    (ast::tags::ExportAssets {
+      assets: assets,
+    })
+  )
+);
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct PlaceObject2Flags {
   pub has_clip_actions: bool,
@@ -508,43 +704,3 @@ named!(
     })
   )
 );
-
-pub fn parse_swf_tag(input: &[u8]) -> IResult<&[u8], ast::Tag> {
-  match parse_swf_tag_header(input) {
-    IResult::Done(remaining_input, rh) => {
-      if remaining_input.len() < rh.length {
-        let record_header_length = input.len() - remaining_input.len();
-        IResult::Incomplete(Needed::Size(record_header_length + rh.length))
-      } else {
-        let record_data: &[u8] = &remaining_input[..rh.length];
-        let remaining_input: &[u8] = &remaining_input[rh.length..];
-        let record_result = match rh.tag_code {
-          1 => IResult::Done(&record_data[rh.length..], ast::Tag::ShowFrame),
-          2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
-          9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
-          // TODO: Ignore DoAction if version >= 9 && use_as3
-          12 => map!(record_data, parse_do_action_tag, |t| ast::Tag::DoAction(t)),
-          26 => map!(record_data, parse_place_object2, |t| ast::Tag::PlaceObject(t)),
-          // TODO: 59 => DoInitAction
-          69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
-          77 => map!(record_data, parse_metadata, |t| ast::Tag::Metadata(t)),
-          86 => map!(record_data, parse_define_scene_and_frame_label_data_tag, |t| ast::Tag::DefineSceneAndFrameLabelData(t)),
-          _ => {
-            IResult::Done(&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() }))
-          }
-        };
-        match record_result {
-          // IResult::Done(left, o) => {
-          //   println!("{:?}", left);
-          //   IResult::Done(remaining_input, o)
-          // }
-          IResult::Done(_, o) => IResult::Done(remaining_input, o),
-          IResult::Error(e) => IResult::Error(e),
-          IResult::Incomplete(n) => IResult::Incomplete(n),
-        }
-      }
-    }
-    IResult::Error(e) => IResult::Error(e),
-    IResult::Incomplete(n) => IResult::Incomplete(n),
-  }
-}

@@ -29,12 +29,10 @@ fn main() {
 
 //  println!("Input:\n{:?}", &data);
 
-  let swf_file_parse_result: nom::IResult<&[u8], ast::SwfFile> = parsers::swf_file::parse_swf_file(&data[..]);
+  let swf_file_parse_result: nom::IResult<&[u8], ast::Movie> = parsers::swf_file::parse_movie(&data[..]);
 
   match swf_file_parse_result {
     nom::IResult::Done(_, parsed) => {
-//      println!("Remaining input:\n{:?}", remaining);
-//      println!("Parsed:\n{:#?}", parsed);
       println!("{}", serde_json::to_string_pretty(&parsed).unwrap());
     },
     nom::IResult::Error(error) => {
