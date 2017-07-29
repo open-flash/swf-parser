@@ -1,15 +1,15 @@
 import {assert} from "chai";
-import {SwfHeader} from "../../lib/ast/header/swf-header";
-import {parseSwfHeader} from "../../lib/parsers/header";
+import {Header} from "swf-tree";
+import {parseHeader} from "../../lib/parsers/header";
 import {Stream} from "../../lib/stream";
 import {readTestJson} from "../_utils";
 import {readStreamJson, StreamJson} from "./_utils";
 
-describe("parseSwfHeader", function () {
+describe("parseHeader", function () {
   interface Item {
     input: Stream;
     expected: {
-      result: SwfHeader;
+      result: Header;
       stream: Stream;
     };
   }
@@ -17,7 +17,7 @@ describe("parseSwfHeader", function () {
   interface ItemJson {
     input: StreamJson;
     expected: {
-      result: SwfHeader.Json;
+      result: Header.Json;
       stream: StreamJson;
     };
   }
@@ -28,7 +28,7 @@ describe("parseSwfHeader", function () {
     items.push({
       input: readStreamJson(itemJson.input),
       expected: {
-        result: SwfHeader.type.read("json", itemJson.expected.result),
+        result: Header.type.read("json", itemJson.expected.result),
         stream: readStreamJson(itemJson.expected.stream),
       },
     });
@@ -36,9 +36,9 @@ describe("parseSwfHeader", function () {
 
   for (let i: number = 0; i < items.length; i++) {
     const item: Item = items[i];
-    it(`Should parse the swfHeader in the test case ${i}`, function () {
-      const actual: SwfHeader = parseSwfHeader(item.input);
-      assert.isTrue(SwfHeader.type.equals(actual, item.expected.result));
+    it(`Should parse the Header in the test case ${i}`, function () {
+      const actual: Header = parseHeader(item.input);
+      assert.isTrue(Header.type.equals(actual, item.expected.result));
       assert.deepEqual(item.input.tail(), item.expected.stream);
     });
   }

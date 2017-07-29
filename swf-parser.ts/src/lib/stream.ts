@@ -9,18 +9,94 @@ import {
   Uint16,
   Uint32,
   Uint8,
+  UintSize,
 } from "semantic-types";
 import {Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8} from "swf-tree";
 import {IncompleteStreamError} from "./errors/incomplete-stream";
 
-export class Stream {
+/**
+ * Represents a non-byte-aligned stream
+ */
+export interface BitStream {
+  bytePos: UintSize;
+  bitPos: UintSize;
+
+  align(): void;
+
+  asByteStream(): ByteStream;
+
+  readUint32Bits(n: UintSize): Uint32;
+
+  skipBits(n: UintSize): void;
+
+  readBoolBits(): boolean;
+
+  readSint16Bits(n: UintSize): Sint16;
+
+  readSint32Bits(n: UintSize): Sint32;
+
+  readUint16Bits(n: UintSize): Uint16;
+
+  readUint32Bits(n: UintSize): Uint32;
+
+  readFixed16P16Bits(n: UintSize): Fixed16P16;
+}
+
+/**
+ * Represents a byte-aligned stream
+ */
+export interface ByteStream {
+  bytePos: UintSize;
+
+  skip(size: UintSize): void;
+
+  align(): void;
+
+  asBitStream(): BitStream;
+
+  take(length: UintSize): ByteStream;
+
+  readUint8(): Uint8;
+
+  peekUint8(): Uint8;
+
+  readUint16LE(): Uint16;
+
+  readUint32LE(): Uint32;
+
+  readSint8(): Sint8;
+
+  readSint16LE(): Sint16;
+
+  readSint32LE(): Sint32;
+
+  readFloat16BE(): Float16;
+
+  readFloat32BE(): Float32;
+
+  readFloat32LE(): Float32;
+
+  readFloat64BE(): Float64;
+
+  readFloat64LE(): Float64;
+
+  readFixed8P8LE(): Fixed8P8;
+
+  readUfixed8P8LE(): Ufixed8P8;
+
+  readFixed16P16LE(): Fixed16P16;
+
+  readUfixed16P16LE(): Ufixed16P16;
+}
+
+export class Stream implements BitStream, ByteStream {
   bytes: Uint8Array;
   view: DataView;
-  bytePos: number;
-  byteEnd: number;
-  bitPos: number;
+  bytePos: UintSize;
+  byteEnd: UintSize;
+  bitPos: UintSize;
 
-  constructor(buffer: ArrayBuffer | Buffer, byteOffset: number = 0, bitOffset: number = 0) {
+  constructor(buffer: ArrayBuffer | Buffer, byteOffset: UintSize = 0, bitOffset: UintSize = 0) {
     if (buffer instanceof Buffer) {
       buffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
     }
@@ -31,7 +107,16 @@ export class Stream {
     this.byteEnd = buffer.byteLength;
   }
 
-  align() {
+  asBitStream(): this {
+    return this;
+  }
+
+  asByteStream(): this {
+    this.align();
+    return this;
+  }
+
+  align(): void {
     if (this.bitPos !== 0) {
       this.bitPos = 0;
       this.bytePos++;
@@ -62,17 +147,17 @@ export class Stream {
     return result;
   }
 
-  readInt8(): Sint8 {
+  readSint8(): Sint8 {
     return this.view.getInt8(this.bytePos++);
   }
 
-  readInt16LE(): Sint16 {
+  readSint16LE(): Sint16 {
     const result: Sint16 = this.view.getInt16(this.bytePos, true);
     this.bytePos += 2;
     return result;
   }
 
-  readInt32LE(): Sint32 {
+  readSint32LE(): Sint32 {
     const result: Sint32 = this.view.getInt32(this.bytePos, true);
     this.bytePos += 4;
     return result;
@@ -100,6 +185,7 @@ export class Stream {
 
   readFloat16BE(): Float16 {
     const u16: Uint16 = this.view.getUint16(0, false);
+    this.bytePos += 2;
     const sign: -1 | 1 = u16 >> 15 === 1 ? -1 : 1;
     const exponent: number = (u16 & 0x7c00) >> 10; // 0x7c00: bits 10 to 14 (inclusive)
     const fraction: number = u16 & 0x03ff; // 0x03ff: bits 0 to 9 (inclusive)
@@ -137,7 +223,7 @@ export class Stream {
   }
 
   readFixed8P8LE(): Fixed8P8 {
-    return Fixed8P8.fromEpsilons(this.readInt16LE());
+    return Fixed8P8.fromEpsilons(this.readSint16LE());
   }
 
   readUfixed8P8LE(): Ufixed8P8 {
@@ -145,14 +231,14 @@ export class Stream {
   }
 
   readFixed16P16LE(): Fixed16P16 {
-    return Fixed16P16.fromEpsilons(this.readInt32LE());
+    return Fixed16P16.fromEpsilons(this.readSint32LE());
   }
 
   readUfixed16P16LE(): Ufixed16P16 {
     return Ufixed16P16.fromEpsilons(this.readUint32LE());
   }
 
-  skip(size: number): void {
+  skip(size: UintSize): void {
     this.bytePos += size;
   }
 
@@ -165,15 +251,25 @@ export class Stream {
     return this.readUintBits(1) > 0;
   }
 
-  readInt16Bits(n: number): Sint16 {
+  readSint16Bits(n: number): Sint16 {
     return this.readIntBits(n);
   }
 
-  readInt32Bits(n: number): Sint32 {
+  /**
+   * SB[n]
+   */
+  readSint32Bits(n: UintSize): Sint32 {
     return this.readIntBits(n);
   }
 
-  readUint16Bits(n: number): Uint16 {
+  readUint16Bits(n: UintSize): Uint16 {
+    return this.readUintBits(n);
+  }
+
+  /**
+   * UB[n]
+   */
+  readUint32Bits(n: UintSize): Uint32 {
     return this.readUintBits(n);
   }
 

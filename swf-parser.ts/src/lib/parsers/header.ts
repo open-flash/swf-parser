@@ -47,7 +47,7 @@ export function parseSwfSignature(byteStream: Stream): SwfSignature {
   return {compressionMethod, swfVersion, uncompressedFileLength};
 }
 
-export function parseSwfHeader(byteStream: Stream): Header {
+export function parseHeader(byteStream: Stream): Header {
   const signature: SwfSignature = parseSwfSignature(byteStream);
   const frameSize: Rect = parseRect(byteStream);
   const frameRate: Ufixed8P8 = byteStream.readUfixed8P8LE();

@@ -1,26 +1,38 @@
 import {Incident} from "incident";
-import {Sint32, Uint16, Uint32, Uint8, UintSize} from "semantic-types";
+import {Float32, Uint16, Uint32, Uint8, UintSize} from "semantic-types";
 import {
   ColorTransformWithAlpha,
   Label,
+  LanguageCode,
   Matrix,
   Rect,
   Scene,
   shapes,
-  SRgb8,
   Tag,
   tags,
   TagType,
-  Vector2D,
+  text,
 } from "swf-tree";
 import {parseActionsString} from "./parsers/avm1";
 import {
   parseColorTransformWithAlpha,
   parseMatrix,
   parseRect,
-  parseRgb,
+  parseSRgb8,
 } from "./parsers/basic-data-types";
 import {Stream} from "./stream";
+import {DefaultParseContext, GlyphCountProvider, ParseContext} from "./parse-context";
+import {
+  parseCsmTableHintBits,
+  parseFontAlignmentZone,
+  parseFontLayout,
+  parseGridFittingBits,
+  parseLanguageCode,
+  parseOffsetGlyphs,
+  parseTextRecordString,
+  parseTextRendererBits,
+} from "./parsers/text";
+import {parseShape} from "./parsers/shapes";
 
 interface SwfTagHeader {
   tagCode: Uint16;
@@ -40,184 +52,13 @@ function parseSwfTagHeader(byteStream: Stream): SwfTagHeader {
   }
 }
 
-function parseListLength(byteStream: Stream): UintSize {
-  const len: UintSize = byteStream.readUint8();
-  return len < 0xff ? len : byteStream.readUint16LE();
-}
-
-function parseSolidFill(byteStream: Stream): shapes.fills.Solid {
-  const color: SRgb8 = parseRgb(byteStream);
-  return {
-    type: shapes.FillStyleType.Solid,
-    color: {...color, a: 255},
-  };
-}
-
-function parseFillStyle(byteStream: Stream): shapes.FillStyle {
-  switch (byteStream.readUint8()) {
-    case 0:
-      return parseSolidFill(byteStream);
-    default:
-      throw new Error("Unexpected fill style");
-  }
-}
-
-function parseFillStyleList(byteStream: Stream): shapes.FillStyle[] {
-  const result: shapes.FillStyle[] = [];
-  const len: UintSize = parseListLength(byteStream);
-  for (let i: UintSize = 0; i < len; i++) {
-    result.push(parseFillStyle(byteStream));
-  }
-  return result;
-}
-
-function parseLineStyle(byteStream: Stream): shapes.LineStyle {
-  const width: Uint16 = byteStream.readUint16LE();
-  const color: SRgb8 = parseRgb(byteStream);
-  return {
-    width,
-    startCap: shapes.CapStyle.Round,
-    endCap: shapes.CapStyle.Round,
-    join: {type: shapes.JoinStyleType.Round},
-    noHScale: false,
-    noVScale: false,
-    noClose: false,
-    pixelHinting: false,
-    fill: {
-      type: shapes.FillStyleType.Solid,
-      color: {...color, a: 255},
-    },
-  };
-}
-
-function parseLineStyleList(byteStream: Stream): shapes.LineStyle[] {
-  const result: shapes.LineStyle[] = [];
-  const len: UintSize = parseListLength(byteStream);
-  for (let i: UintSize = 0; i < len; i++) {
-    result.push(parseLineStyle(byteStream));
-  }
-  return result;
-}
-
-function parseCurvedEdgeBits(bitStream: Stream): shapes.records.CurvedEdge {
-  bitStream.skipBits(2);
-  const nBits: UintSize = bitStream.readUint16Bits(4) + 2;
-  const controlX: Sint32 = bitStream.readInt32Bits(nBits);
-  const controlY: Sint32 = bitStream.readInt32Bits(nBits);
-  const deltaX: Sint32 = bitStream.readInt32Bits(nBits);
-  const deltaY: Sint32 = bitStream.readInt32Bits(nBits);
-  return {
-    type: shapes.ShapeRecordType.CurvedEdge,
-    controlDelta: {x: controlX, y: controlY},
-    endDelta: {x: deltaX, y: deltaY},
-  };
-}
-
-function parseStraightEdgeBits(bitStream: Stream): shapes.records.StraightEdge {
-  bitStream.skipBits(2);
-  const nBits: UintSize = bitStream.readUint16Bits(4) + 2;
-  const isDiagonal: boolean = bitStream.readBoolBits();
-  const isVertical: boolean = !isDiagonal && bitStream.readBoolBits();
-  const deltaX: Sint32 = isDiagonal || !isVertical ? bitStream.readInt32Bits(nBits) : 0;
-  const deltaY: Sint32 = isDiagonal || isVertical ? bitStream.readInt32Bits(nBits) : 0;
-  return {
-    type: shapes.ShapeRecordType.StraightEdge,
-    endDelta: {x: deltaX, y: deltaY},
-  };
-}
-
-function parseStyleChangeBits(
-  bitStream: Stream,
-  fillStyleBits: UintSize,
-  lineStyleBits: UintSize,
-): shapes.records.StyleChange {
-  bitStream.skipBits(1);
-  const hasNewStyles: boolean = bitStream.readBoolBits();
-  const changeLineStyle: boolean = bitStream.readBoolBits();
-  const changeRightFill: boolean = bitStream.readBoolBits();
-  const changeLeftFill: boolean = bitStream.readBoolBits();
-  const hasMoveTo: boolean = bitStream.readBoolBits();
-
-  let moveTo: Vector2D | undefined = undefined;
-  if (hasMoveTo) {
-    const nBits: UintSize = bitStream.readUint16Bits(5);
-    const x: Sint32 = bitStream.readInt32Bits(nBits);
-    const y: Sint32 = bitStream.readInt32Bits(nBits);
-    moveTo = {x, y};
-  }
-  const leftFill: UintSize | undefined = changeLeftFill ? bitStream.readUint16Bits(fillStyleBits) : undefined;
-  const rightFill: UintSize | undefined = changeRightFill ? bitStream.readUint16Bits(fillStyleBits) : undefined;
-  const lineStyle: UintSize | undefined = changeLineStyle ? bitStream.readUint16Bits(lineStyleBits) : undefined;
-
-  return {
-    type: shapes.ShapeRecordType.StyleChange,
-    moveTo,
-    leftFill,
-    rightFill,
-    lineStyle,
-    fillStyles: undefined,
-    lineStyles: undefined,
-  };
-}
-
-function parseShapeRecordListBits(bitStream: Stream): shapes.ShapeRecord[] {
-  const result: shapes.ShapeRecord[] = [];
-
-  let fillStyleBits: UintSize;
-  let lineStyleBits: UintSize;
-
-  fillStyleBits = bitStream.readUint16Bits(4);
-  lineStyleBits = bitStream.readUint16Bits(4);
-
-  while (true) {
-    const bytePos: number = bitStream.bytePos;
-    const bitPos: number = bitStream.bitPos;
-
-    const head: number = bitStream.readUint16Bits(6);
-
-    if (head === 0) {
-      break;
-    } else {
-      bitStream.bytePos = bytePos;
-      bitStream.bitPos = bitPos;
-    }
-
-    const isEdge: boolean = bitStream.readBoolBits();
-    bitStream.bytePos = bytePos;
-    bitStream.bitPos = bitPos;
-
-    if (isEdge) {
-      const isStraightEdge: boolean = bitStream.readBoolBits();
-      bitStream.bytePos = bytePos;
-      bitStream.bitPos = bitPos;
-      if (isStraightEdge) {
-        result.push(parseStraightEdgeBits(bitStream));
-      } else {
-        result.push(parseCurvedEdgeBits(bitStream));
-      }
-    } else {
-      result.push(parseStyleChangeBits(bitStream, fillStyleBits, lineStyleBits));
-    }
+export function parseSwfTag(byteStream: Stream, context?: ParseContext): Tag {
+  if (context === undefined) {
+    context = new DefaultParseContext();
   }
 
-  return result;
-}
-
-function parseShape(byteStream: Stream): shapes.Shape {
-  const fillStyles: shapes.FillStyle[] = parseFillStyleList(byteStream);
-  const lineStyles: shapes.LineStyle[] = parseLineStyleList(byteStream);
-  const records: shapes.ShapeRecord[] = parseShapeRecordListBits(byteStream);
-  byteStream.align();
-  return {
-    fillStyles,
-    lineStyles,
-    records,
-  };
-}
-
-export function parseSwfTag(byteStream: Stream): Tag {
   const {tagCode, length}: SwfTagHeader = parseSwfTagHeader(byteStream);
-  const swfTagStream: Stream = byteStream.take(length);
+  const tagByteStream: Stream = byteStream.take(length);
 
   switch (tagCode) {
     case 0:
@@ -225,22 +66,125 @@ export function parseSwfTag(byteStream: Stream): Tag {
     case 1:
       return {type: TagType.ShowFrame};
     case 2:
-      return parseDefineShape(swfTagStream);
+      return parseDefineShape(tagByteStream);
     case 9:
-      return parseSetBackgroundColor(swfTagStream);
+      return parseSetBackgroundColor(tagByteStream);
+    case 11:
+      return parseDefineText(tagByteStream);
     case 12:
-      return parseDoAction(swfTagStream);
+      return parseDoAction(tagByteStream);
     case 26:
-      return parsePlaceObject2(swfTagStream);
+      return parsePlaceObject2(tagByteStream);
     case 69:
-      return parseFileAttributes(swfTagStream);
+      return parseFileAttributes(tagByteStream);
+    case 73:
+      return parseDefineFontAlignZones(tagByteStream, context.getGlyphCount.bind(context));
+    case 74:
+      return parseCsmTextSettings(tagByteStream);
+    case 75:
+      const result: tags.DefineFont = parseDefineFont(tagByteStream);
+      if (result.glyphs !== undefined) {
+        context.setGlyphCount(result.id, result.glyphs.length)
+      } else {
+        context.setGlyphCount(result.id, 0);
+      }
+      return result;
     case 77:
-      return parseMetadata(swfTagStream);
+      return parseMetadata(tagByteStream);
     case 86:
-      return parseDefineSceneAndFrameLabelData(swfTagStream);
+      return parseDefineSceneAndFrameLabelData(tagByteStream);
+    case 88:
+      return parseDefineFontName(tagByteStream);
     default:
-      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(swfTagStream.bytes)};
+      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(tagByteStream.bytes)};
   }
+}
+
+export function parseCsmTextSettings(byteStream: Stream): tags.CsmTextSettings {
+  const textId: Uint16 = byteStream.readUint16LE();
+  const renderer: text.TextRenderer = parseTextRendererBits(byteStream);
+  const fitting: text.GridFitting = parseGridFittingBits(byteStream);
+  byteStream.skipBits(3);
+  const thickness: Float32 = byteStream.readFloat32BE();
+  const sharpness: Float32 = byteStream.readFloat32BE();
+  byteStream.skip(1);
+  return {type: TagType.CsmTextSettings, textId, renderer, fitting, thickness, sharpness};
+}
+
+export function parseDefineFont(byteStream: Stream): tags.DefineFont {
+  const id: Uint16 = byteStream.readUint16LE();
+  const hasLayout: boolean = byteStream.readBoolBits();
+  const isShiftJis: boolean = byteStream.readBoolBits();
+  const isAnsi: boolean = byteStream.readBoolBits();
+  const isSmall: boolean = byteStream.readBoolBits();
+  const useWideOffsets: boolean = byteStream.readBoolBits();
+  const useWideCodes: boolean = byteStream.readBoolBits();
+  const isItalic: boolean = byteStream.readBoolBits();
+  const isBold: boolean = byteStream.readBoolBits();
+  const language: LanguageCode = parseLanguageCode(byteStream);
+  const fontNameLength: UintSize = byteStream.readUint8();
+  const fontName: string = byteStream.take(fontNameLength).readCString();
+  const glyphCount: UintSize = byteStream.readUint16LE();
+  if (glyphCount === 0) {
+    // System font
+    return {
+      type: TagType.DefineFont,
+      id,
+      fontName,
+      isSmall,
+      isShiftJis,
+      isAnsi,
+      isItalic,
+      isBold,
+      language
+    };
+  }
+  const glyphs: shapes.Glyph[] = parseOffsetGlyphs(byteStream, glyphCount, useWideOffsets);
+  const codeUnits: Uint16[] = new Array(glyphCount);
+  for (let i: number = 0; i < codeUnits.length; i++) {
+    codeUnits[i] = useWideCodes ? byteStream.readUint16LE() : byteStream.readUint8();
+  }
+  const layout: text.FontLayout | undefined = hasLayout ? parseFontLayout(byteStream, glyphCount) : undefined;
+
+  return {
+    type: TagType.DefineFont,
+    id,
+    fontName,
+    isSmall,
+    isShiftJis,
+    isAnsi,
+    isItalic,
+    isBold,
+    language,
+    glyphs,
+    codeUnits,
+    layout,
+  };
+}
+
+export function parseDefineFontAlignZones(
+  byteStream: Stream,
+  glyphCountProvider: GlyphCountProvider
+): tags.DefineFontAlignZones {
+  const fontId: Uint16 = byteStream.readUint16LE();
+  const glyphCount: UintSize | undefined = glyphCountProvider(fontId);
+  if (glyphCount === undefined) {
+    throw new Incident("ParseError", `ParseDefineFontAlignZones: Unknown font for id: ${fontId}`);
+  }
+  const csmTableHint: text.CsmTableHint = parseCsmTableHintBits(byteStream);
+  byteStream.skipBits(6);
+  const zones: text.FontAlignmentZone[] = [];
+  for (let i: number = 0; i < glyphCount; i++) {
+    zones.push(parseFontAlignmentZone(byteStream));
+  }
+  return {type: TagType.DefineFontAlignZones, fontId, csmTableHint, zones};
+}
+
+export function parseDefineFontName(byteStream: Stream): tags.DefineFontName {
+  const fontId: Uint16 = byteStream.readUint16LE();
+  const name: string = byteStream.readCString();
+  const copyright: string = byteStream.readCString();
+  return {type: TagType.DefineFontName, fontId, name, copyright};
 }
 
 export function parseDefineSceneAndFrameLabelData(byteStream: Stream): tags.DefineSceneAndFrameLabelData {
@@ -283,6 +227,26 @@ export function parseDefineShape(byteStream: Stream): tags.DefineShape {
   };
 }
 
+export function parseDefineText(byteStream: Stream): tags.DefineText {
+  const id: Uint16 = byteStream.readUint16LE();
+  const bounds: Rect = parseRect(byteStream);
+  const matrix: Matrix = parseMatrix(byteStream);
+  const glyphBits: UintSize = byteStream.readUint8();
+  const advanceBits: UintSize = byteStream.readUint8();
+  const records: text.TextRecord[] = parseTextRecordString(byteStream, false, glyphBits, advanceBits);
+  return {type: TagType.DefineText, id, bounds, matrix, records};
+}
+
+export function parseDefineText2(byteStream: Stream): tags.DefineText {
+  const id: Uint16 = byteStream.readUint16LE();
+  const bounds: Rect = parseRect(byteStream);
+  const matrix: Matrix = parseMatrix(byteStream);
+  const glyphBits: UintSize = byteStream.readUint8();
+  const advanceBits: UintSize = byteStream.readUint8();
+  const records: text.TextRecord[] = parseTextRecordString(byteStream, true, glyphBits, advanceBits);
+  return {type: TagType.DefineText, id, bounds, matrix, records};
+}
+
 export function parseDoAction(byteStream: Stream): tags.DoAction {
   return {type: TagType.DoAction, actions: parseActionsString(byteStream)};
 }
@@ -301,10 +265,6 @@ export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
     useRelativeUrls: ((flags >> 1) & 1) > 0,
     useNetwork: ((flags >> 0) & 1) > 0,
   };
-}
-
-export function parseSetBackgroundColor(byteStream: Stream): tags.SetBackgroundColor {
-  return {type: TagType.SetBackgroundColor, color: parseRgb(byteStream)};
 }
 
 export function parseMetadata(byteStream: Stream): tags.Metadata {
@@ -347,4 +307,8 @@ export function parsePlaceObject2(byteStream: Stream): tags.PlaceObject {
     backgroundColor: undefined,
     clipActions: [],
   };
+}
+
+export function parseSetBackgroundColor(byteStream: Stream): tags.SetBackgroundColor {
+  return {type: TagType.SetBackgroundColor, color: parseSRgb8(byteStream)};
 }

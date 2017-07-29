@@ -551,7 +551,7 @@ export function parseActionValue(byteStream: Stream): avm1.Value {
     case 6:
       return {type: avm1.ValueType.Float64, value: byteStream.readFloat64LE()};
     case 7:
-      return {type: avm1.ValueType.Int32, value: byteStream.readInt32LE()};
+      return {type: avm1.ValueType.Int32, value: byteStream.readSint32LE()};
     case 8:
       return {type: avm1.ValueType.Constant, value: byteStream.readUint8() as Uint16};
     case 9:

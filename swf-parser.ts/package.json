@@ -17,7 +17,7 @@
     "incident": "^2.0.0",
     "kryo": "^0.5.0-alpha.9",
     "semantic-types": "^0.1.1",
-    "swf-tree": "0.0.4"
+    "swf-tree": "0.0.5"
   },
   "devDependencies": {
     "@types/chai": "^4.0.1",

@@ -78,6 +78,12 @@ test_items = [
         os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.rs.actual.json"),
         os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.ts.actual.json"),
     ),
+    TestItem(
+        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.swf"),
+        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.expected.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.rs.actual.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.ts.actual.json"),
+    ),
 ]
 
 

@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {Rect} from "../../lib/ast/basic-types/rect";
+import {Rect} from "swf-tree";
 import {parseRect} from "../../lib/parsers/basic-data-types";
 import {Stream} from "../../lib/stream";
 import {readTestJson} from "../_utils";

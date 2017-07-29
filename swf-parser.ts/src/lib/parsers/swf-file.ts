@@ -1,12 +1,16 @@
 import {Incident} from "incident";
-import {CompressionMethod, Header, Movie, SwfSignature, Tag, TagType} from "swf-tree";
+import {CompressionMethod, Header, Movie, SwfSignature, Tag} from "swf-tree";
 import * as zlib from "zlib";
 import {Stream} from "../stream";
 import {parseSwfTag} from "../tags";
-import {parseSwfHeader, parseSwfSignature} from "./header";
+import {parseHeader, parseSwfSignature} from "./header";
+import {DefaultParseContext, ParseContext} from "../parse-context";
 
 export function parseDecompressedMovie(byteStream: Stream): Movie {
-  const header: Header = parseSwfHeader(byteStream);
+  // TODO(demurgos): take parse context or version as an argument
+  const context: ParseContext = new DefaultParseContext(0);
+
+  const header: Header = parseHeader(byteStream);
   const tags: Tag[] = [];
   while (byteStream.available() > 0) {
     // A null byte indicates the end the string of actions
@@ -14,7 +18,7 @@ export function parseDecompressedMovie(byteStream: Stream): Movie {
       byteStream.skip(1);
       break;
     }
-    tags.push(parseSwfTag(byteStream));
+    tags.push(parseSwfTag(byteStream, context));
   }
   return {header, tags};
 }
