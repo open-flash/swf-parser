@@ -12,8 +12,9 @@ extern crate swf_tree;
 pub mod parsers {
   pub mod avm1;
   pub mod basic_data_types;
+  pub mod shapes;
   pub mod swf_file;
   pub mod swf_header;
+  pub mod tags;
+  pub mod text;
 }
-
-pub mod tags;

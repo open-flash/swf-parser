@@ -1,6 +1,9 @@
 use swf_tree as ast;
 use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
-use parsers::basic_data_types::{parse_le_ufixed8_p8_bits, parse_rect};
+use parsers::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
+
+// 1011.1000 1111.1111
+// 101 1010.1100
 
 named!(
   pub parse_compression_method<ast::CompressionMethod>,
@@ -8,19 +11,20 @@ named!(
     tag!("FWS") => {|_| ast::CompressionMethod::None}
   | tag!("CWS") => {|_| ast::CompressionMethod::Deflate}
   | tag!("ZWS") => {|_| ast::CompressionMethod::Lzma}
+  // TODO(demurgos): Throw error if none matches
   )
 );
 
 named!(
-  pub parse_swf_header_signature<ast::SwfSignature>,
+  pub parse_swf_signature<ast::SwfSignature>,
   do_parse!(
     compression_method: parse_compression_method >>
     swf_version: parse_u8 >>
-    uncompressed_file_length: parse_le_u32 >>
+    uncompressed_file_length: map!(parse_le_u32, |x| x as usize) >>
     (ast::SwfSignature {
       compression_method: compression_method,
       swf_version: swf_version,
-      uncompressed_file_length: uncompressed_file_length as usize,
+      uncompressed_file_length: uncompressed_file_length,
     })
   )
 );
@@ -28,14 +32,14 @@ named!(
 named!(
   pub parse_swf_header<ast::Header>,
   do_parse!(
-    prolog: parse_swf_header_signature >>
+    signature: parse_swf_signature >>
     frame_size: parse_rect >>
-    frame_rate: parse_le_ufixed8_p8_bits >>
+    frame_rate: parse_le_ufixed8_p8 >>
     frame_count: parse_le_u16 >>
     (ast::Header {
-      compression_method: prolog.compression_method,
-      swf_version: prolog.swf_version,
-      uncompressed_file_length: prolog.uncompressed_file_length,
+      compression_method: signature.compression_method,
+      swf_version: signature.swf_version,
+      uncompressed_file_length: signature.uncompressed_file_length,
       frame_size: frame_size,
       frame_rate: frame_rate,
       frame_count: frame_count,
@@ -58,26 +62,38 @@ mod tests {
   #[test]
   fn test_parse_swf_header_signature() {
     assert_eq!(
-    parse_swf_header_signature(&b"FWS\x0f\x08\x00\x00\x00"[..]),
-    nom::IResult::Done(
-      &[][..],
-      ast::HeaderSignature {
-        compression_method: ast::CompressionMethod::None,
-        swf_version: 15u8,
-        uncompressed_file_length: 8
-      }
-    )
+      parse_swf_signature(&b"FWS\x0f\x08\x00\x00\x00"[..]),
+      nom::IResult::Done(
+        &[][..],
+        ast::SwfSignature {
+          compression_method: ast::CompressionMethod::None,
+          swf_version: 15u8,
+          uncompressed_file_length: 8
+        }
+      )
     );
     assert_eq!(
-    parse_swf_header_signature(&b"CWS\x0f\x08\x00\x00\x00"[..]),
-    nom::IResult::Done(
-      &[][..],
-      ast::HeaderSignature {
-        compression_method: ast::CompressionMethod::Deflate,
-        swf_version: 15u8,
-        uncompressed_file_length: 8
-      }
-    )
+      parse_swf_signature(&b"CWS\x0f\x08\x00\x00\x00"[..]),
+      nom::IResult::Done(
+        &[][..],
+        ast::SwfSignature {
+          compression_method: ast::CompressionMethod::Deflate,
+          swf_version: 15u8,
+          uncompressed_file_length: 8
+        }
+      )
+    );
+
+    assert_eq!(
+      parse_swf_signature(&b"\x43\x57\x53\x08\xac\x05\x00\x00"[..]),
+      nom::IResult::Done(
+        &[][..],
+        ast::SwfSignature {
+          compression_method: ast::CompressionMethod::Deflate,
+          swf_version: 8u8,
+          uncompressed_file_length: 1452
+        }
+      )
     );
   }
 }

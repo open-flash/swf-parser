@@ -14,14 +14,14 @@ path = "src/main.rs"
 [dependencies]
 lazy_static = "^0.2.8"
 libflate = "^0.1.4"
-nom = "^2.2"
+nom = "^3.2.0"
 num-traits = "^0.1.37"
 regex = "^0.2.1"
 rust-lzma = "^0.2.1"
 serde = "^1.0.2"
 serde_derive = "^1.0.2"
 serde_json = "^1.0.1"
-swf-tree = "^0.0.4"
+swf-tree = "^0.0.5"
 
 [dependencies.ordered-float]
 version = "^0.5.0"

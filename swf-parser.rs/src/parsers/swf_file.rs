@@ -3,8 +3,8 @@ use nom::{IResult, Needed};
 use libflate;
 use std::io;
 use std::io::Read;
-use tags::parse_swf_tag;
-use parsers::swf_header::{parse_swf_header, parse_swf_header_signature};
+use parsers::tags::parse_swf_tag;
+use parsers::swf_header::{parse_swf_header, parse_swf_signature};
 
 pub fn parse_swf_tags_string(input: &[u8]) -> IResult<&[u8], Vec<ast::Tag>> {
   let mut result: Vec<ast::Tag> = Vec::new();
@@ -40,13 +40,13 @@ named!(
 );
 
 pub fn parse_movie(input: &[u8]) -> IResult<&[u8], ast::Movie> {
-  match parse_swf_header_signature(input) {
+  match parse_swf_signature(input) {
     IResult::Done(remaining_input, signature) => {
       match signature.compression_method {
         ast::CompressionMethod::None => parse_decompressed_movie(input),
         ast::CompressionMethod::Deflate => {
           let mut decoder = libflate::zlib::Decoder::new(io::Cursor::new(remaining_input)).unwrap();
-          let mut decoded_data: Vec<u8> = vec![67, 87, 83, 8, 255, 184, 0, 0]; // Vec::new();
+          let mut decoded_data: Vec<u8> = input[0..8].to_vec();
           decoder.read_to_end(&mut decoded_data).unwrap();
           match parse_decompressed_movie(&decoded_data[..]) {
             IResult::Done(_, parsed_swf_file) => IResult::Done(&input[input.len()..], parsed_swf_file),

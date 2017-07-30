@@ -1,7 +1,7 @@
 use swf_tree as ast;
-use swf_tree::fixed_point::{Fixed16P16, Ufixed8P8};
+use swf_tree::fixed_point::{Fixed16P16, Fixed8P8, Ufixed8P8};
 use nom::{IResult, Needed};
-use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16};
+use nom::{le_u8 as parse_u8, le_i16 as parse_le_i16, le_u16 as parse_le_u16};
 
 named!(
   pub parse_argb<ast::StraightSRgba8>,
@@ -65,6 +65,15 @@ pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8]
   )
 }
 
+/// Parse the bit-encoded big-endian representation of a signed fixed-point 8.8-bit number
+pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Fixed8P8> {
+  map!(
+    input,
+    apply!(parse_i16_bits, n),
+    |x| Fixed8P8::from_epsilons(x)
+  )
+}
+
 /// Parse the bit-encoded big-endian representation of a signed 16-bit integer
 pub fn parse_i16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), i16> {
   map!(
@@ -90,10 +99,20 @@ pub fn parse_i32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize)
   )
 }
 
+pub fn parse_u32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), u32> {
+  take_bits!(input, u32, n)
+}
+
 /// Parse the little-endian representation of an unsigned fixed-point 8.8-bit number
 named!(
-  pub parse_le_ufixed8_p8_bits<Ufixed8P8>,
+  pub parse_le_ufixed8_p8<Ufixed8P8>,
   map!(parse_le_u16, |x| Ufixed8P8::from_epsilons(x))
+);
+
+/// Parse the little-endian representation of a signed fixed-point 8.8-bit number
+named!(
+  pub parse_le_fixed8_p8<Fixed8P8>,
+  map!(parse_le_i16, |x| Fixed8P8::from_epsilons(x))
 );
 
 named!(
@@ -162,6 +181,7 @@ named!(
     3 => value!(ast::LanguageCode::Korean) |
     4 => value!(ast::LanguageCode::SimplifiedChinese) |
     5 => value!(ast::LanguageCode::TraditionalChinese)
+    // TODO(demurgos): Error on unexpected value
   )
 );
 
@@ -177,26 +197,26 @@ named!(
     scale: map!(
       cond!(has_scale, do_parse!(
         scale_bits: apply!(parse_u16_bits, 5) >>
-        scale_x: apply!(parse_i32_bits, scale_bits as usize) >>
-        scale_y: apply!(parse_i32_bits, scale_bits as usize) >>
+        scale_x: apply!(parse_fixed16_p16_bits, scale_bits as usize) >>
+        scale_y: apply!(parse_fixed16_p16_bits, scale_bits as usize) >>
         (scale_x, scale_y)
       )),
       |scale| match scale {
         Some((scale_x, scale_y)) => (scale_x, scale_y),
-        None => (1, 1),
+        None => (Fixed16P16::from_epsilons(1 << 16), Fixed16P16::from_epsilons(1 << 16)),
       }
     ) >>
     has_rotate: call!(parse_bool_bits) >>
     skew: map!(
       cond!(has_rotate, do_parse!(
         skew_bits: apply!(parse_u16_bits, 5) >>
-        skew0: apply!(parse_i32_bits, skew_bits as usize) >>
-        skew1: apply!(parse_i32_bits, skew_bits as usize) >>
+        skew0: apply!(parse_fixed16_p16_bits, skew_bits as usize) >>
+        skew1: apply!(parse_fixed16_p16_bits, skew_bits as usize) >>
         (skew0, skew1)
       )),
       |skew| match skew {
         Some((skew0, skew1)) => (skew0, skew1),
-        None => (0, 0),
+        None => (Fixed16P16::from_epsilons(0), Fixed16P16::from_epsilons(0)),
       }
     ) >>
     translate_bits: apply!(parse_u16_bits, 5) >>
@@ -205,8 +225,8 @@ named!(
     (ast::Matrix {
       scale_x: scale.0,
       scale_y: scale.1,
-      rotate_skew_0: skew.0,
-      rotate_skew_1: skew.1,
+      rotate_skew0: skew.0,
+      rotate_skew1: skew.1,
       translate_x: translate_x,
       translate_y: translate_y,
     })
@@ -238,14 +258,14 @@ named!(
     n_bits: apply!(parse_u16_bits, 4) >>
     mult: map!(
       cond!(has_mult, do_parse!(
-        r: apply!(parse_i16_bits, n_bits as usize) >>
-        g: apply!(parse_i16_bits, n_bits as usize) >>
-        b: apply!(parse_i16_bits, n_bits as usize) >>
+        r: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
+        g: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
+        b: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
         (r, g, b)
       )),
       |mult| match mult {
         Some((r, g, b)) => (r, g, b),
-        None => (1, 1, 1),
+        None => (Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8)),
       }
     ) >>
     add: map!(
@@ -284,15 +304,15 @@ named!(
     n_bits: apply!(parse_u16_bits, 4) >>
     mult: map!(
       cond!(has_mult, do_parse!(
-        r: apply!(parse_i16_bits, n_bits as usize) >>
-        g: apply!(parse_i16_bits, n_bits as usize) >>
-        b: apply!(parse_i16_bits, n_bits as usize) >>
-        a: apply!(parse_i16_bits, n_bits as usize) >>
+        r: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
+        g: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
+        b: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
+        a: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
         (r, g, b, a)
       )),
       |mult| match mult {
         Some((r, g, b, a)) => (r, g, b, a),
-        None => (1, 1, 1, 1),
+        None => (Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8)),
       }
     ) >>
     add: map!(
