@@ -25,8 +25,6 @@ export interface BitStream {
 
   asByteStream(): ByteStream;
 
-  readUint32Bits(n: UintSize): Uint32;
-
   skipBits(n: UintSize): void;
 
   readBoolBits(): boolean;

@@ -11,8 +11,8 @@ export function parseGlyph(byteStream: ByteStream): shapes.Glyph {
 }
 
 export function parseGlyphBits(bitStream: BitStream): shapes.Glyph {
-  const fillBits = bitStream.readUint32Bits(4);
-  const lineBits = bitStream.readUint32Bits(4);
+  const fillBits: UintSize = bitStream.readUint32Bits(4);
+  const lineBits: UintSize = bitStream.readUint32Bits(4);
   const records: shapes.ShapeRecord[] = parseShapeRecordStringBits(bitStream, fillBits, lineBits);
   return {records};
 }
@@ -30,7 +30,7 @@ export function parseShapeBits(bitStream: BitStream): shapes.Shape {
   return {
     fillStyles: styles.fill,
     lineStyles: styles.line,
-    records
+    records,
   };
 }
 
@@ -46,12 +46,16 @@ export function parseShapeStylesBits(bitStream: BitStream): ShapeStyles {
   const fill: shapes.FillStyle[] = parseFillStyleList(byteStream);
   const line: shapes.LineStyle[] = parseLineStyleList(byteStream);
   bitStream = byteStream.asBitStream();
-  const fillBits = bitStream.readUint32Bits(4);
-  const lineBits = bitStream.readUint32Bits(4);
+  const fillBits: UintSize = bitStream.readUint32Bits(4);
+  const lineBits: UintSize = bitStream.readUint32Bits(4);
   return {fill, line, fillBits, lineBits};
 }
 
-export function parseShapeRecordStringBits(bitStream: BitStream, fillBits: UintSize, lineBits: UintSize): shapes.ShapeRecord[] {
+export function parseShapeRecordStringBits(
+  bitStream: BitStream,
+  fillBits: UintSize,
+  lineBits: UintSize,
+): shapes.ShapeRecord[] {
   const result: shapes.ShapeRecord[] = [];
 
   while (true) {
@@ -74,7 +78,7 @@ export function parseShapeRecordStringBits(bitStream: BitStream, fillBits: UintS
         result.push(parseCurvedEdgeBits(bitStream));
       }
     } else {
-      const styles = parseStyleChangeBits(bitStream, fillBits, lineBits);
+      const styles: shapes.records.StyleChange = parseStyleChangeBits(bitStream, fillBits, lineBits);
       result.push(styles);
     }
   }

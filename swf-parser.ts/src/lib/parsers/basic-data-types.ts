@@ -1,7 +1,7 @@
 import {Sint16, UintSize} from "semantic-types";
 import {
   ColorTransform, ColorTransformWithAlpha, Fixed16P16, Fixed8P8, Matrix, Rect, SRgb8,
-  StraightSRgba8
+  StraightSRgba8,
 } from "swf-tree";
 import {BitStream, ByteStream, Stream} from "../stream";
 

@@ -1,6 +1,6 @@
 import {Incident} from "incident";
 import {Float16, Sint16, SintSize, Uint16, Uint8, UintSize} from "semantic-types";
-import {LanguageCode, Rect, StraightSRgba8, shapes, text} from "swf-tree";
+import {LanguageCode, Rect, shapes, StraightSRgba8, text} from "swf-tree";
 import {BitStream, ByteStream} from "../stream";
 import {parseRect, parseSRgb8, parseStraightSRgba8} from "./basic-data-types";
 import {parseGlyph} from "./shapes";
@@ -55,7 +55,7 @@ export function parseTextRecordString(
   byteStream: ByteStream,
   hasAlpha: boolean,
   indexBits: UintSize,
-  advanceBits: UintSize
+  advanceBits: UintSize,
 ): text.TextRecord[] {
   const result: text.TextRecord[] = [];
   while (byteStream.peekUint8() !== 0) {
@@ -69,7 +69,7 @@ export function parseTextRecord(
   byteStream: ByteStream,
   hasAlpha: boolean,
   indexBits: UintSize,
-  advanceBits: UintSize
+  advanceBits: UintSize,
 ): text.TextRecord {
   const flags: Uint8 = byteStream.readUint8();
   const hasFont: boolean = (flags & (1 << 3)) !== 0;
@@ -86,7 +86,7 @@ export function parseTextRecord(
   const fontSize: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
 
   const entryCount: UintSize = byteStream.readUint8();
-  const bitStream = byteStream.asBitStream();
+  const bitStream: BitStream = byteStream.asBitStream();
   const entries: text.GlyphEntry[] = [];
   for (let i: UintSize = 0; i < entryCount; i++) {
     const index: UintSize = bitStream.readUint32Bits(indexBits);
@@ -129,7 +129,11 @@ export function parseFontAlignmentZoneData(byteStream: ByteStream): text.FontAli
   return {origin, size};
 }
 
-export function parseOffsetGlyphs(byteStream: ByteStream, glyphCount: UintSize, useWideOffset: boolean): shapes.Glyph[] {
+export function parseOffsetGlyphs(
+  byteStream: ByteStream,
+  glyphCount: UintSize,
+  useWideOffset: boolean,
+): shapes.Glyph[] {
   const startPos: UintSize = byteStream.bytePos;
   const offsets: UintSize[] = new Array(glyphCount + 1);
   for (let i: number = 0; i < offsets.length; i++) {
@@ -138,7 +142,7 @@ export function parseOffsetGlyphs(byteStream: ByteStream, glyphCount: UintSize, 
   const result: shapes.Glyph[] = [];
   for (let i: number = 1; i < offsets.length; i++) {
     const length: UintSize = offsets[i] - (byteStream.bytePos - startPos);
-    result.push(parseGlyph(byteStream.take(length)))
+    result.push(parseGlyph(byteStream.take(length)));
   }
   return result;
 }

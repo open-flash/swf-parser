@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as sysPath from "path";
 import {Movie} from "swf-tree";
-import {parseMovie} from "../lib/parsers/swf-file";
+import {parseMovie} from "../lib/parsers/movie";
 import {Stream} from "../lib/stream";
 
 async function main(): Promise<void> {

@@ -13,15 +13,16 @@ import {
   TagType,
   text,
 } from "swf-tree";
-import {parseActionsString} from "./parsers/avm1";
+import {GlyphCountProvider, ParseContext} from "../parse-context";
+import {Stream} from "../stream";
+import {parseActionsString} from "./avm1";
 import {
   parseColorTransformWithAlpha,
   parseMatrix,
   parseRect,
   parseSRgb8,
-} from "./parsers/basic-data-types";
-import {Stream} from "./stream";
-import {DefaultParseContext, GlyphCountProvider, ParseContext} from "./parse-context";
+} from "./basic-data-types";
+import {parseShape} from "./shapes";
 import {
   parseCsmTableHintBits,
   parseFontAlignmentZone,
@@ -31,71 +32,73 @@ import {
   parseOffsetGlyphs,
   parseTextRecordString,
   parseTextRendererBits,
-} from "./parsers/text";
-import {parseShape} from "./parsers/shapes";
+} from "./text";
 
-interface SwfTagHeader {
-  tagCode: Uint16;
+export function parseTag(byteStream: Stream, context: ParseContext): Tag {
+  const {code, length}: TagHeader = parseTagHeader(byteStream);
+  const tag: Tag = parseTagBody(byteStream.take(length), code, context);
+  switch (tag.type) {
+    case TagType.DefineFont:
+      if (tag.glyphs !== undefined) {
+        context.setGlyphCount(tag.id, tag.glyphs.length);
+      } else {
+        context.setGlyphCount(tag.id, 0);
+      }
+      break;
+    default:
+      break;
+  }
+  return tag;
+}
+
+interface TagHeader {
+  code: Uint16;
   length: Uint32;
 }
 
-function parseSwfTagHeader(byteStream: Stream): SwfTagHeader {
+function parseTagHeader(byteStream: Stream): TagHeader {
   const codeAndLength: Uint16 = byteStream.readUint16LE();
-  const tagCode: Uint16 = codeAndLength >>> 6;
+  const code: Uint16 = codeAndLength >>> 6;
   const maxLength: number = (1 << 6) - 1;
   const length: number = codeAndLength & maxLength;
 
   if (length === maxLength) {
-    return {tagCode, length: byteStream.readUint32LE()};
+    return {code, length: byteStream.readUint32LE()};
   } else {
-    return {tagCode, length};
+    return {code, length};
   }
 }
 
-// TODO(demurgos): Extract `parseTagBody`, then parse head, call parseTagBody and update state
-export function parseSwfTag(byteStream: Stream, context?: ParseContext): Tag {
-  if (context === undefined) {
-    context = new DefaultParseContext();
-  }
-
-  const {tagCode, length}: SwfTagHeader = parseSwfTagHeader(byteStream);
-  const tagByteStream: Stream = byteStream.take(length);
-
+function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext): Tag {
   switch (tagCode) {
     case 1:
       return {type: TagType.ShowFrame};
     case 2:
-      return parseDefineShape(tagByteStream);
+      return parseDefineShape(byteStream);
     case 9:
-      return parseSetBackgroundColor(tagByteStream);
+      return parseSetBackgroundColor(byteStream);
     case 11:
-      return parseDefineText(tagByteStream);
+      return parseDefineText(byteStream);
     case 12:
-      return parseDoAction(tagByteStream);
+      return parseDoAction(byteStream);
     case 26:
-      return parsePlaceObject2(tagByteStream);
+      return parsePlaceObject2(byteStream);
     case 69:
-      return parseFileAttributes(tagByteStream);
+      return parseFileAttributes(byteStream);
     case 73:
-      return parseDefineFontAlignZones(tagByteStream, context.getGlyphCount.bind(context));
+      return parseDefineFontAlignZones(byteStream, context.getGlyphCount.bind(context));
     case 74:
-      return parseCsmTextSettings(tagByteStream);
+      return parseCsmTextSettings(byteStream);
     case 75:
-      const result: tags.DefineFont = parseDefineFont(tagByteStream);
-      if (result.glyphs !== undefined) {
-        context.setGlyphCount(result.id, result.glyphs.length)
-      } else {
-        context.setGlyphCount(result.id, 0);
-      }
-      return result;
+      return parseDefineFont(byteStream);
     case 77:
-      return parseMetadata(tagByteStream);
+      return parseMetadata(byteStream);
     case 86:
-      return parseDefineSceneAndFrameLabelData(tagByteStream);
+      return parseDefineSceneAndFrameLabelData(byteStream);
     case 88:
-      return parseDefineFontName(tagByteStream);
+      return parseDefineFontName(byteStream);
     default:
-      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(tagByteStream.bytes)};
+      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.bytes)};
   }
 }
 
@@ -135,7 +138,7 @@ export function parseDefineFont(byteStream: Stream): tags.DefineFont {
       isAnsi,
       isItalic,
       isBold,
-      language
+      language,
     };
   }
   const glyphs: shapes.Glyph[] = parseOffsetGlyphs(byteStream, glyphCount, useWideOffsets);
@@ -163,7 +166,7 @@ export function parseDefineFont(byteStream: Stream): tags.DefineFont {
 
 export function parseDefineFontAlignZones(
   byteStream: Stream,
-  glyphCountProvider: GlyphCountProvider
+  glyphCountProvider: GlyphCountProvider,
 ): tags.DefineFontAlignZones {
   const fontId: Uint16 = byteStream.readUint16LE();
   const glyphCount: UintSize | undefined = glyphCountProvider(fontId);
