@@ -78,7 +78,8 @@ export function parseShapeRecordStringBits(
         result.push(parseCurvedEdgeBits(bitStream));
       }
     } else {
-      const styles: shapes.records.StyleChange = parseStyleChangeBits(bitStream, fillBits, lineBits);
+      let styles: shapes.records.StyleChange;
+      [styles, [fillBits, lineBits]] = parseStyleChangeBits(bitStream, fillBits, lineBits);
       result.push(styles);
     }
   }
@@ -113,9 +114,9 @@ export function parseStraightEdgeBits(bitStream: BitStream): shapes.records.Stra
 
 export function parseStyleChangeBits(
   bitStream: BitStream,
-  fillStyleBits: UintSize,
-  lineStyleBits: UintSize,
-): shapes.records.StyleChange {
+  fillBits: UintSize,
+  lineBits: UintSize,
+): [shapes.records.StyleChange, [UintSize, UintSize]] {
   const hasNewStyles: boolean = bitStream.readBoolBits();
   const changeLineStyle: boolean = bitStream.readBoolBits();
   const changeRightFill: boolean = bitStream.readBoolBits();
@@ -129,19 +130,31 @@ export function parseStyleChangeBits(
     const y: Sint32 = bitStream.readSint32Bits(nBits);
     moveTo = {x, y};
   }
-  const leftFill: UintSize | undefined = changeLeftFill ? bitStream.readUint16Bits(fillStyleBits) : undefined;
-  const rightFill: UintSize | undefined = changeRightFill ? bitStream.readUint16Bits(fillStyleBits) : undefined;
-  const lineStyle: UintSize | undefined = changeLineStyle ? bitStream.readUint16Bits(lineStyleBits) : undefined;
+  const leftFill: UintSize | undefined = changeLeftFill ? bitStream.readUint16Bits(fillBits) : undefined;
+  const rightFill: UintSize | undefined = changeRightFill ? bitStream.readUint16Bits(fillBits) : undefined;
+  const lineStyle: UintSize | undefined = changeLineStyle ? bitStream.readUint16Bits(lineBits) : undefined;
 
-  return {
+  let fillStyles: shapes.FillStyle[] | undefined = undefined;
+  let lineStyles: shapes.LineStyle[] | undefined = undefined;
+  if (hasNewStyles) {
+    const styles = parseShapeStylesBits(bitStream);
+    fillStyles = styles.fill;
+    lineStyles = styles.line;
+    fillBits = styles.fillBits;
+    lineBits = styles.lineBits;
+  }
+
+  const styleChangeRecord: shapes.records.StyleChange =  {
     type: shapes.ShapeRecordType.StyleChange,
     moveTo,
     leftFill,
     rightFill,
     lineStyle,
-    fillStyles: undefined,
-    lineStyles: undefined,
+    fillStyles,
+    lineStyles,
   };
+
+  return [styleChangeRecord, [fillBits, lineBits]];
 }
 
 export function parseListLength(byteStream: ByteStream): UintSize {
