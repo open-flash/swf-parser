@@ -6,7 +6,7 @@ import {parseRect, parseSRgb8, parseStraightSRgba8} from "./basic-data-types";
 import {parseGlyph} from "./shapes";
 
 export function parseGridFittingBits(bitStream: BitStream): text.GridFitting {
-  const code: UintSize = bitStream.readUint32Bits(2);
+  const code: UintSize = bitStream.readUint32Bits(3);
   switch (code) {
     case 0:
       return text.GridFitting.None;
@@ -53,13 +53,13 @@ export function parseTextRendererBits(bitStream: BitStream): text.TextRenderer {
 
 export function parseTextRecordString(
   byteStream: ByteStream,
-  colorAlpha: boolean,
-  glyphBits: UintSize,
+  hasAlpha: boolean,
+  indexBits: UintSize,
   advanceBits: UintSize
 ): text.TextRecord[] {
   const result: text.TextRecord[] = [];
   while (byteStream.peekUint8() !== 0) {
-    result.push(parseTextRecord(byteStream, colorAlpha, glyphBits, advanceBits));
+    result.push(parseTextRecord(byteStream, hasAlpha, indexBits, advanceBits));
   }
   byteStream.skip(1); // End of records
   return result;
@@ -67,8 +67,8 @@ export function parseTextRecordString(
 
 export function parseTextRecord(
   byteStream: ByteStream,
-  colorAlpha: boolean,
-  glyphBits: UintSize,
+  hasAlpha: boolean,
+  indexBits: UintSize,
   advanceBits: UintSize
 ): text.TextRecord {
   const flags: Uint8 = byteStream.readUint8();
@@ -79,20 +79,21 @@ export function parseTextRecord(
   const fontId: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
   let color: StraightSRgba8 | undefined = undefined;
   if (hasColor) {
-    color = colorAlpha ? parseStraightSRgba8(byteStream) : {...parseSRgb8(byteStream), a: 255};
+    color = hasAlpha ? parseStraightSRgba8(byteStream) : {...parseSRgb8(byteStream), a: 255};
   }
   const offsetX: Sint16 = hasOffsetX ? byteStream.readSint16LE() : 0;
   const offsetY: Sint16 = hasOffsetY ? byteStream.readSint16LE() : 0;
   const fontSize: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
-  const entryCount: UintSize = byteStream.readUint8();
 
+  const entryCount: UintSize = byteStream.readUint8();
   const bitStream = byteStream.asBitStream();
   const entries: text.GlyphEntry[] = [];
   for (let i: UintSize = 0; i < entryCount; i++) {
-    const index: UintSize = bitStream.readUint32Bits(glyphBits);
+    const index: UintSize = bitStream.readUint32Bits(indexBits);
     const advance: SintSize = bitStream.readSint32Bits(advanceBits);
     entries.push({index, advance});
   }
+  bitStream.align();
   return {fontId, color, offsetX, offsetY, fontSize, entries};
 }
 

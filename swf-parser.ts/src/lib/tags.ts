@@ -52,6 +52,7 @@ function parseSwfTagHeader(byteStream: Stream): SwfTagHeader {
   }
 }
 
+// TODO(demurgos): Extract `parseTagBody`, then parse head, call parseTagBody and update state
 export function parseSwfTag(byteStream: Stream, context?: ParseContext): Tag {
   if (context === undefined) {
     context = new DefaultParseContext();
@@ -61,8 +62,6 @@ export function parseSwfTag(byteStream: Stream, context?: ParseContext): Tag {
   const tagByteStream: Stream = byteStream.take(length);
 
   switch (tagCode) {
-    case 0:
-      throw new Incident("EndOfTags", "Reached end of tags");
     case 1:
       return {type: TagType.ShowFrame};
     case 2:
@@ -231,9 +230,9 @@ export function parseDefineText(byteStream: Stream): tags.DefineText {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
   const matrix: Matrix = parseMatrix(byteStream);
-  const glyphBits: UintSize = byteStream.readUint8();
+  const indexBits: UintSize = byteStream.readUint8();
   const advanceBits: UintSize = byteStream.readUint8();
-  const records: text.TextRecord[] = parseTextRecordString(byteStream, false, glyphBits, advanceBits);
+  const records: text.TextRecord[] = parseTextRecordString(byteStream, false, indexBits, advanceBits);
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 
@@ -241,9 +240,9 @@ export function parseDefineText2(byteStream: Stream): tags.DefineText {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
   const matrix: Matrix = parseMatrix(byteStream);
-  const glyphBits: UintSize = byteStream.readUint8();
+  const indexBits: UintSize = byteStream.readUint8();
   const advanceBits: UintSize = byteStream.readUint8();
-  const records: text.TextRecord[] = parseTextRecordString(byteStream, true, glyphBits, advanceBits);
+  const records: text.TextRecord[] = parseTextRecordString(byteStream, true, indexBits, advanceBits);
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 

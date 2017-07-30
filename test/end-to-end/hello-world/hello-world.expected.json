@@ -2803,8 +2803,8 @@
       "type": "csm-text-settings",
       "text_id": 2,
       "renderer": "advanced",
-      "fitting": "pixel",
-      "thickness": 8589934592,
+      "fitting": "sub-pixel",
+      "thickness": 0,
       "sharpness": 0
     },
     {
