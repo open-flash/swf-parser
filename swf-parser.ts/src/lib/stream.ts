@@ -184,11 +184,11 @@ export class Stream implements BitStream, ByteStream {
   }
 
   readFloat16BE(): Float16 {
-    const u16: Uint16 = this.view.getUint16(0, false);
+    const u16: Uint16 = this.view.getUint16(this.bytePos, false);
     this.bytePos += 2;
     const sign: -1 | 1 = (u16 & (1 << 15)) !== 0 ? -1 : 1;
-    const exponent: number = (u16 & 0x7c00) >>> 10; // 0x7c00: bits 10 to 14 (inclusive)
-    const fraction: number = u16 & 0x03ff; // 0x03ff: bits 0 to 9 (inclusive)
+    const exponent: Sint32 = (u16 & 0x7c00) >>> 10; // 0x7c00: bits 10 to 14 (inclusive)
+    const fraction: Float64 = u16 & 0x03ff; // 0x03ff: bits 0 to 9 (inclusive)
     if (exponent === 0) {
       return sign * Math.pow(2, -14) * (fraction / 1024);
     } else if (exponent === 0x1f) { // 0x1f: bits 0 to 4 (inclusive)
