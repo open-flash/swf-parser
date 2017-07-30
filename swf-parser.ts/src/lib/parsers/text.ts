@@ -72,10 +72,10 @@ export function parseTextRecord(
   advanceBits: UintSize
 ): text.TextRecord {
   const flags: Uint8 = byteStream.readUint8();
-  const hasFont: boolean = (flags & (1 << 3)) > 0;
-  const hasColor: boolean = (flags & (1 << 2)) > 0;
-  const hasOffsetX: boolean = (flags & (1 << 1)) > 0;
-  const hasOffsetY: boolean = (flags & (1 << 0)) > 0;
+  const hasFont: boolean = (flags & (1 << 3)) !== 0;
+  const hasColor: boolean = (flags & (1 << 2)) !== 0;
+  const hasOffsetX: boolean = (flags & (1 << 1)) !== 0;
+  const hasOffsetY: boolean = (flags & (1 << 0)) !== 0;
   const fontId: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
   let color: StraightSRgba8 | undefined = undefined;
   if (hasColor) {
@@ -117,8 +117,8 @@ export function parseFontAlignmentZone(byteStream: ByteStream): text.FontAlignme
     data.push(parseFontAlignmentZoneData(byteStream));
   }
   const flags: Uint8 = byteStream.readUint8();
-  const hasY: boolean = (flags & (1 << 1)) > 0;
-  const hasX: boolean = (flags & (1 << 0)) > 0;
+  const hasY: boolean = (flags & (1 << 1)) !== 0;
+  const hasX: boolean = (flags & (1 << 0)) !== 0;
   return {data, hasX, hasY};
 }
 

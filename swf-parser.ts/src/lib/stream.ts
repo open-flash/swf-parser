@@ -186,8 +186,8 @@ export class Stream implements BitStream, ByteStream {
   readFloat16BE(): Float16 {
     const u16: Uint16 = this.view.getUint16(0, false);
     this.bytePos += 2;
-    const sign: -1 | 1 = u16 >> 15 === 1 ? -1 : 1;
-    const exponent: number = (u16 & 0x7c00) >> 10; // 0x7c00: bits 10 to 14 (inclusive)
+    const sign: -1 | 1 = (u16 & (1 << 15)) !== 0 ? -1 : 1;
+    const exponent: number = (u16 & 0x7c00) >>> 10; // 0x7c00: bits 10 to 14 (inclusive)
     const fraction: number = u16 & 0x03ff; // 0x03ff: bits 0 to 9 (inclusive)
     if (exponent === 0) {
       return sign * Math.pow(2, -14) * (fraction / 1024);
@@ -281,13 +281,14 @@ export class Stream implements BitStream, ByteStream {
     let result: Uint32 = 0;
     for (let i: number = 0; i < 5; i++) {
       const nextByte: Uint8 = this.bytes[this.bytePos++];
-      if (i === 4) {
-        // Only read 4 bits, do not use bitwise operations (JS would convert it to Int32)
-        result += (nextByte & 0x0f) * Math.pow(2, 28);
-      } else {
+      if (i < 4) {
+        // Bit-shift is safe
         result += (nextByte & 0x7f) << (7 * i);
+      } else {
+        // Bit-shift is unsafe, use `* Math.pow`
+        result += (nextByte & 0x0f) * Math.pow(2, 28);
       }
-      if (((nextByte >> 7) & 1) === 0) {
+      if ((nextByte & (1 << 7)) === 0) {
         return result;
       }
     }
@@ -307,19 +308,21 @@ export class Stream implements BitStream, ByteStream {
 
   private readUintBits(n: number): number {
     if (n > 32) {
+      // Even if we could read up to 53 bits, we restrict it to 32 bits (which is already unsafe
+      // if we consider that the max positive number safe regarding bit operations is 2^31 - 1)
       throw new Incident("BitOverflow", "Cannot read above 32 bits without overflow");
     }
     let result: number = 0;
     while (n > 0) {
       if (this.bitPos + n < 8) {
         const endBitPos: number = this.bitPos + n;
-        const shift: number = 1 << endBitPos - this.bitPos;
+        const shift: number = 1 << (endBitPos - this.bitPos);
         const cur: number = (this.bytes[this.bytePos] >>> 8 - endBitPos) & (shift - 1);
         result = result * shift + cur;
         n = 0;
         this.bitPos = endBitPos;
       } else {
-        const shift: number = 1 << 8 - this.bitPos;
+        const shift: number = 1 << (8 - this.bitPos);
         const cur: number = this.bytes[this.bytePos] & (shift - 1);
         result = result * shift + cur;
         n -= (8 - this.bitPos);

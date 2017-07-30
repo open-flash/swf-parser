@@ -41,7 +41,7 @@ interface SwfTagHeader {
 
 function parseSwfTagHeader(byteStream: Stream): SwfTagHeader {
   const codeAndLength: Uint16 = byteStream.readUint16LE();
-  const tagCode: Uint16 = codeAndLength >> 6;
+  const tagCode: Uint16 = codeAndLength >>> 6;
   const maxLength: number = (1 << 6) - 1;
   const length: number = codeAndLength & maxLength;
 
@@ -257,13 +257,13 @@ export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
 
   return {
     type: TagType.FileAttributes,
-    useDirectBlit: ((flags >> 6) & 1) > 0,
-    useGpu: ((flags >> 5) & 1) > 0,
-    hasMetadata: ((flags >> 4) & 1) > 0,
-    useAs3: ((flags >> 3) & 1) > 0,
-    noCrossDomainCaching: ((flags >> 2) & 1) > 0,
-    useRelativeUrls: ((flags >> 1) & 1) > 0,
-    useNetwork: ((flags >> 0) & 1) > 0,
+    useDirectBlit: (flags & (1 << 6)) !== 0,
+    useGpu: (flags & (1 << 5)) !== 0,
+    hasMetadata: (flags & (1 << 4)) !== 0,
+    useAs3: (flags & (1 << 3)) !== 0,
+    noCrossDomainCaching: (flags & (1 << 2)) !== 0,
+    useRelativeUrls: (flags & (1 << 1)) !== 0,
+    useNetwork: (flags & (1 << 0)) !== 0,
   };
 }
 
