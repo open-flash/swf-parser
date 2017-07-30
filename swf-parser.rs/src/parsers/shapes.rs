@@ -5,7 +5,7 @@ use parsers::basic_data_types::{
   parse_bool_bits,
   parse_i32_bits,
   parse_u32_bits,
-  parse_rgb,
+  parse_s_rgb8,
   parse_u16_bits
 };
 
@@ -225,7 +225,7 @@ named!(
   pub parse_line_style<ast::shapes::LineStyle>,
   do_parse!(
     width: parse_le_u16 >>
-    color: parse_rgb >>
+    color: parse_s_rgb8 >>
     (
       ast::shapes::LineStyle {
       width: width,
@@ -258,7 +258,7 @@ named!(
 named!(
   pub parse_solid_fill<ast::shapes::fills::Solid>,
   do_parse!(
-    color: parse_rgb >>
+    color: parse_s_rgb8 >>
     (
       ast::shapes::fills::Solid {
         color: ast::StraightSRgba8 {

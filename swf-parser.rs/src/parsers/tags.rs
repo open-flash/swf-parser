@@ -1,6 +1,7 @@
 use swf_tree as ast;
 use nom::{IResult, Needed};
-use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
+use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32, be_f32 as parse_be_f32};
+use ordered_float::OrderedFloat;
 use parsers::avm1::parse_actions_string;
 use parsers::basic_data_types::{
   parse_bool_bits,
@@ -11,12 +12,13 @@ use parsers::basic_data_types::{
   parse_matrix,
   parse_named_id,
   parse_rect,
-  parse_rgb,
+  parse_s_rgb8,
   skip_bits
 };
-use parsers::shapes::{parse_shape};
+use parsers::shapes::parse_shape;
 use parsers::swf_file::parse_swf_tags_string;
-use parsers::text::{parse_font_layout, parse_offset_glyphs};
+use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_record_string, parse_text_renderer_bits};
+use state::ParseState;
 
 pub struct SwfTagHeader {
   pub tag_code: u16,
@@ -40,7 +42,14 @@ fn parse_swf_tag_header(input: &[u8]) -> IResult<&[u8], SwfTagHeader> {
   }
 }
 
-pub fn parse_swf_tag(input: &[u8]) -> IResult<&[u8], ast::Tag> {
+pub fn parse_swf_tag<'a>(input: &'a[u8], state: &mut ParseState) -> IResult<&'a[u8], ast::Tag> {
+//  pub fn te_parse_define_font_align_zones() {
+//
+//    state.set_glyph_count(1, 11);
+//
+//    let f = parse_define_font_align_zones(&b"\x01"[..], |font_id| state.get_glyph_count(font_id));
+//  }
+
   match parse_swf_tag_header(input) {
     IResult::Done(remaining_input, rh) => {
       if remaining_input.len() < rh.length {
@@ -53,26 +62,37 @@ pub fn parse_swf_tag(input: &[u8]) -> IResult<&[u8], ast::Tag> {
           1 => IResult::Done(&record_data[rh.length..], ast::Tag::ShowFrame),
           2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
           9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
+          11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           // TODO: Ignore DoAction if version >= 9 && use_as3
-          12 => map!(record_data, parse_do_action_tag, |t| ast::Tag::DoAction(t)),
+          12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
           26 => map!(record_data, parse_place_object2, |t| ast::Tag::PlaceObject(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           // TODO: 59 => DoInitAction
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
+          73 => map!(record_data, apply!(parse_define_font_align_zones, |font_id| state.get_glyph_count(font_id)), |t| ast::Tag::DefineFontAlignZones(t)),
+          74 => map!(record_data, parse_csm_text_settings, |t| ast::Tag::CsmTextSettings(t)),
           75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont(t)),
           77 => map!(record_data, parse_metadata, |t| ast::Tag::Metadata(t)),
           86 => map!(record_data, parse_define_scene_and_frame_label_data_tag, |t| ast::Tag::DefineSceneAndFrameLabelData(t)),
+          88 => map!(record_data, parse_define_font_name, |t| ast::Tag::DefineFontName(t)),
           _ => {
             IResult::Done(&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() }))
           }
         };
         match record_result {
-          // IResult::Done(left, o) => {
-          //   println!("{:?}", left);
-          //   IResult::Done(remaining_input, o)
-          // }
-          IResult::Done(_, o) => IResult::Done(remaining_input, o),
+          IResult::Done(_, output_tag) => {
+            match output_tag {
+              ast::Tag::DefineFont(ref tag) => {
+                match tag.glyphs {
+                  Some(ref glyphs) => state.set_glyph_count(tag.id as usize, glyphs.len()),
+                  None => state.set_glyph_count(tag.id as usize, 0),
+                };
+              }
+              _ => (),
+            };
+            IResult::Done(remaining_input, output_tag)
+          },
           IResult::Error(e) => IResult::Error(e),
           IResult::Incomplete(n) => IResult::Incomplete(n),
         }
@@ -81,6 +101,28 @@ pub fn parse_swf_tag(input: &[u8]) -> IResult<&[u8], ast::Tag> {
     IResult::Error(e) => IResult::Error(e),
     IResult::Incomplete(n) => IResult::Incomplete(n),
   }
+}
+
+pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTextSettings> {
+  do_parse!(
+    input,
+    text_id: parse_le_u16 >>
+    renderer_and_fitting: bits!(do_parse!(
+      renderer: parse_text_renderer_bits >>
+      fitting: parse_grid_fitting_bits >>
+      // Implicitly skip 3 bits to align
+      ((renderer, fitting))
+    ))  >>
+    thickness: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
+    sharpness: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
+    (ast::tags::CsmTextSettings {
+      text_id: text_id,
+      renderer: renderer_and_fitting.0,
+      fitting: renderer_and_fitting.1,
+      thickness: thickness,
+      sharpness: sharpness,
+    })
+  )
 }
 
 struct DefineFont3Flags {
@@ -145,6 +187,38 @@ named!(
   )
 );
 
+pub fn parse_define_font_align_zones<P>(input: &[u8], glyph_count_provider: P) -> IResult<&[u8], ast::tags::DefineFontAlignZones>
+  where P: Fn(usize) -> Option<usize> {
+
+  do_parse!(
+    input,
+    font_id: map!(parse_le_u16, |x| x as usize) >>
+    // TODO(demurgos): Learn how to return errors and return an error if the glyph count is not found (instead of silently using default!)
+    glyph_count: map!(value!(glyph_count_provider(font_id)), |glyph_count_opt| glyph_count_opt.unwrap_or_default()) >>
+    csm_table_hint: bits!(parse_csm_table_hint_bits) >>
+    zones:  length_count!(value!(glyph_count), parse_font_alignment_zone) >>
+    (ast::tags::DefineFontAlignZones {
+      font_id: font_id as u16,
+      csm_table_hint: csm_table_hint,
+      zones: zones,
+    })
+  )
+}
+
+pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontName> {
+  do_parse!(
+    input,
+    font_id: parse_le_u16 >>
+    name: parse_c_string >>
+    copyright: parse_c_string >>
+    (ast::tags::DefineFontName {
+      font_id: font_id,
+      name: name,
+      copyright: copyright,
+    })
+  )
+}
+
 named!(
   pub parse_define_scene_and_frame_label_data_tag<ast::tags::DefineSceneAndFrameLabelData>,
   do_parse!(
@@ -170,8 +244,7 @@ named!(
         acc
       }
     ) >>
-    (
-      ast::tags::DefineSceneAndFrameLabelData {
+    (ast::tags::DefineSceneAndFrameLabelData {
       scenes: scenes,
       labels: labels,
     })
@@ -210,9 +283,26 @@ named!(
   )
 );
 
-/// Parse a DoAction tag (code: 12)
+pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
+  do_parse!(
+    input,
+    id: parse_le_u16 >>
+    bounds: parse_rect >>
+    matrix: parse_matrix >>
+    index_bits: map!(parse_u8, |x| x as usize) >>
+    advance_bits: map!(parse_u8, |x| x as usize) >>
+    records: apply!(parse_text_record_string, false, index_bits, advance_bits) >>
+    (ast::tags::DefineText {
+      id: id,
+      bounds: bounds,
+      matrix: matrix,
+      records: records,
+    })
+  )
+}
+
 named!(
-  pub parse_do_action_tag<ast::tags::DoAction>,
+  pub parse_do_action<ast::tags::DoAction>,
   map!(
     parse_actions_string,
     |actions| ast::tags::DoAction {actions: actions}
@@ -330,7 +420,7 @@ named!(
 named!(
   pub parse_set_background_color_tag<ast::tags::SetBackgroundColor>,
   do_parse!(
-    color: parse_rgb >>
+    color: parse_s_rgb8 >>
     (ast::tags::SetBackgroundColor {
       color: color,
     })

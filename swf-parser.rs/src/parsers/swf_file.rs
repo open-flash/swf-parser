@@ -5,8 +5,10 @@ use std::io;
 use std::io::Read;
 use parsers::tags::parse_swf_tag;
 use parsers::swf_header::{parse_swf_header, parse_swf_signature};
+use state::ParseState;
 
 pub fn parse_swf_tags_string(input: &[u8]) -> IResult<&[u8], Vec<ast::Tag>> {
+  let mut state = ParseState::new();
   let mut result: Vec<ast::Tag> = Vec::new();
   let mut current_input: &[u8] = input;
   while current_input.len() > 0 {
@@ -15,7 +17,7 @@ pub fn parse_swf_tags_string(input: &[u8]) -> IResult<&[u8], Vec<ast::Tag>> {
       current_input = &current_input[1..];
       break;
     }
-    match parse_swf_tag(current_input) {
+    match parse_swf_tag(current_input, &mut state) {
       IResult::Done(next_input, swf_tag) => {
         current_input = next_input;
         result.push(swf_tag);
