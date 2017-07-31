@@ -2,6 +2,8 @@
   "name": "swf-parser",
   "version": "0.0.1",
   "description": "SWF parser loosely based on Shumway",
+  "main": "dist/lib-es2015/lib/index.js",
+  "types": "dist/lib-es2015/lib/index.d.ts",
   "keywords": [],
   "license": "MIT",
   "scripts": {
