@@ -22,7 +22,7 @@ import {
   parseRect,
   parseSRgb8,
 } from "./basic-data-types";
-import {parseShape} from "./shapes";
+import {parseShape, ShapeVersion} from "./shapes";
 import {
   parseCsmTableHintBits,
   parseFontAlignmentZone,
@@ -81,8 +81,12 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseDefineText(byteStream);
     case 12:
       return parseDoAction(byteStream);
+    case 22:
+      return parseDefineShape2(byteStream);
     case 26:
       return parsePlaceObject2(byteStream);
+    case 32:
+      return parseDefineShape3(byteStream);
     case 69:
       return parseFileAttributes(byteStream);
     case 73:
@@ -213,9 +217,22 @@ export function parseDefineSceneAndFrameLabelData(byteStream: Stream): tags.Defi
 }
 
 export function parseDefineShape(byteStream: Stream): tags.DefineShape {
+  return parseDefineShapeAny(byteStream, ShapeVersion.Shape1);
+}
+
+export function parseDefineShape2(byteStream: Stream): tags.DefineShape {
+  return parseDefineShapeAny(byteStream, ShapeVersion.Shape2);
+}
+
+export function parseDefineShape3(byteStream: Stream): tags.DefineShape {
+  return parseDefineShapeAny(byteStream, ShapeVersion.Shape3);
+}
+
+function parseDefineShapeAny(byteStream: Stream, version: ShapeVersion): tags.DefineShape {
+  // defineShape{1,2,3} are very similar, but we should check the special cases where they differ
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
-  const shape: shapes.Shape = parseShape(byteStream);
+  const shape: shapes.Shape = parseShape(byteStream, version);
 
   return {
     type: TagType.DefineShape,
