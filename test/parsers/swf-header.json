@@ -7,17 +7,17 @@
     },
     "expected": {
       "result": {
-        "compression-method": "none",
-        "swf-version": 34,
-        "uncompressed-file-length": 53,
-        "frame-size": {
-          "x-min": 0,
-          "x-max": 11000,
-          "y-min": 0,
-          "y-max": 8000
+        "compression_method": "none",
+        "swf_version": 34,
+        "uncompressed_file_length": 53,
+        "frame_size": {
+          "x_min": 0,
+          "x_max": 11000,
+          "y_min": 0,
+          "y_max": 8000
         },
-        "frame-rate": "+0x18.00",
-        "frame-count": 1
+        "frame_rate": "+0x18.00",
+        "frame_count": 1
       },
       "stream": {
         "buffer": "0x4411080000004302ffffffbf150b00000001005363656e652031000040000000",
@@ -34,17 +34,17 @@
     },
     "expected": {
       "result": {
-        "compression-method": "none",
-        "swf-version": 34,
-        "uncompressed-file-length": 53,
-        "frame-size": {
-          "x-min": 0,
-          "x-max": 11000,
-          "y-min": 0,
-          "y-max": 8000
+        "compression_method": "none",
+        "swf_version": 34,
+        "uncompressed_file_length": 53,
+        "frame_size": {
+          "x_min": 0,
+          "x_max": 11000,
+          "y_min": 0,
+          "y_max": 8000
         },
-        "frame-rate": "+0x18.00",
-        "frame-count": 1
+        "frame_rate": "+0x18.00",
+        "frame_count": 1
       },
       "stream": {
         "buffer": "0x4411080000004302ffffffbf150b00000001005363656e652031000040000000",

@@ -8,10 +8,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 127,
-        "x-max": 260,
-        "y-min": 15,
-        "y-max": 514
+        "x_min": 127,
+        "x_max": 260,
+        "y_min": 15,
+        "y_max": 514
       },
       "stream": {
         "buffer": "",
@@ -28,10 +28,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 0,
-        "x-max": 0,
-        "y-min": 0,
-        "y-max": 0
+        "x_min": 0,
+        "x_max": 0,
+        "y_min": 0,
+        "y_max": 0
       },
       "stream": {
         "buffer": "",
@@ -48,10 +48,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 0,
-        "x-max": 0,
-        "y-min": 0,
-        "y-max": 0
+        "x_min": 0,
+        "x_max": 0,
+        "y_min": 0,
+        "y_max": 0
       },
       "stream": {
         "buffer": "",
@@ -68,10 +68,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 0,
-        "x-max": 0,
-        "y-min": 0,
-        "y-max": 0
+        "x_min": 0,
+        "x_max": 0,
+        "y_min": 0,
+        "y_max": 0
       },
       "stream": {
         "buffer": "",
@@ -88,10 +88,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 1,
-        "x-max": 0,
-        "y-min": 0,
-        "y-max": 0
+        "x_min": 1,
+        "x_max": 0,
+        "y_min": 0,
+        "y_max": 0
       },
       "stream": {
         "buffer": "",
@@ -108,10 +108,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 0,
-        "x-max": 1,
-        "y-min": 0,
-        "y-max": 0
+        "x_min": 0,
+        "x_max": 1,
+        "y_min": 0,
+        "y_max": 0
       },
       "stream": {
         "buffer": "",
@@ -128,10 +128,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 0,
-        "x-max": 0,
-        "y-min": 1,
-        "y-max": 0
+        "x_min": 0,
+        "x_max": 0,
+        "y_min": 1,
+        "y_max": 0
       },
       "stream": {
         "buffer": "",
@@ -148,10 +148,10 @@
     },
     "expected": {
       "result": {
-        "x-min": 0,
-        "x-max": 0,
-        "y-min": 0,
-        "y-max": 1
+        "x_min": 0,
+        "x_max": 0,
+        "y_min": 0,
+        "y_max": 1
       },
       "stream": {
         "buffer": "",
