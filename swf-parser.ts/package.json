@@ -2,7 +2,6 @@
   "name": "swf-parser",
   "version": "0.0.1",
   "description": "SWF parser loosely based on Shumway",
-  "private": true,
   "keywords": [],
   "license": "MIT",
   "scripts": {
