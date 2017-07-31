@@ -23,7 +23,7 @@ export function parseDecompressedMovie(byteStream: Stream): Movie {
   return {header, tags};
 }
 
-export async function parseMovie(byteStream: Stream): Promise<Movie> {
+export function parseMovie(byteStream: Stream): Movie {
   const startPos: number = byteStream.bytePos;
   const headerSignature: SwfSignature = parseSwfSignature(byteStream);
   switch (headerSignature.compressionMethod) {
