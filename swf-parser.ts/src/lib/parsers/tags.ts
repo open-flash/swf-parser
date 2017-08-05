@@ -132,6 +132,8 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseExportAssets(byteStream);
     case 57:
       return parseImportAssets(byteStream);
+    case 59:
+      return parseDoInitAction(byteStream);
     case 69:
       return parseFileAttributes(byteStream);
     case 70: {
@@ -397,6 +399,11 @@ export function parseDefineText2(byteStream: Stream): tags.DefineText {
 
 export function parseDoAction(byteStream: Stream): tags.DoAction {
   return {type: TagType.DoAction, actions: parseActionsString(byteStream)};
+}
+
+export function parseDoInitAction(byteStream: Stream): tags.DoInitAction {
+  const spriteId: Uint16 = byteStream.readUint16LE();
+  return {type: TagType.DoInitAction, spriteId, actions: parseActionsString(byteStream)};
 }
 
 export function parseExportAssets(byteStream: Stream): tags.ExportAssets {
