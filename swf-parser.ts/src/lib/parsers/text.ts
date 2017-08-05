@@ -172,3 +172,18 @@ export function parseKerningRecord(byteStream: ByteStream): text.KerningRecord {
   const adjustment: Sint16 = byteStream.readSint16LE();
   return {left, right, adjustment};
 }
+
+export function parseTextAlignment(byteStream: ByteStream): text.TextAlignment {
+  switch (byteStream.readUint8()) {
+    case 0:
+      return text.TextAlignment.Left;
+    case 1:
+      return text.TextAlignment.Right;
+    case 2:
+      return text.TextAlignment.Center;
+    case 3:
+      return text.TextAlignment.Justify;
+    default:
+      throw new Incident("UnreachableCode");
+  }
+}
