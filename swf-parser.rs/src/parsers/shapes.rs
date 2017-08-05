@@ -9,32 +9,32 @@ use parsers::basic_data_types::{
   parse_u16_bits
 };
 
-pub fn parse_glyph(input: &[u8]) -> IResult<&[u8], ast::shapes::Glyph> {
+pub fn parse_glyph(input: &[u8]) -> IResult<&[u8], ast::Glyph> {
   bits!(input, parse_glyph_bits)
 }
 
-pub fn parse_glyph_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::Glyph> {
+pub fn parse_glyph_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Glyph> {
   do_parse!(
     input,
     fill_bits: map!(apply!(parse_u32_bits, 4), |x| x as usize) >>
     line_bits: map!(apply!(parse_u32_bits, 4), |x| x as usize) >>
     records: apply!(parse_shape_record_string_bits, fill_bits, line_bits) >>
-    (ast::shapes::Glyph {
+    (ast::Glyph {
       records: records,
     })
   )
 }
 
-pub fn parse_shape(input: &[u8]) -> IResult<&[u8], ast::shapes::Shape> {
+pub fn parse_shape(input: &[u8]) -> IResult<&[u8], ast::Shape> {
   bits!(input, parse_shape_bits)
 }
 
-pub fn parse_shape_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::Shape> {
+pub fn parse_shape_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Shape> {
   do_parse!(
     input,
     styles: parse_shape_styles_bits >>
     records: apply!(parse_shape_record_string_bits, styles.fill_bits, styles.line_bits) >>
-    (ast::shapes::Shape {
+    (ast::Shape {
       fill_styles: styles.fill,
       line_styles: styles.line,
       records: records,
@@ -43,8 +43,8 @@ pub fn parse_shape_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::s
 }
 
 pub struct ShapeStyles {
-  pub fill: Vec<ast::shapes::FillStyle>,
-  pub line: Vec<ast::shapes::LineStyle>,
+  pub fill: Vec<ast::FillStyle>,
+  pub line: Vec<ast::LineStyle>,
   pub fill_bits: usize,
   pub line_bits: usize,
 }
@@ -65,8 +65,8 @@ pub fn parse_shape_styles_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize),
   )
 }
 
-pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usize, mut line_bits: usize) -> IResult<(&[u8], usize), Vec<ast::shapes::ShapeRecord>> {
-  let mut result: Vec<ast::shapes::ShapeRecord> = Vec::new();
+pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usize, mut line_bits: usize) -> IResult<(&[u8], usize), Vec<ast::ShapeRecord>> {
+  let mut result: Vec<ast::ShapeRecord> = Vec::new();
   let mut current_input = input;
 
   loop {
@@ -100,7 +100,7 @@ pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usiz
       if is_straight_edge {
         match parse_straight_edge_bits(current_input) {
           IResult::Done(next_input, straight_edge) => {
-            let record = ast::shapes::ShapeRecord::StraightEdge(straight_edge);
+            let record = ast::ShapeRecord::StraightEdge(straight_edge);
             result.push(record);
             current_input = next_input;
           }
@@ -110,7 +110,7 @@ pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usiz
       } else {
         match parse_curved_edge_bits(current_input) {
           IResult::Done(next_input, curved_edge) => {
-            let record = ast::shapes::ShapeRecord::CurvedEdge(curved_edge);
+            let record = ast::ShapeRecord::CurvedEdge(curved_edge);
             result.push(record);
             current_input = next_input;
           }
@@ -124,7 +124,7 @@ pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usiz
           let (style_change, style_bits) = record_and_bits;
           fill_bits = style_bits.0;
           line_bits = style_bits.1;
-          let record = ast::shapes::ShapeRecord::StyleChange(style_change);
+          let record = ast::ShapeRecord::StyleChange(style_change);
           result.push(record);
           current_input = next_input;
         }
@@ -137,7 +137,7 @@ pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usiz
   IResult::Done(current_input, result)
 }
 
-pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::records::CurvedEdge> {
+pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shape_records::CurvedEdge> {
   do_parse!(
     input,
     n_bits: map!(apply!(parse_u16_bits, 4), |x| x as usize) >>
@@ -145,14 +145,14 @@ pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), 
     control_y: apply!(parse_i32_bits, n_bits + 2) >>
     delta_x: apply!(parse_i32_bits, n_bits + 2) >>
     delta_y: apply!(parse_i32_bits, n_bits + 2) >>
-    (ast::shapes::records::CurvedEdge {
+    (ast::shape_records::CurvedEdge {
       control_delta: ast::Vector2D {x: control_x, y: control_y},
       end_delta: ast::Vector2D {x: delta_x, y: delta_y},
     })
   )
 }
 
-pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shapes::records::StraightEdge> {
+pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::shape_records::StraightEdge> {
   do_parse!(
     input,
     n_bits: map!(apply!(parse_u16_bits, 4), |x| x as usize) >>
@@ -160,13 +160,13 @@ pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize)
     is_vertical: map!(cond!(!is_diagonal, call!(parse_bool_bits)), |opt: Option<bool>| opt.unwrap_or_default()) >>
     delta_x: cond!(is_diagonal || !is_vertical, apply!(parse_i32_bits, n_bits + 2)) >>
     delta_y: cond!(is_diagonal || is_vertical, apply!(parse_i32_bits, n_bits + 2)) >>
-    (ast::shapes::records::StraightEdge {
+    (ast::shape_records::StraightEdge {
       end_delta: ast::Vector2D {x: delta_x.unwrap_or_default(), y: delta_y.unwrap_or_default()},
     })
   )
 }
 
-pub fn parse_style_change_bits(input: (&[u8], usize), fill_bits: usize, line_bits: usize) -> IResult<(&[u8], usize), (ast::shapes::records::StyleChange, (usize, usize))> {
+pub fn parse_style_change_bits(input: (&[u8], usize), fill_bits: usize, line_bits: usize) -> IResult<(&[u8], usize), (ast::shape_records::StyleChange, (usize, usize))> {
   do_parse!(
     input,
     has_new_styles: parse_bool_bits >>
@@ -193,7 +193,7 @@ pub fn parse_style_change_bits(input: (&[u8], usize), fill_bits: usize, line_bit
       }
     ) >>
     ((
-      ast::shapes::records::StyleChange {
+      ast::shape_records::StyleChange {
           move_to: move_to.map(|vector| ast::Vector2D {x: vector.0, y: vector.1}),
           left_fill: left_fill.map(|x| x as usize),
           right_fill: right_fill.map(|x| x as usize),
@@ -222,22 +222,22 @@ pub fn parse_list_length(input: &[u8]) -> IResult<&[u8], usize> {
 }
 
 named!(
-  pub parse_line_style<ast::shapes::LineStyle>,
+  pub parse_line_style<ast::LineStyle>,
   do_parse!(
     width: parse_le_u16 >>
     color: parse_s_rgb8 >>
     (
-      ast::shapes::LineStyle {
+      ast::LineStyle {
       width: width,
-      start_cap: ast::shapes::CapStyle::Round,
-      end_cap: ast::shapes::CapStyle::Round,
-      join: ast::shapes::JoinStyle::Round,
+      start_cap: ast::CapStyle::Round,
+      end_cap: ast::CapStyle::Round,
+      join: ast::JoinStyle::Round,
       no_h_scale: false,
       no_v_scale: false,
       no_close: false,
       pixel_hinting: false,
-      fill: ast::shapes::FillStyle::Solid(
-        ast::shapes::fills::Solid {
+      fill: ast::FillStyle::Solid(
+        ast::fill_styles::Solid {
           color: ast::StraightSRgba8 {
             r: color.r,
             g: color.g,
@@ -251,16 +251,16 @@ named!(
 );
 
 named!(
-  pub parse_line_style_list<Vec<ast::shapes::LineStyle>>,
+  pub parse_line_style_list<Vec<ast::LineStyle>>,
   length_count!(parse_list_length, parse_line_style)
 );
 
 named!(
-  pub parse_solid_fill<ast::shapes::fills::Solid>,
+  pub parse_solid_fill<ast::fill_styles::Solid>,
   do_parse!(
     color: parse_s_rgb8 >>
     (
-      ast::shapes::fills::Solid {
+      ast::fill_styles::Solid {
         color: ast::StraightSRgba8 {
           r: color.r,
           g: color.g,
@@ -272,75 +272,13 @@ named!(
 );
 
 named!(
-  pub parse_fill_style<&[u8], ast::shapes::FillStyle>,
+  pub parse_fill_style<&[u8], ast::FillStyle>,
   switch!(parse_u8,
-   0x00 => map!(parse_solid_fill, |fill| ast::shapes::FillStyle::Solid(fill))
+   0x00 => map!(parse_solid_fill, |fill| ast::FillStyle::Solid(fill))
   )
 );
 
 named!(
-  pub parse_fill_style_list<Vec<ast::shapes::FillStyle>>,
+  pub parse_fill_style_list<Vec<ast::FillStyle>>,
     length_count!(parse_list_length, parse_fill_style)
-);
-
-named!(
-  pub parse_clip_event_flags<ast::shapes::ClipEventFlags>,
-  bits!(parse_clip_event_flags_bits)
-);
-
-named!(
-  pub parse_clip_event_flags_bits<(&[u8], usize), ast::shapes::ClipEventFlags>,
-  do_parse!(
-    key_up: call!(parse_bool_bits) >>
-    key_down: call!(parse_bool_bits) >>
-    mouse_up: call!(parse_bool_bits) >>
-    mouse_down: call!(parse_bool_bits) >>
-    unload: call!(parse_bool_bits) >>
-    enter_frane: call!(parse_bool_bits) >>
-    load: call!(parse_bool_bits) >>
-    drag_over: call!(parse_bool_bits) >>
-    roll_out: call!(parse_bool_bits) >>
-    roll_over: call!(parse_bool_bits) >>
-    release_outside: call!(parse_bool_bits) >>
-    release: call!(parse_bool_bits) >>
-    press: call!(parse_bool_bits) >>
-    initialize: call!(parse_bool_bits) >>
-    data: call!(parse_bool_bits) >>
-    construct: call!(parse_bool_bits) >>
-    key_press: call!(parse_bool_bits) >>
-    drag_out: call!(parse_bool_bits) >>
-    (ast::shapes::ClipEventFlags {
-      key_up: key_up,
-      key_down: key_down,
-      mouse_up: mouse_up,
-      mouse_down: mouse_down,
-      unload: unload,
-      enter_frane: enter_frane,
-      load: load,
-      drag_over: drag_over,
-      roll_out: roll_out,
-      roll_over: roll_over,
-      release_outside: release_outside,
-      release: release,
-      press: press,
-      initialize: initialize,
-      data: data,
-      construct: construct,
-      key_press: key_press,
-      drag_out: drag_out,
-    })
-  )
-);
-
-named!(
-  pub parse_clip_action<ast::shapes::ClipAction>,
-  do_parse!(
-    event_flags: parse_clip_event_flags >>
-    key_code: cond!(event_flags.key_press, parse_u8) >>
-    (ast::shapes::ClipAction {
-      event_flags: event_flags,
-      key_code: key_code,
-      actions: vec!(),
-    })
-  )
 );

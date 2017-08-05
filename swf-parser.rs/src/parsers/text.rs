@@ -144,7 +144,7 @@ pub fn parse_glyph_entry(input: (&[u8], usize), index_bits: usize, advance_bits:
   )
 }
 
-pub fn parse_offset_glyphs(input: &[u8], glyph_count: usize, use_wide_offsets: bool) -> IResult<&[u8], Vec<ast::shapes::Glyph>> {
+pub fn parse_offset_glyphs(input: &[u8], glyph_count: usize, use_wide_offsets: bool) -> IResult<&[u8], Vec<ast::Glyph>> {
   let parsed_offsets = if use_wide_offsets {
     pair!(
       input,
@@ -163,7 +163,7 @@ pub fn parse_offset_glyphs(input: &[u8], glyph_count: usize, use_wide_offsets: b
     IResult::Error(e) => return IResult::Error(e),
     IResult::Incomplete(n) => return IResult::Incomplete(n),
   };
-  let mut glyphs: Vec<ast::shapes::Glyph> = Vec::with_capacity(glyph_count);
+  let mut glyphs: Vec<ast::Glyph> = Vec::with_capacity(glyph_count);
   for i in 0..glyph_count {
     let start_offset = offsets[i];
     let end_offset = if i + 1 < glyph_count { offsets[i + 1] } else { end_offset };
