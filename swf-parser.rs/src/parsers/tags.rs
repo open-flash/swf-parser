@@ -1,6 +1,6 @@
 use swf_tree as ast;
 use nom::{IResult, Needed};
-use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32, be_f32 as parse_be_f32};
+use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32, be_f32 as parse_be_f32};
 use ordered_float::OrderedFloat;
 use parsers::avm1::parse_actions_string;
 use parsers::basic_data_types::{
@@ -13,8 +13,10 @@ use parsers::basic_data_types::{
   parse_named_id,
   parse_rect,
   parse_s_rgb8,
+  parse_straight_s_rgba8,
   skip_bits
 };
+use parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
 use parsers::shapes::parse_shape;
 use parsers::movie::parse_tag_string;
 use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_record_string, parse_text_renderer_bits};
@@ -42,14 +44,7 @@ fn parse_swf_tag_header(input: &[u8]) -> IResult<&[u8], SwfTagHeader> {
   }
 }
 
-pub fn parse_swf_tag<'a>(input: &'a[u8], state: &mut ParseState) -> IResult<&'a[u8], ast::Tag> {
-//  pub fn te_parse_define_font_align_zones() {
-//
-//    state.set_glyph_count(1, 11);
-//
-//    let f = parse_define_font_align_zones(&b"\x01"[..], |font_id| state.get_glyph_count(font_id));
-//  }
-
+pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::Tag> {
   match parse_swf_tag_header(input) {
     IResult::Done(remaining_input, rh) => {
       if remaining_input.len() < rh.length {
@@ -65,7 +60,8 @@ pub fn parse_swf_tag<'a>(input: &'a[u8], state: &mut ParseState) -> IResult<&'a[
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           // TODO: Ignore DoAction if version >= 9 && use_as3
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
-          26 => map!(record_data, parse_place_object2, |t| ast::Tag::PlaceObject(t)),
+          // TODO(demurgos): Throw error if the version is unknown
+          26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
@@ -92,7 +88,7 @@ pub fn parse_swf_tag<'a>(input: &'a[u8], state: &mut ParseState) -> IResult<&'a[
               _ => (),
             };
             IResult::Done(remaining_input, output_tag)
-          },
+          }
           IResult::Error(e) => IResult::Error(e),
           IResult::Incomplete(n) => IResult::Incomplete(n),
         }
@@ -190,7 +186,6 @@ pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont>
 
 pub fn parse_define_font_align_zones<P>(input: &[u8], glyph_count_provider: P) -> IResult<&[u8], ast::tags::DefineFontAlignZones>
   where P: Fn(usize) -> Option<usize> {
-
   do_parse!(
     input,
     font_id: map!(parse_le_u16, |x| x as usize) >>
@@ -369,48 +364,75 @@ pub fn parse_metadata(input: &[u8]) -> IResult<&[u8], ast::tags::Metadata> {
   )
 }
 
-struct PlaceObject2Flags {
-  pub has_clip_actions: bool,
-  pub has_clip_depth: bool,
-  pub has_name: bool,
-  pub has_ratio: bool,
-  pub has_color_transform: bool,
-  pub has_matrix: bool,
-  pub has_character: bool,
-  pub is_move: bool,
-}
+pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject> {
+  fn has_available_input(input: &[u8]) -> IResult<&[u8], bool> {
+    return IResult::Done(input, input.len() > 0);
+  }
 
-pub fn parse_place_object2(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject> {
   do_parse!(
     input,
-    flags: bits!(do_parse!(
-      has_clip_actions: call!(parse_bool_bits) >>
-      has_clip_depth: call!(parse_bool_bits) >>
-      has_name: call!(parse_bool_bits) >>
-      has_ratio: call!(parse_bool_bits) >>
-      has_color_transform: call!(parse_bool_bits) >>
-      has_matrix: call!(parse_bool_bits) >>
-      has_character: call!(parse_bool_bits) >>
-      is_move: call!(parse_bool_bits) >>
-      (PlaceObject2Flags {
-        has_clip_actions: has_clip_actions,
-        has_clip_depth: has_clip_depth,
-        has_name: has_name,
-        has_ratio: has_ratio,
-        has_color_transform: has_color_transform,
-        has_matrix: has_matrix,
-        has_character: has_character,
-        is_move: is_move,
-      })
-    )) >>
+    character_id: parse_le_u16 >>
     depth: parse_le_u16 >>
-    character_id: cond!(flags.has_character, parse_le_u16) >>
-    matrix: cond!(flags.has_matrix, parse_matrix) >>
-    color_transform: cond!(flags.has_color_transform, parse_color_transform_with_alpha) >>
-    ratio: cond!(flags.has_ratio, parse_le_u16) >>
-    name: cond!(flags.has_name, parse_c_string) >>
-    clip_depth: cond!(flags.has_clip_depth, parse_le_u16) >>
+    matrix: parse_matrix >>
+    has_color_transform: has_available_input >>
+    color_transform: cond!(
+      has_color_transform,
+      map!(
+        parse_color_transform_with_alpha,
+        |color_transform| ast::ColorTransformWithAlpha {
+          red_mult: color_transform.red_mult,
+          green_mult: color_transform.green_mult,
+          blue_mult: color_transform.blue_mult,
+          alpha_mult: ast::fixed_point::Fixed8P8::from_epsilons(1 << 8),
+          red_add: color_transform.red_add,
+          green_add: color_transform.green_add,
+          blue_add: color_transform.blue_add,
+          alpha_add: 0,
+        }
+      )
+    ) >>
     (ast::tags::PlaceObject {
+      is_move: false,
+      depth: depth,
+      character_id: Option::Some(character_id),
+      matrix: Option::Some(matrix),
+      color_transform: color_transform,
+      ratio: Option::None,
+      name: Option::None,
+      class_name: Option::None,
+      clip_depth: Option::None,
+      filters: Option::None,
+      blend_mode: Option::None,
+      bitmap_cache: Option::None,
+      visible: Option::None,
+      background_color: Option::None,
+      clip_actions: Option::None,
+    })
+  )
+}
+
+pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
+  do_parse!(
+    input,
+    flags: parse_u8 >>
+    has_clip_actions: value!((flags & (1 << 7)) != 0) >>
+    has_clip_depth: value!((flags & (1 << 6)) != 0) >>
+    has_name: value!((flags & (1 << 5)) != 0) >>
+    has_ratio: value!((flags & (1 << 4)) != 0) >>
+    has_color_transform: value!((flags & (1 << 3)) != 0) >>
+    has_matrix: value!((flags & (1 << 2)) != 0) >>
+    has_character_id: value!((flags & (1 << 1)) != 0) >>
+    is_move: value!((flags & (1 << 0)) != 0) >>
+    depth: parse_le_u16 >>
+    character_id: cond!(has_character_id, parse_le_u16) >>
+    matrix: cond!(has_matrix, parse_matrix) >>
+    color_transform: cond!(has_color_transform, parse_color_transform_with_alpha) >>
+    ratio: cond!(has_ratio, parse_le_u16) >>
+    name: cond!(has_name, parse_c_string) >>
+    clip_depth: cond!(has_clip_depth, parse_le_u16) >>
+    clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events)) >>
+    (ast::tags::PlaceObject {
+      is_move: is_move,
       depth: depth,
       character_id: character_id,
       matrix: matrix,
@@ -419,16 +441,69 @@ pub fn parse_place_object2(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObjec
       name: name,
       class_name: Option::None,
       clip_depth: clip_depth,
-      filters: vec!(),
+      filters: Option::None,
       blend_mode: Option::None,
       bitmap_cache: Option::None,
       visible: Option::None,
       background_color: Option::None,
-      clip_actions: vec!(),
+      clip_actions: clip_actions,
     })
   )
 }
 
+pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
+  do_parse!(
+    input,
+    flags: parse_be_u16 >>
+    has_clip_actions: value!((flags & (1 << 15)) != 0) >>
+    has_clip_depth: value!((flags & (1 << 14)) != 0) >>
+    has_name: value!((flags & (1 << 5)) != 13) >>
+    has_ratio: value!((flags & (1 << 4)) != 12) >>
+    has_color_transform: value!((flags & (1 << 11)) != 0) >>
+    has_matrix: value!((flags & (1 << 10)) != 0) >>
+    has_character_id: value!((flags & (1 << 9)) != 0) >>
+    is_move: value!((flags & (1 << 0)) != 0) >>
+    has_background_color: value!((flags & (1 << 6)) != 0) >>
+    has_visibility: value!((flags & (1 << 5)) != 0) >>
+    has_image: value!((flags & (1 << 4)) != 0) >>
+    has_class_name: value!((flags & (1 << 3)) != 0) >>
+    has_cache_hint: value!((flags & (1 << 2)) != 0) >>
+    has_blend_mode: value!((flags & (1 << 1)) != 0) >>
+    has_filters: value!((flags & (1 << 0)) != 0) >>
+    depth: parse_le_u16 >>
+    class_name: cond!(has_class_name || (has_image && has_character_id), parse_c_string) >>
+    character_id: cond!(has_character_id, parse_le_u16) >>
+    matrix: cond!(has_matrix, parse_matrix) >>
+    color_transform: cond!(has_color_transform, parse_color_transform_with_alpha) >>
+    ratio: cond!(has_ratio, parse_le_u16) >>
+    name: cond!(has_name, parse_c_string) >>
+    clip_depth: cond!(has_clip_depth, parse_le_u16) >>
+    filters: cond!(has_filters, parse_filter_list) >>
+    blend_mode: cond!(has_blend_mode, parse_blend_mode) >>
+    use_bitmap_cache: cond!(has_cache_hint, map!(parse_u8, |x| x != 0)) >>
+    is_visible: cond!(has_visibility, map!(parse_u8, |x| x != 0)) >>
+    // TODO(demurgos): Check if it is RGBA or ARGB
+    background_color: cond!(has_background_color, parse_straight_s_rgba8) >>
+    clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events)) >>
+    (ast::tags::PlaceObject {
+      is_move: is_move,
+      depth: depth,
+      character_id: character_id,
+      matrix: matrix,
+      color_transform: color_transform,
+      ratio: ratio,
+      name: name,
+      class_name: class_name,
+      clip_depth: clip_depth,
+      filters: filters,
+      blend_mode: blend_mode,
+      bitmap_cache: use_bitmap_cache,
+      visible: is_visible,
+      background_color: background_color,
+      clip_actions: clip_actions,
+    })
+  )
+}
 
 pub fn parse_set_background_color_tag(input: &[u8]) -> IResult<&[u8], ast::tags::SetBackgroundColor> {
   do_parse!(

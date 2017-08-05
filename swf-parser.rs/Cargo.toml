@@ -34,5 +34,5 @@ swf-tree = "^0.0.9"
 version = "^0.5.0"
 features = ["serde"]
 
-# [replace]
-# "swf-tree" = { path = '../../swf-tree/swf-tree.rs' }
+[replace]
+"swf-tree:0.0.9" = { path = '../../swf-tree/swf-tree.rs' }

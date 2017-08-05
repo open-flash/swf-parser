@@ -2,12 +2,16 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct ParseState {
+  swf_version: Option<usize>,
   glyph_counts: HashMap<usize, usize>
 }
 
 impl ParseState {
   pub fn new() -> ParseState {
-    ParseState{glyph_counts: HashMap::new()}
+    ParseState {
+      swf_version: Option::None,
+      glyph_counts: HashMap::new(),
+    }
   }
 
   pub fn get_glyph_count(&self, font_id: usize) -> Option<usize> {
@@ -17,5 +21,9 @@ impl ParseState {
   pub fn set_glyph_count(&mut self, font_id: usize, glyph_count: usize) -> () {
     // TODO(demurgos): Use return value to ensure that there was no duplicate insertion?
     self.glyph_counts.insert(font_id, glyph_count);
+  }
+
+  pub fn get_swf_version(&self) -> Option<usize> {
+    self.swf_version
   }
 }

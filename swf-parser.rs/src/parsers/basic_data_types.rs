@@ -2,7 +2,7 @@ use std::f32;
 use swf_tree as ast;
 use swf_tree::fixed_point::{Fixed16P16, Fixed8P8, Ufixed8P8};
 use nom::{IResult, Needed};
-use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_u16 as parse_le_u16};
+use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16};
 use num_traits::Float;
 
 pub fn parse_straight_s_argb8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba8> {
@@ -127,6 +127,11 @@ pub fn parse_le_ufixed8_p8(input: &[u8]) -> IResult<&[u8], Ufixed8P8> {
 /// Parse the little-endian representation of a signed fixed-point 8.8-bit number
 pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Fixed8P8> {
   map!(input, parse_le_i16, |x| Fixed8P8::from_epsilons(x))
+}
+
+/// Parse the little-endian representation of a signed fixed-point 16.16-bit number
+pub fn parse_le_fixed16_p16(input: &[u8]) -> IResult<&[u8], Fixed16P16> {
+  map!(input, parse_le_i32, |x| Fixed16P16::from_epsilons(x))
 }
 
 pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
