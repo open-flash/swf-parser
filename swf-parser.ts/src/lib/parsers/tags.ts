@@ -1,27 +1,36 @@
 import {Incident} from "incident";
 import {Float32, Uint16, Uint32, Uint8, UintSize} from "semantic-types";
 import {
+  BlendMode,
+  ClipActions,
   ColorTransformWithAlpha,
+  Filter,
+  Fixed8P8,
+  Glyph,
   Label,
   LanguageCode,
   Matrix,
   Rect,
   Scene,
-  shapes,
+  Shape,
+  StraightSRgba8,
   Tag,
   tags,
   TagType,
   text,
 } from "swf-tree";
 import {GlyphCountProvider, ParseContext} from "../parse-context";
-import {Stream} from "../stream";
+import {ByteStream, Stream} from "../stream";
 import {parseActionsString} from "./avm1";
 import {
+  parseColorTransform,
   parseColorTransformWithAlpha,
   parseMatrix,
   parseRect,
   parseSRgb8,
+  parseStraightSRgba8,
 } from "./basic-data-types";
+import {parseBlendMode, parseClipActionsString, parseFilterList} from "./display";
 import {parseShape, ShapeVersion} from "./shapes";
 import {
   parseCsmTableHintBits,
@@ -33,6 +42,22 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
+
+/**
+ * Read tags until the end of the stream or "end-of-tags".
+ */
+export function parseTagBlockString(byteStream: Stream, context: ParseContext): Tag[] {
+  const tags: Tag[] = [];
+  while (byteStream.available() > 0) {
+    // A null byte indicates the end-of-tags
+    if (byteStream.peekUint8() === 0) {
+      byteStream.skip(1);
+      break;
+    }
+    tags.push(parseTag(byteStream, context));
+  }
+  return tags;
+}
 
 export function parseTag(byteStream: Stream, context: ParseContext): Tag {
   const {code, length}: TagHeader = parseTagHeader(byteStream);
@@ -75,6 +100,10 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return {type: TagType.ShowFrame};
     case 2:
       return parseDefineShape(byteStream);
+    case 4:
+      return parsePlaceObject(byteStream);
+    case 5:
+      return parseRemoveObject(byteStream);
     case 9:
       return parseSetBackgroundColor(byteStream);
     case 11:
@@ -83,12 +112,28 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseDoAction(byteStream);
     case 22:
       return parseDefineShape2(byteStream);
-    case 26:
-      return parsePlaceObject2(byteStream);
+    case 26: {
+      const swfVersion: UintSize | undefined = context.getVersion();
+      if (swfVersion === undefined) {
+        throw new Incident("Missing SWF version, unable to parse placeObject2");
+      }
+      return parsePlaceObject2(byteStream, swfVersion);
+    }
     case 32:
       return parseDefineShape3(byteStream);
+    case 28:
+      return parseRemoveObject2(byteStream);
+    case 39:
+      return parseDefineSprite(byteStream, context);
     case 69:
       return parseFileAttributes(byteStream);
+    case 70: {
+      const swfVersion: UintSize | undefined = context.getVersion();
+      if (swfVersion === undefined) {
+        throw new Incident("Missing SWF version, unable to parse placeObject3");
+      }
+      return parsePlaceObject3(byteStream, swfVersion);
+    }
     case 73:
       return parseDefineFontAlignZones(byteStream, context.getGlyphCount.bind(context));
     case 74:
@@ -145,7 +190,7 @@ export function parseDefineFont(byteStream: Stream): tags.DefineFont {
       language,
     };
   }
-  const glyphs: shapes.Glyph[] = parseOffsetGlyphs(byteStream, glyphCount, useWideOffsets);
+  const glyphs: Glyph[] = parseOffsetGlyphs(byteStream, glyphCount, useWideOffsets);
   const codeUnits: Uint16[] = new Array(glyphCount);
   for (let i: number = 0; i < codeUnits.length; i++) {
     codeUnits[i] = useWideCodes ? byteStream.readUint16LE() : byteStream.readUint8();
@@ -229,10 +274,9 @@ export function parseDefineShape3(byteStream: Stream): tags.DefineShape {
 }
 
 function parseDefineShapeAny(byteStream: Stream, version: ShapeVersion): tags.DefineShape {
-  // defineShape{1,2,3} are very similar, but we should check the special cases where they differ
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
-  const shape: shapes.Shape = parseShape(byteStream, version);
+  const shape: Shape = parseShape(byteStream, version);
 
   return {
     type: TagType.DefineShape,
@@ -243,6 +287,18 @@ function parseDefineShapeAny(byteStream: Stream, version: ShapeVersion): tags.De
     hasNonScalingStrokes: false,
     hasScalingStrokes: false,
     shape,
+  };
+}
+
+export function parseDefineSprite(byteStream: Stream, context: ParseContext): tags.DefineSprite {
+  const id: Uint16 = byteStream.readUint16LE();
+  const frameCount: UintSize = byteStream.readUint16LE();
+  const tags: Tag[] = parseTagBlockString(byteStream, context);
+  return {
+    type: TagType.DefineSprite,
+    id,
+    frameCount,
+    tags,
   };
 }
 
@@ -290,17 +346,40 @@ export function parseMetadata(byteStream: Stream): tags.Metadata {
   return {type: TagType.Metadata, metadata: byteStream.readCString()};
 }
 
-export function parsePlaceObject2(byteStream: Stream): tags.PlaceObject {
+export function parsePlaceObject(byteStream: Stream): tags.PlaceObject {
+  const characterId: Uint16 = byteStream.readUint16LE();
+  const depth: Uint16 = byteStream.readUint16LE();
+  const matrix: Matrix = parseMatrix(byteStream);
+  let colorTransform: ColorTransformWithAlpha | undefined = undefined;
+  if (byteStream.available() > 0) {
+    colorTransform = {
+      ...parseColorTransform(byteStream),
+      alphaMult: Fixed8P8.fromValue(1),
+      alphaAdd: 0,
+    };
+  }
+
+  return {
+    type: TagType.PlaceObject,
+    depth,
+    characterId,
+    matrix,
+    colorTransform,
+    filters: [],
+  };
+}
+
+export function parsePlaceObject2(byteStream: Stream, swfVersion: UintSize): tags.PlaceObject {
   const hasClipActions: boolean = byteStream.readBoolBits();
   const hasClipDepth: boolean = byteStream.readBoolBits();
   const hasName: boolean = byteStream.readBoolBits();
   const hasRatio: boolean = byteStream.readBoolBits();
   const hasColorTransform: boolean = byteStream.readBoolBits();
   const hasMatrix: boolean = byteStream.readBoolBits();
-  const hasCharacter: boolean = byteStream.readBoolBits();
+  const hasCharacterId: boolean = byteStream.readBoolBits();
   const isMove: boolean = byteStream.readBoolBits();
   const depth: Uint16 = byteStream.readUint16LE();
-  const characterId: Uint16 | undefined = hasCharacter ? byteStream.readUint16LE() : undefined;
+  const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
   const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
   const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform ?
     parseColorTransformWithAlpha(byteStream) :
@@ -308,6 +387,66 @@ export function parsePlaceObject2(byteStream: Stream): tags.PlaceObject {
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
+
+  const clipActions: ClipActions[] | undefined = hasClipActions ?
+    parseClipActionsString(byteStream, swfVersion) :
+    undefined;
+
+  return {
+    type: TagType.PlaceObject,
+    depth,
+    characterId,
+    matrix,
+    colorTransform,
+    ratio,
+    name,
+    clipDepth,
+    filters: [],
+    clipActions: clipActions,
+  };
+}
+
+export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize): tags.PlaceObject {
+  const flags: Uint16 = byteStream.readUint16BE();
+  const hasClipActions: boolean = (flags & (1 << 15)) !== 0;
+  const hasClipDepth: boolean = (flags & (1 << 14)) !== 0;
+  const hasName: boolean = (flags & (1 << 13)) !== 0;
+  const hasRatio: boolean = (flags & (1 << 12)) !== 0;
+  const hasColorTransform: boolean = (flags & (1 << 11)) !== 0;
+  const hasMatrix: boolean = (flags & (1 << 10)) !== 0;
+  const hasCharacterId: boolean = (flags & (1 << 9)) !== 0;
+  const isMove: boolean = (flags & (1 << 8)) !== 0;
+  // Reserved: (flags & (1 << 7))
+  const isOpaqueBackground: boolean = (flags & (1 << 6)) !== 0;
+  const maybeIsVisible: boolean = (flags & (1 << 5)) !== 0;
+  const hasImage: boolean = (flags & (1 << 4)) !== 0;
+  const hasClassName: boolean = (flags & (1 << 3)) !== 0;
+  const maybeUseBitmapCache: boolean = (flags & (1 << 2)) !== 0;
+  const hasBlendMode: boolean = (flags & (1 << 1)) !== 0;
+  const hasFilterList: boolean = (flags & (1 << 0)) !== 0;
+
+  const depth: Uint16 = byteStream.readUint16LE();
+  const className: string | undefined = hasClassName || (hasImage && hasCharacterId) ?
+    byteStream.readCString() :
+    undefined;
+  const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
+  const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
+  const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform ?
+    parseColorTransformWithAlpha(byteStream) :
+    undefined;
+  const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
+  const name: string | undefined = hasName ? byteStream.readCString() : undefined;
+  const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
+  const filters: Filter[] = hasFilterList ? parseFilterList(byteStream) : [];
+  const blendMode: BlendMode = hasBlendMode ? parseBlendMode(byteStream) : BlendMode.Normal;
+  const useBitmapCache: boolean = maybeUseBitmapCache ? byteStream.readUint8() !== 0 : false;
+  const isVisible: boolean = maybeIsVisible ? byteStream.readUint8() !== 0 : false;
+  // TODO: This is strange, maybe it's "isOpaqueBackground".
+  const backgoundColor: StraightSRgba8 | undefined = maybeIsVisible ? parseStraightSRgba8(byteStream) : undefined;
+
+  const clipActions: ClipActions[] | undefined = hasClipActions ?
+    parseClipActionsString(byteStream, swfVersion) :
+    undefined;
 
   return {
     type: TagType.PlaceObject,
@@ -319,13 +458,24 @@ export function parsePlaceObject2(byteStream: Stream): tags.PlaceObject {
     name,
     className: undefined,
     clipDepth,
-    filters: [],
+    filters: filters,
     blendMode: undefined,
     bitmapCache: undefined,
     visible: undefined,
     backgroundColor: undefined,
-    clipActions: [],
+    clipActions: clipActions,
   };
+}
+
+export function parseRemoveObject(byteStream: Stream): tags.RemoveObject {
+  const characterId: Uint16 = byteStream.readUint16LE();
+  const depth: Uint16 = byteStream.readUint16LE();
+  return {type: TagType.RemoveObject, characterId, depth};
+}
+
+export function parseRemoveObject2(byteStream: Stream): tags.RemoveObject {
+  const depth: Uint16 = byteStream.readUint16LE();
+  return {type: TagType.RemoveObject, depth};
 }
 
 export function parseSetBackgroundColor(byteStream: Stream): tags.SetBackgroundColor {

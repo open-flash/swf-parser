@@ -13,7 +13,7 @@ export function parseDecompressedMovie(byteStream: Stream): Movie {
   const header: Header = parseHeader(byteStream);
   const tags: Tag[] = [];
   while (byteStream.available() > 0) {
-    // A null byte indicates the end the string of actions
+    // A null byte indicates the end-of-tags
     if (byteStream.peekUint8() === 0) {
       byteStream.skip(1);
       break;

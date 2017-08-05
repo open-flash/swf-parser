@@ -1,6 +1,6 @@
 import {Incident} from "incident";
 import {Float16, Sint16, SintSize, Uint16, Uint8, UintSize} from "semantic-types";
-import {LanguageCode, Rect, shapes, StraightSRgba8, text} from "swf-tree";
+import {Glyph, LanguageCode, Rect, StraightSRgba8, text} from "swf-tree";
 import {BitStream, ByteStream} from "../stream";
 import {parseRect, parseSRgb8, parseStraightSRgba8} from "./basic-data-types";
 import {parseGlyph} from "./shapes";
@@ -133,13 +133,13 @@ export function parseOffsetGlyphs(
   byteStream: ByteStream,
   glyphCount: UintSize,
   useWideOffset: boolean,
-): shapes.Glyph[] {
+): Glyph[] {
   const startPos: UintSize = byteStream.bytePos;
   const offsets: UintSize[] = new Array(glyphCount + 1);
   for (let i: number = 0; i < offsets.length; i++) {
     offsets[i] = useWideOffset ? byteStream.readUint32LE() : byteStream.readUint16LE();
   }
-  const result: shapes.Glyph[] = [];
+  const result: Glyph[] = [];
   for (let i: number = 1; i < offsets.length; i++) {
     const length: UintSize = offsets[i] - (byteStream.bytePos - startPos);
     result.push(parseGlyph(byteStream.take(length)));

@@ -50,15 +50,23 @@ export interface ByteStream {
 
   align(): void;
 
+  available(): UintSize;
+
   asBitStream(): BitStream;
 
   take(length: UintSize): ByteStream;
+
+  readCString(): string;
 
   readUint8(): Uint8;
 
   peekUint8(): Uint8;
 
+  readUint16BE(): Uint16;
+
   readUint16LE(): Uint16;
+
+  readUint32BE(): Uint32;
 
   readUint32LE(): Uint32;
 
@@ -169,9 +177,24 @@ export class Stream implements BitStream, ByteStream {
     return this.view.getUint8(this.bytePos);
   }
 
+  /**
+   * Convenience method, most of the time you need `readUint16LE` for SWF.
+   */
+  readUint16BE(): Uint16 {
+    const result: Uint16 = this.view.getUint16(this.bytePos, false);
+    this.bytePos += 2;
+    return result;
+  }
+
   readUint16LE(): Uint16 {
     const result: Uint16 = this.view.getUint16(this.bytePos, true);
     this.bytePos += 2;
+    return result;
+  }
+
+  readUint32BE(): Uint32 {
+    const result: Uint32 = this.view.getUint32(this.bytePos, false);
+    this.bytePos += 4;
     return result;
   }
 

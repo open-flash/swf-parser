@@ -2,7 +2,7 @@ import {Incident} from "incident";
 import {Uint16, Uint8, UintSize} from "semantic-types";
 import {avm1} from "swf-tree";
 import {IncompleteStreamError} from "../errors/incomplete-stream";
-import {Stream} from "../stream";
+import {ByteStream, Stream} from "../stream";
 
 export interface ActionHeader {
   actionCode: Uint8;
@@ -31,11 +31,11 @@ export function parseActionsString(byteStream: Stream): avm1.Action[] {
   return result;
 }
 
-export function parseActionsBlock(byteStream: Stream, size: UintSize): avm1.Action[] {
+export function parseActionsBlock(byteStream: ByteStream): avm1.Action[] {
   const block: avm1.Action[] = [];
-  const subStream: Stream = byteStream.take(size);
-  while (subStream.available() > 0) {
-    block.push(parseAction(subStream));
+  while (byteStream.available() > 0) {
+    // TODO: type AVM1 parsers to no longer require Stream but either ByteStream or BitStream
+    block.push(parseAction(byteStream as Stream));
   }
   return block;
 }
@@ -458,7 +458,7 @@ export function parseDefineFunction2Action(byteStream: Stream): avm1.actions.Def
     parameters.push({register, name});
   }
   const codeSize: UintSize = byteStream.readUint16LE();
-  const body: avm1.Action[] = parseActionsBlock(byteStream, codeSize);
+  const body: avm1.Action[] = parseActionsBlock(byteStream.take(codeSize));
 
   return {
     action: avm1.ActionType.DefineFunction2,
@@ -495,14 +495,14 @@ export function parseTryAction(byteStream: Stream): avm1.actions.Try {
   const finallySize: Uint16 = byteStream.readUint16LE();
   const catchSize: Uint16 = byteStream.readUint16LE();
   const catchTarget: avm1.CatchTarget = parseCatchTarget(byteStream, catchInRegister);
-  const tryBody: avm1.Action[] = parseActionsBlock(byteStream, trySize);
+  const tryBody: avm1.Action[] = parseActionsBlock(byteStream.take(trySize));
   let catchBody: avm1.Action[] | undefined = undefined;
   if (hasCatchBlock) {
-    catchBody = parseActionsBlock(byteStream, catchSize);
+    catchBody = parseActionsBlock(byteStream.take(catchSize));
   }
   let finallyBody: avm1.Action[] | undefined = undefined;
   if (hasFinallyBlock) {
-    finallyBody = parseActionsBlock(byteStream, finallySize);
+    finallyBody = parseActionsBlock(byteStream.take(finallySize));
   }
   return {
     action: avm1.ActionType.Try,
@@ -515,7 +515,7 @@ export function parseTryAction(byteStream: Stream): avm1.actions.Try {
 
 export function parseWithAction(byteStream: Stream): avm1.actions.With {
   const withSize: Uint16 = byteStream.readUint16LE();
-  const withBody: avm1.Action[] = parseActionsBlock(byteStream, withSize);
+  const withBody: avm1.Action[] = parseActionsBlock(byteStream.take(withSize));
   return {
     action: avm1.ActionType.With,
     with: withBody,
@@ -603,7 +603,7 @@ export function parseDefineFunctionAction(byteStream: Stream): avm1.actions.Defi
     parameters.push(byteStream.readCString());
   }
   const bodySize: UintSize = byteStream.readUint16LE();
-  const body: avm1.Action[] = parseActionsBlock(byteStream, bodySize);
+  const body: avm1.Action[] = parseActionsBlock(byteStream.take(bodySize));
 
   return {
     action: avm1.ActionType.DefineFunction,
