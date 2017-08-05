@@ -68,7 +68,7 @@ pub fn parse_swf_tag<'a>(input: &'a[u8], state: &mut ParseState) -> IResult<&'a[
           26 => map!(record_data, parse_place_object2, |t| ast::Tag::PlaceObject(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
-          // TODO: 59 => DoInitAction
+          59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
           73 => map!(record_data, apply!(parse_define_font_align_zones, |font_id| state.get_glyph_count(font_id)), |t| ast::Tag::DefineFontAlignZones(t)),
           74 => map!(record_data, parse_csm_text_settings, |t| ast::Tag::CsmTextSettings(t)),
@@ -301,13 +301,25 @@ pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> 
   )
 }
 
-named!(
-  pub parse_do_action<ast::tags::DoAction>,
+pub fn parse_do_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoAction> {
   map!(
+    input,
     parse_actions_string,
     |actions| ast::tags::DoAction {actions: actions}
   )
-);
+}
+
+pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAction> {
+  do_parse!(
+    input,
+    sprite_id: parse_le_u16 >>
+    actions: parse_actions_string >>
+    (ast::tags::DoInitAction {
+      sprite_id: sprite_id,
+      actions: actions,
+    })
+  )
+}
 
 named!(
   pub parse_export_assets<ast::tags::ExportAssets>,
