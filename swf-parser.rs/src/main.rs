@@ -29,7 +29,7 @@ fn main() {
 
 //  println!("Input:\n{:?}", &data);
 
-  let swf_file_parse_result: nom::IResult<&[u8], ast::Movie> = parsers::swf_file::parse_movie(&data[..]);
+  let swf_file_parse_result: nom::IResult<&[u8], ast::Movie> = parsers::movie::parse_movie(&data[..]);
 
   match swf_file_parse_result {
     nom::IResult::Done(_, parsed) => {

@@ -16,7 +16,7 @@ use parsers::basic_data_types::{
   skip_bits
 };
 use parsers::shapes::parse_shape;
-use parsers::swf_file::parse_swf_tags_string;
+use parsers::movie::parse_tag_string;
 use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_record_string, parse_text_renderer_bits};
 use state::ParseState;
 
@@ -137,9 +137,10 @@ struct DefineFont3Flags {
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
-named!(
-  pub parse_define_font3<&[u8], ast::tags::DefineFont, u32>,
+#[allow(unused_variables)]
+pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
   do_parse!(
+    input,
     id: parse_le_u16 >>
     flags: bits!(do_parse!(
       has_layout: call!(parse_bool_bits) >>
@@ -185,7 +186,7 @@ named!(
       layout: layout,
     })
   )
-);
+}
 
 pub fn parse_define_font_align_zones<P>(input: &[u8], glyph_count_provider: P) -> IResult<&[u8], ast::tags::DefineFontAlignZones>
   where P: Fn(usize) -> Option<usize> {
@@ -219,9 +220,9 @@ pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
   )
 }
 
-named!(
-  pub parse_define_scene_and_frame_label_data_tag<ast::tags::DefineSceneAndFrameLabelData>,
+pub fn parse_define_scene_and_frame_label_data_tag(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSceneAndFrameLabelData> {
   do_parse!(
+    input,
     scene_count: parse_encoded_le_u32 >>
     scenes: fold_many_m_n!(
       scene_count as usize,
@@ -249,11 +250,11 @@ named!(
       labels: labels,
     })
   )
-);
+}
 
-named!(
-  pub parse_define_shape<ast::tags::DefineShape>,
+pub fn parse_define_shape(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
   do_parse!(
+    input,
     id: parse_le_u16 >>
     bounds: parse_rect >>
     shape: parse_shape >>
@@ -267,21 +268,21 @@ named!(
       shape: shape,
     })
   )
-);
+}
 
-named!(
-  pub parse_define_sprite<ast::tags::DefineSprite>,
+pub fn parse_define_sprite(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSprite> {
   do_parse!(
+    input,
     id: parse_le_u16 >>
     frame_count: parse_le_u16 >>
-    tags: parse_swf_tags_string >>
+    tags: parse_tag_string >>
     (ast::tags::DefineSprite {
       id: id,
       frame_count: frame_count as usize,
       tags: tags,
     })
   )
-);
+}
 
 pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
   do_parse!(
@@ -321,19 +322,19 @@ pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAct
   )
 }
 
-named!(
-  pub parse_export_assets<ast::tags::ExportAssets>,
+pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAssets> {
   do_parse!(
+    input,
     assets: length_count!(parse_le_u16, parse_named_id) >>
     (ast::tags::ExportAssets {
       assets: assets,
     })
   )
-);
+}
 
-named!(
-  pub parse_file_attributes_tag<ast::tags::FileAttributes>,
+pub fn parse_file_attributes_tag(input: &[u8]) -> IResult<&[u8], ast::tags::FileAttributes> {
   bits!(
+    input,
     do_parse!(
       apply!(skip_bits, 1) >>
       use_direct_blit: call!(parse_bool_bits) >>
@@ -355,18 +356,18 @@ named!(
       })
     )
   )
-);
+}
 
-named!(
-  pub parse_metadata<ast::tags::Metadata>,
+pub fn parse_metadata(input: &[u8]) -> IResult<&[u8], ast::tags::Metadata> {
   do_parse!(
+    input,
     metadata: parse_c_string >>
     (
       ast::tags::Metadata {
       metadata: metadata,
     })
   )
-);
+}
 
 struct PlaceObject2Flags {
   pub has_clip_actions: bool,
@@ -379,9 +380,9 @@ struct PlaceObject2Flags {
   pub is_move: bool,
 }
 
-named!(
-  pub parse_place_object2<ast::tags::PlaceObject>,
+pub fn parse_place_object2(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject> {
   do_parse!(
+    input,
     flags: bits!(do_parse!(
       has_clip_actions: call!(parse_bool_bits) >>
       has_clip_depth: call!(parse_bool_bits) >>
@@ -426,15 +427,15 @@ named!(
       clip_actions: vec!(),
     })
   )
-);
+}
 
-/// Parse a SetBackgroundColor tag (code: 9)
-named!(
-  pub parse_set_background_color_tag<ast::tags::SetBackgroundColor>,
+
+pub fn parse_set_background_color_tag(input: &[u8]) -> IResult<&[u8], ast::tags::SetBackgroundColor> {
   do_parse!(
+    input,
     color: parse_s_rgb8 >>
     (ast::tags::SetBackgroundColor {
       color: color,
     })
   )
-);
+}

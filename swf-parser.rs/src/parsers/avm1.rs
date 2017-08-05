@@ -27,19 +27,19 @@ pub fn parse_action_header(input: &[u8]) -> IResult<&[u8], ActionHeader> {
   }
 }
 
-// Action 0x81
-named!(parse_goto_frame_action<&[u8], ast::avm1::actions::GotoFrame>,
+pub fn parse_goto_frame_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::GotoFrame> {
   do_parse!(
+    input,
     frame: parse_le_u16 >>
     (ast::avm1::actions::GotoFrame {
       frame: frame as usize,
     })
   )
-);
+}
 
-// Action 0x83
-named!(parse_get_url_action<&[u8], ast::avm1::actions::GetUrl>,
+pub fn parse_get_url_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::GetUrl> {
   do_parse!(
+    input,
     url: parse_c_string >>
     target: parse_c_string >>
     (ast::avm1::actions::GetUrl {
@@ -47,31 +47,31 @@ named!(parse_get_url_action<&[u8], ast::avm1::actions::GetUrl>,
       target: target,
     })
   )
-);
+}
 
-// Action 0x87
-named!(parse_store_register_action<&[u8], ast::avm1::actions::StoreRegister>,
+pub fn parse_store_register_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::StoreRegister> {
   do_parse!(
+    input,
     register_number: parse_u8 >>
     (ast::avm1::actions::StoreRegister {
       register_number: register_number,
     })
   )
-);
+}
 
-// Action 0x88
-named!(parse_constant_pool_action<&[u8], ast::avm1::actions::ConstantPool>,
-  dbg_dmp!(do_parse!(
+pub fn parse_constant_pool_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::ConstantPool> {
+  do_parse!(
+    input,
     constant_pool: length_count!(parse_le_u16, parse_c_string) >>
     (ast::avm1::actions::ConstantPool {
       constant_pool: constant_pool,
     })
-  ))
-);
+  )
+}
 
-// Action 0x8a
-named!(parse_wait_for_frame_action<&[u8], ast::avm1::actions::WaitForFrame>,
+pub fn parse_wait_for_frame_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::WaitForFrame> {
   do_parse!(
+    input,
     frame: parse_le_u16 >>
     skip_count: parse_u8 >>
     (ast::avm1::actions::WaitForFrame {
@@ -79,37 +79,37 @@ named!(parse_wait_for_frame_action<&[u8], ast::avm1::actions::WaitForFrame>,
       skip_count: skip_count as usize,
     })
   )
-);
+}
 
-// Action 0x8b
-named!(parse_set_target_action<&[u8], ast::avm1::actions::SetTarget>,
+pub fn parse_set_target_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::SetTarget> {
   do_parse!(
+    input,
     target_name: parse_c_string >>
     (ast::avm1::actions::SetTarget {
       target_name: target_name,
     })
   )
-);
+}
 
-// Action 0x8c
-named!(parse_goto_label_action<&[u8], ast::avm1::actions::GoToLabel>,
+pub fn parse_goto_label_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::GoToLabel> {
   do_parse!(
+    input,
     label: parse_c_string >>
     (ast::avm1::actions::GoToLabel {
       label: label,
     })
   )
-);
+}
 
-// Action 0x8d
-named!(parse_wait_for_frame2_action<&[u8], ast::avm1::actions::WaitForFrame2>,
+pub fn parse_wait_for_frame2_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::WaitForFrame2> {
   do_parse!(
+    input,
     skip_count: parse_u8 >>
     (ast::avm1::actions::WaitForFrame2 {
       skip_count: skip_count as usize,
     })
   )
-);
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct DefineFunction2Flags {
@@ -126,9 +126,9 @@ struct DefineFunction2Flags {
 
 // TODO(demurgos): registerCount
 
-// Action 0x8e
-named!(parse_define_function2_action<&[u8], ast::avm1::actions::DefineFunction2>,
-  dbg_dmp!(do_parse!(
+pub fn parse_define_function2_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::DefineFunction2> {
+  do_parse!(
+    input,
     name: parse_c_string >>
     parameter_count: parse_le_u16 >>
     register_count: parse_u8 >>
@@ -173,8 +173,8 @@ named!(parse_define_function2_action<&[u8], ast::avm1::actions::DefineFunction2>
       parameters: parameters,
       body: body,
     })
-  ))
-);
+  )
+}
 
 fn parse_catch_target(input: &[u8], catch_in_register: bool) -> IResult<&[u8], ast::avm1::actions::CatchTarget> {
   if catch_in_register {
@@ -184,9 +184,9 @@ fn parse_catch_target(input: &[u8], catch_in_register: bool) -> IResult<&[u8], a
   }
 }
 
-// Action 0x8f
-named!(parse_try_action<&[u8], ast::avm1::actions::Try>,
+pub fn parse_try_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::Try> {
   do_parse!(
+    input,
     flags: bits!(do_parse!(
       apply!(skip_bits, 5) >>
       catch_in_register: parse_bool_bits >>
@@ -208,21 +208,22 @@ named!(parse_try_action<&[u8], ast::avm1::actions::Try>,
       finally: finally_body,
     })
   )
-);
+}
 
-// Action 0x94
-named!(parse_with_action<&[u8], ast::avm1::actions::With>,
+pub fn parse_with_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::With> {
   do_parse!(
+    input,
     with_size: parse_le_i16 >>
     with_body: call!(parse_actions_block, with_size as usize) >>
     (ast::avm1::actions::With {
       with: with_body,
     })
   )
-);
+}
 
-named!(parse_action_value<&[u8], ast::avm1::actions::Value>,
-  switch!(parse_u8,
+#[allow(unused_variables)]
+fn parse_action_value(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::Value> {
+  switch!(input, parse_u8,
    0 => map!(parse_c_string, |v: String| ast::avm1::actions::Value::CString(v)) |
    1 => map!(parse_le_f32, |v| ast::avm1::actions::Value::F32(::ordered_float::OrderedFloat::<f32>(v))) |
    2 => value!(ast::avm1::actions::Value::Null) |
@@ -234,31 +235,30 @@ named!(parse_action_value<&[u8], ast::avm1::actions::Value>,
    8 => map!(parse_u8, |v| ast::avm1::actions::Value::Constant(v as u16)) |
    9 => map!(parse_le_u16, |v| ast::avm1::actions::Value::Constant(v))
   )
-);
+}
 
-// Action 0x96
-named!(parse_push_action<&[u8], ast::avm1::actions::Push>,
+pub fn parse_push_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::Push> {
   do_parse!(
+    input,
     values: many1!(parse_action_value) >>
     (ast::avm1::actions::Push {
       values: values,
     })
   )
-);
+}
 
-// Action 0x99
-named!(parse_jump_action<&[u8], ast::avm1::actions::Jump>,
+pub fn parse_jump_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::Jump> {
   do_parse!(
+    input,
     branch_offset: parse_le_i16 >>
     (ast::avm1::actions::Jump {
       offset: branch_offset as isize,
     })
   )
-);
+}
 
-// Action 0x9a
-named!(parse_get_url2_action<&[u8], ast::avm1::actions::GetUrl2>,
-  bits!(do_parse!(
+pub fn parse_get_url2_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::GetUrl2> {
+  bits!(input, do_parse!(
     // TODO: Use switch! and value!
     send_vars_method: map!(
       take_bits!(u8, 2),
@@ -278,10 +278,11 @@ named!(parse_get_url2_action<&[u8], ast::avm1::actions::GetUrl2>,
       load_variables: load_variables,
     })
   ))
-);
+}
 
-named!(parse_define_function_action<&[u8], ast::avm1::actions::DefineFunction>,
-  dbg_dmp!(do_parse!(
+pub fn parse_define_function_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::DefineFunction> {
+  do_parse!(
+    input,
     name: parse_c_string >>
     parameter_count: parse_le_u16 >>
     parameters: count!(parse_c_string, parameter_count as usize) >>
@@ -292,22 +293,22 @@ named!(parse_define_function_action<&[u8], ast::avm1::actions::DefineFunction>,
       parameters: parameters,
       body: body,
     })
-  ))
-);
+  )
+}
 
-// Action 0x9d
-named!(parse_if_action<&[u8], ast::avm1::actions::If>,
+pub fn parse_if_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::If> {
   do_parse!(
+    input,
     branch_offset: parse_le_i16 >>
     (ast::avm1::actions::If {
       branch_offset: branch_offset,
     })
   )
-);
+}
 
-// Action 0x9f
-named!(parse_goto_frame2_action<&[u8], ast::avm1::actions::GotoFrame2>,
+pub fn parse_goto_frame2_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::GotoFrame2> {
   do_parse!(
+    input,
     flags: bits!(do_parse!(
       apply!(skip_bits, 6) >>
       scene_bias: parse_bool_bits >>
@@ -323,7 +324,7 @@ named!(parse_goto_frame2_action<&[u8], ast::avm1::actions::GotoFrame2>,
       },
     })
   )
-);
+}
 
 fn parse_action(input: &[u8]) -> IResult<&[u8], ast::avm1::Action> {
   match parse_action_header(input) {

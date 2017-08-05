@@ -1,23 +1,21 @@
 use swf_tree as ast;
+use nom::IResult;
 use nom::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
 use parsers::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
 
-// 1011.1000 1111.1111
-// 101 1010.1100
-
-named!(
-  pub parse_compression_method<ast::CompressionMethod>,
+pub fn parse_compression_method(input: &[u8]) -> IResult<&[u8], ast::CompressionMethod> {
   alt!(
+    input,
     tag!("FWS") => {|_| ast::CompressionMethod::None}
   | tag!("CWS") => {|_| ast::CompressionMethod::Deflate}
   | tag!("ZWS") => {|_| ast::CompressionMethod::Lzma}
   // TODO(demurgos): Throw error if none matches
   )
-);
+}
 
-named!(
-  pub parse_swf_signature<ast::SwfSignature>,
+pub fn parse_swf_signature(input: &[u8]) -> IResult<&[u8], ast::SwfSignature> {
   do_parse!(
+    input,
     compression_method: parse_compression_method >>
     swf_version: parse_u8 >>
     uncompressed_file_length: map!(parse_le_u32, |x| x as usize) >>
@@ -27,11 +25,12 @@ named!(
       uncompressed_file_length: uncompressed_file_length,
     })
   )
-);
+}
 
-named!(
-  pub parse_swf_header<ast::Header>,
+
+pub fn parse_header(input: &[u8]) -> IResult<&[u8], ast::Header> {
   do_parse!(
+    input,
     signature: parse_swf_signature >>
     frame_size: parse_rect >>
     frame_rate: parse_le_ufixed8_p8 >>
@@ -45,7 +44,7 @@ named!(
       frame_count: frame_count,
     })
   )
-);
+}
 
 #[cfg(test)]
 mod tests {

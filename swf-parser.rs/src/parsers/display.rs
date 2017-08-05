@@ -9,14 +9,13 @@ use parsers::basic_data_types::{
   parse_u16_bits
 };
 
-named!(
-  pub parse_clip_event_flags<ast::ClipEventFlags>,
-  bits!(parse_clip_event_flags_bits)
-);
+pub fn parse_clip_event_flags(input: &[u8]) -> IResult<&[u8], ast::ClipEventFlags> {
+  bits!(input, parse_clip_event_flags_bits)
+}
 
-named!(
-  pub parse_clip_event_flags_bits<(&[u8], usize), ast::ClipEventFlags>,
+pub fn parse_clip_event_flags_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ClipEventFlags> {
   do_parse!(
+    input,
     key_up: call!(parse_bool_bits) >>
     key_down: call!(parse_bool_bits) >>
     mouse_up: call!(parse_bool_bits) >>
@@ -56,11 +55,11 @@ named!(
       drag_out: drag_out,
     })
   )
-);
+}
 
-named!(
-  pub parse_clip_action<ast::ClipAction>,
+pub fn parse_clip_action(input: &[u8]) -> IResult<&[u8], ast::ClipAction> {
   do_parse!(
+    input,
     events: parse_clip_event_flags >>
     key_code: cond!(events.key_press, parse_u8) >>
     (ast::ClipAction {
@@ -70,4 +69,4 @@ named!(
       actions: vec!(),
     })
   )
-);
+}

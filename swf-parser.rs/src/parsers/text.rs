@@ -176,9 +176,9 @@ pub fn parse_offset_glyphs(input: &[u8], glyph_count: usize, use_wide_offsets: b
   value!(&input[end_offset..], glyphs)
 }
 
-named!(
-  pub parse_kerning_record<ast::text::KerningRecord>,
+pub fn parse_kerning_record(input: &[u8]) -> IResult<&[u8], ast::text::KerningRecord> {
   do_parse!(
+    input,
     left: parse_le_u16 >>
     right: parse_le_u16 >>
     adjustment: parse_le_i16 >>
@@ -188,7 +188,7 @@ named!(
       adjustment: adjustment,
     })
   )
-);
+}
 
 pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> IResult<&[u8], ast::text::FontLayout> {
   do_parse!(input,

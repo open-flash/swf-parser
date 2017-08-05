@@ -5,16 +5,16 @@ use nom::{IResult, Needed};
 use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_u16 as parse_le_u16};
 use num_traits::Float;
 
-named!(
-  pub parse_argb<ast::StraightSRgba8>,
+pub fn parse_straight_s_argb8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba8> {
   do_parse!(
+    input,
     a: parse_u8 >>
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
     (ast::StraightSRgba8 {r: r, g: g, b: b, a: a})
   )
-);
+}
 
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8], usize), bool> {
@@ -32,10 +32,9 @@ pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8]
 
 /// Parse a null-terminated sequence of bytes. The null byte is consumed but not included in the
 /// result.
-named!(
-  pub parse_c_string<&[u8], String>,
-  map!(take_until_and_consume!("\x00"), |str: &[u8]| String::from_utf8(str.to_vec()).unwrap())
-);
+pub fn parse_c_string(input: &[u8]) -> IResult<&[u8], String> {
+  map!(input, take_until_and_consume!("\x00"), |str: &[u8]| String::from_utf8(str.to_vec()).unwrap())
+}
 
 /// Parse the variable-length encoded little-endian representation of an unsigned 32-bit integer
 pub fn parse_encoded_le_u32(input: &[u8]) -> IResult<&[u8], u32> {
@@ -121,25 +120,22 @@ pub fn parse_be_f16(input: &[u8]) -> IResult<&[u8], f32> {
 }
 
 /// Parse the little-endian representation of an unsigned fixed-point 8.8-bit number
-named!(
-  pub parse_le_ufixed8_p8<Ufixed8P8>,
-  map!(parse_le_u16, |x| Ufixed8P8::from_epsilons(x))
-);
+pub fn parse_le_ufixed8_p8(input: &[u8]) -> IResult<&[u8], Ufixed8P8> {
+  map!(input, parse_le_u16, |x| Ufixed8P8::from_epsilons(x))
+}
 
 /// Parse the little-endian representation of a signed fixed-point 8.8-bit number
-named!(
-  pub parse_le_fixed8_p8<Fixed8P8>,
-  map!(parse_le_i16, |x| Fixed8P8::from_epsilons(x))
-);
+pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Fixed8P8> {
+  map!(input, parse_le_i16, |x| Fixed8P8::from_epsilons(x))
+}
 
-named!(
-  pub parse_rect<ast::Rect>,
-  bits!(parse_rect_bits)
-);
+pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
+  bits!(input, parse_rect_bits)
+}
 
-named!(
-  pub parse_rect_bits<(&[u8], usize), ast::Rect>,
+pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Rect> {
   do_parse!(
+    input,
     n_bits: apply!(parse_u16_bits, 5) >>
     x_min: apply!(parse_i16_bits, n_bits as usize) >>
     x_max: apply!(parse_i16_bits, n_bits as usize) >>
@@ -147,28 +143,28 @@ named!(
     y_max: apply!(parse_i16_bits, n_bits as usize) >>
     (ast::Rect {x_min: x_min, x_max: x_max, y_min: y_min, y_max: y_max})
   )
-);
+}
 
-named!(
-  pub parse_s_rgb8<ast::SRgb8>,
+pub fn parse_s_rgb8(input: &[u8]) -> IResult<&[u8], ast::SRgb8> {
   do_parse!(
+    input,
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
     (ast::SRgb8 {r: r, g: g, b: b})
   )
-);
+}
 
-named!(
-  pub parse_straight_s_rgba8<ast::StraightSRgba8>,
+pub fn parse_straight_s_rgba8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba8> {
   do_parse!(
+    input,
     r: parse_u8 >>
     g: parse_u8 >>
     b: parse_u8 >>
     a: parse_u8 >>
     (ast::StraightSRgba8 {r: r, g: g, b: b, a: a})
   )
-);
+}
 
 /// Skip `n` bits
 pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> IResult<(&[u8], usize), ()> {
@@ -189,9 +185,9 @@ pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize)
   take_bits!(input, u16, n)
 }
 
-named!(
-  pub parse_language_code<&[u8], ast::LanguageCode>,
-  switch!(parse_u8,
+#[allow(unused_variables)]
+pub fn parse_language_code(input: &[u8]) -> IResult<&[u8], ast::LanguageCode> {
+  switch!(input, parse_u8,
     0 => value!(ast::LanguageCode::Auto) |
     1 => value!(ast::LanguageCode::Latin) |
     2 => value!(ast::LanguageCode::Japanese) |
@@ -200,16 +196,15 @@ named!(
     5 => value!(ast::LanguageCode::TraditionalChinese)
     // TODO(demurgos): Error on unexpected value
   )
-);
+}
 
-named!(
-  pub parse_matrix<ast::Matrix>,
-  bits!(parse_matrix_bits)
-);
+pub fn parse_matrix(input: &[u8]) -> IResult<&[u8], ast::Matrix> {
+  bits!(input, parse_matrix_bits)
+}
 
-named!(
-  pub parse_matrix_bits<(&[u8], usize), ast::Matrix>,
+pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Matrix> {
   do_parse!(
+    input,
     has_scale: call!(parse_bool_bits) >>
     scale: map!(
       cond!(has_scale, do_parse!(
@@ -248,11 +243,11 @@ named!(
       translate_y: translate_y,
     })
   )
-);
+}
 
-named!(
-  pub parse_named_id<ast::NamedId>,
+pub fn parse_named_id(input: &[u8]) -> IResult<&[u8], ast::NamedId> {
   do_parse!(
+    input,
     id: parse_le_u16 >>
     name: parse_c_string >>
     (ast::NamedId {
@@ -260,16 +255,16 @@ named!(
       name: name,
     })
   )
-);
+}
 
-named!(
-  pub parse_color_transform<ast::ColorTransform>,
-  bits!(parse_color_transform_bits)
-);
+pub fn parse_color_transform(input: &[u8]) -> IResult<&[u8], ast::ColorTransform> {
+  bits!(input, parse_color_transform_bits)
+}
 
-named!(
-  pub parse_color_transform_bits<(&[u8], usize), ast::ColorTransform>,
+#[allow(unused_variables)]
+pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ColorTransform> {
   do_parse!(
+    input,
     has_add: call!(parse_bool_bits) >>
     has_mult: call!(parse_bool_bits) >>
     n_bits: apply!(parse_u16_bits, 4) >>
@@ -306,16 +301,16 @@ named!(
       blue_add: add.2,
     })
   )
-);
+}
 
-named!(
-  pub parse_color_transform_with_alpha<ast::ColorTransformWithAlpha>,
-  bits!(parse_color_transform_with_alpha_bits)
-);
+pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::ColorTransformWithAlpha> {
+  bits!(input, parse_color_transform_with_alpha_bits)
+}
 
-named!(
-  pub parse_color_transform_with_alpha_bits<(&[u8], usize), ast::ColorTransformWithAlpha>,
+#[allow(unused_variables)]
+pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
   do_parse!(
+    input,
     has_add: call!(parse_bool_bits) >>
     has_mult: call!(parse_bool_bits) >>
     n_bits: apply!(parse_u16_bits, 4) >>
@@ -356,7 +351,7 @@ named!(
       alpha_add: add.3,
     })
   )
-);
+}
 
 #[cfg(test)]
 mod tests {

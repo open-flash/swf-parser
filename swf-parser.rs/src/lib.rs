@@ -13,8 +13,8 @@ pub mod parsers {
   pub mod avm1;
   pub mod basic_data_types;
   pub mod shapes;
-  pub mod swf_file;
-  pub mod swf_header;
+  pub mod movie;
+  pub mod header;
   pub mod tags;
   pub mod text;
 }

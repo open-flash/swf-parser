@@ -221,9 +221,9 @@ pub fn parse_list_length(input: &[u8]) -> IResult<&[u8], usize> {
   }
 }
 
-named!(
-  pub parse_line_style<ast::LineStyle>,
+pub fn parse_line_style(input: &[u8]) -> IResult<&[u8], ast::LineStyle> {
   do_parse!(
+    input,
     width: parse_le_u16 >>
     color: parse_s_rgb8 >>
     (
@@ -248,16 +248,15 @@ named!(
       ),
     })
   )
-);
+}
 
-named!(
-  pub parse_line_style_list<Vec<ast::LineStyle>>,
-  length_count!(parse_list_length, parse_line_style)
-);
+pub fn parse_line_style_list(input: &[u8]) -> IResult<&[u8], Vec<ast::LineStyle>> {
+  length_count!(input, parse_list_length, parse_line_style)
+}
 
-named!(
-  pub parse_solid_fill<ast::fill_styles::Solid>,
+pub fn parse_solid_fill(input: &[u8]) -> IResult<&[u8], ast::fill_styles::Solid> {
   do_parse!(
+    input,
     color: parse_s_rgb8 >>
     (
       ast::fill_styles::Solid {
@@ -269,16 +268,15 @@ named!(
         }
     })
   )
-);
+}
 
-named!(
-  pub parse_fill_style<&[u8], ast::FillStyle>,
-  switch!(parse_u8,
+#[allow(unused_variables)]
+pub fn parse_fill_style(input: &[u8]) -> IResult<&[u8], ast::FillStyle> {
+  switch!(input, parse_u8,
    0x00 => map!(parse_solid_fill, |fill| ast::FillStyle::Solid(fill))
   )
-);
+}
 
-named!(
-  pub parse_fill_style_list<Vec<ast::FillStyle>>,
-    length_count!(parse_list_length, parse_fill_style)
-);
+pub fn parse_fill_style_list(input: &[u8]) -> IResult<&[u8], Vec<ast::FillStyle>> {
+  length_count!(input, parse_list_length, parse_fill_style)
+}

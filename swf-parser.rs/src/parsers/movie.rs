@@ -4,10 +4,10 @@ use libflate;
 use std::io;
 use std::io::Read;
 use parsers::tags::parse_swf_tag;
-use parsers::swf_header::{parse_swf_header, parse_swf_signature};
+use parsers::header::{parse_header, parse_swf_signature};
 use state::ParseState;
 
-pub fn parse_swf_tags_string(input: &[u8]) -> IResult<&[u8], Vec<ast::Tag>> {
+pub fn parse_tag_string(input: &[u8]) -> IResult<&[u8], Vec<ast::Tag>> {
   let mut state = ParseState::new();
   let mut result: Vec<ast::Tag> = Vec::new();
   let mut current_input: &[u8] = input;
@@ -29,17 +29,17 @@ pub fn parse_swf_tags_string(input: &[u8]) -> IResult<&[u8], Vec<ast::Tag>> {
   IResult::Done(current_input, result)
 }
 
-named!(
-  pub parse_decompressed_movie<ast::Movie>,
+pub fn parse_decompressed_movie(input: &[u8]) -> IResult<&[u8],ast::Movie> {
   do_parse!(
-    header: parse_swf_header >>
-    tags: parse_swf_tags_string >>
+    input,
+    header: parse_header >>
+    tags: parse_tag_string >>
     (ast::Movie {
       header: header,
       tags: tags,
     })
   )
-);
+}
 
 pub fn parse_movie(input: &[u8]) -> IResult<&[u8], ast::Movie> {
   match parse_swf_signature(input) {
