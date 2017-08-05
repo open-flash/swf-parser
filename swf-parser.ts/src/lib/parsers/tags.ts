@@ -18,6 +18,7 @@ import {
   tags,
   TagType,
   text,
+  NamedId,
 } from "swf-tree";
 import {GlyphCountProvider, ParseContext} from "../parse-context";
 import {ByteStream, Stream} from "../stream";
@@ -127,6 +128,10 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseDefineEditText(byteStream);
     case 39:
       return parseDefineSprite(byteStream, context);
+    case 56:
+      return parseExportAssets(byteStream);
+    case 57:
+      return parseImportAssets(byteStream);
     case 69:
       return parseFileAttributes(byteStream);
     case 70: {
@@ -136,6 +141,8 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       }
       return parsePlaceObject3(byteStream, swfVersion);
     }
+    case 71:
+      return parseImportAssets2(byteStream);
     case 73:
       return parseDefineFontAlignZones(byteStream, context.getGlyphCount.bind(context));
     case 74:
@@ -323,7 +330,8 @@ export function parseDefineEditText(byteStream: Stream): tags.DefineDynamicText 
   const marginRight: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const indent: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const leading: Sint16 = hasLayout ? byteStream.readSint16LE() : 0;
-  const variableName: string = byteStream.readCString();
+  const rawVariableName: string = byteStream.readCString();
+  const variableName: string | undefined = rawVariableName.length > 0 ? rawVariableName : undefined;
   const text: string | undefined = hasText ? byteStream.readCString() : undefined;
 
   return {
@@ -351,7 +359,7 @@ export function parseDefineEditText(byteStream: Stream): tags.DefineDynamicText 
     indent,
     leading,
     variableName,
-    initialText: text,
+    text,
   };
 }
 
@@ -391,6 +399,20 @@ export function parseDoAction(byteStream: Stream): tags.DoAction {
   return {type: TagType.DoAction, actions: parseActionsString(byteStream)};
 }
 
+export function parseExportAssets(byteStream: Stream): tags.ExportAssets {
+  const assetCount: UintSize = byteStream.readUint16LE();
+  const assets: NamedId[] = [];
+  for (let i: number = 0; i < assetCount; i++) {
+    const id: Uint16 = byteStream.readUint16LE();
+    const name: string = byteStream.readCString();
+    assets.push({id, name});
+  }
+  return {
+    type: TagType.ExportAssets,
+    assets,
+  };
+}
+
 export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
   const flags: Uint8 = byteStream.readUint8();
   byteStream.skip(3);
@@ -404,6 +426,39 @@ export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
     noCrossDomainCaching: (flags & (1 << 2)) !== 0,
     useRelativeUrls: (flags & (1 << 1)) !== 0,
     useNetwork: (flags & (1 << 0)) !== 0,
+  };
+}
+
+export function parseImportAssets(byteStream: Stream): tags.ImportAssets {
+  const url: string = byteStream.readCString();
+  const assetCount: UintSize = byteStream.readUint16LE();
+  const assets: NamedId[] = [];
+  for (let i: number = 0; i < assetCount; i++) {
+    const id: Uint16 = byteStream.readUint16LE();
+    const name: string = byteStream.readCString();
+    assets.push({id, name});
+  }
+  return {
+    type: TagType.ImportAssets,
+    url,
+    assets,
+  };
+}
+
+export function parseImportAssets2(byteStream: Stream): tags.ImportAssets {
+  const url: string = byteStream.readCString();
+  byteStream.skip(2);
+  const assetCount: UintSize = byteStream.readUint16LE();
+  const assets: NamedId[] = [];
+  for (let i: number = 0; i < assetCount; i++) {
+    const id: Uint16 = byteStream.readUint16LE();
+    const name: string = byteStream.readCString();
+    assets.push({id, name});
+  }
+  return {
+    type: TagType.ImportAssets,
+    url,
+    assets,
   };
 }
 
