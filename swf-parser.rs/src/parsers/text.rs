@@ -209,3 +209,15 @@ pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> IResult<&[u8], ast
   )
 }
 
+#[allow(unused_variables)]
+pub fn parse_text_alignment(input: &[u8]) -> IResult<&[u8], ast::text::TextAlignment> {
+  switch!(
+    input,
+    parse_u8,
+    0 => value!(ast::text::TextAlignment::Left) |
+    1 => value!(ast::text::TextAlignment::Right) |
+    2 => value!(ast::text::TextAlignment::Center) |
+    3 => value!(ast::text::TextAlignment::Justify)
+    // TODO(demurgos): Throw error
+  )
+}

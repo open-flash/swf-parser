@@ -1,6 +1,6 @@
 use swf_tree as ast;
 use nom::{IResult, Needed};
-use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32, be_f32 as parse_be_f32};
+use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, be_f32 as parse_be_f32};
 use ordered_float::OrderedFloat;
 use parsers::avm1::parse_actions_string;
 use parsers::basic_data_types::{
@@ -19,7 +19,7 @@ use parsers::basic_data_types::{
 use parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
 use parsers::shapes::{parse_shape, ShapeVersion};
 use parsers::movie::parse_tag_string;
-use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_record_string, parse_text_renderer_bits};
+use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use state::ParseState;
 
 pub struct SwfTagHeader {
@@ -67,6 +67,7 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
           28 => map!(record_data, parse_remove_object2, |t| ast::Tag::RemoveObject(t)),
           32 => map!(record_data, parse_define_shape3, |t| ast::Tag::DefineShape(t)),
+          37 => map!(record_data, parse_define_edit_text, |t| ast::Tag::DefineDynamicText(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
@@ -128,20 +129,86 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
   )
 }
 
-struct DefineFont3Flags {
-  has_layout: bool,
-  is_shift_jis: bool,
-  is_ansi: bool,
-  is_small: bool,
-  use_wide_offsets: bool,
-  use_wide_codes: bool,
-  is_italic: bool,
-  is_bold: bool,
+pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineDynamicText> {
+  do_parse!(
+    input,
+    id: parse_le_u16 >>
+    bounds: parse_rect >>
+
+    flags: parse_be_u16 >>
+    has_text: value!((flags & (1 << 15)) != 0) >>
+    word_wrap: value!((flags & (1 << 14)) != 0) >>
+    multiline: value!((flags & (1 << 13)) != 0) >>
+    password: value!((flags & (1 << 12)) != 0) >>
+    readonly: value!((flags & (1 << 11)) != 0) >>
+    has_color: value!((flags & (1 << 10)) != 0) >>
+    has_max_length: value!((flags & (1 << 9)) != 0) >>
+    has_font: value!((flags & (1 << 8)) != 0) >>
+    has_font_class: value!((flags & (1 << 7)) != 0) >>
+    auto_size: value!((flags & (1 << 6)) != 0) >>
+    has_layout: value!((flags & (1 << 5)) != 0) >>
+    no_select: value!((flags & (1 << 4)) != 0) >>
+    border: value!((flags & (1 << 3)) != 0) >>
+    was_static: value!((flags & (1 << 2)) != 0) >>
+    html: value!((flags & (1 << 1)) != 0) >>
+    use_glyph_font: value!((flags & (1 << 0)) != 0) >>
+
+    font_id: cond!(has_font, parse_le_u16) >>
+    font_class: cond!(has_font_class, parse_c_string) >>
+    font_size: cond!(has_font, parse_le_u16) >>
+    color: cond!(has_color, parse_straight_s_rgba8) >>
+    max_length: cond!(has_max_length, map!(parse_le_u16, |x| x as usize)) >>
+    align: cond!(has_layout, parse_text_alignment) >>
+    margin_left: map!(cond!(has_layout, parse_le_u16), |x| x.unwrap_or_default()) >>
+    margin_right: map!(cond!(has_layout, parse_le_u16), |x| x.unwrap_or_default()) >>
+    indent: map!(cond!(has_layout, parse_le_u16), |x| x.unwrap_or_default()) >>
+    leading: map!(cond!(has_layout, parse_le_i16), |x| x.unwrap_or_default()) >>
+    variable_name: map!(parse_c_string, |x| if x.len() > 0 {Option::Some(x)} else {Option::None}) >>
+    text: cond!(has_text, parse_c_string) >>
+
+    (ast::tags::DefineDynamicText {
+      id: id,
+      bounds: bounds,
+      word_wrap: word_wrap,
+      multiline: multiline,
+      password: password,
+      readonly: readonly,
+      auto_size: auto_size,
+      no_select: no_select,
+      border: border,
+      was_static: was_static,
+      html: html,
+      use_glyph_font: use_glyph_font,
+      font_id: font_id,
+      font_class: font_class,
+      font_size: font_size,
+      color: color,
+      max_length: max_length,
+      align: align,
+      margin_left: margin_left,
+      margin_right: margin_right,
+      indent: indent,
+      leading: leading,
+      variable_name: variable_name,
+      text: text,
+    })
+  )
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
 #[allow(unused_variables)]
 pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+  struct DefineFont3Flags {
+    has_layout: bool,
+    is_shift_jis: bool,
+    is_ansi: bool,
+    is_small: bool,
+    use_wide_offsets: bool,
+    use_wide_codes: bool,
+    is_italic: bool,
+    is_bold: bool,
+  }
+
   do_parse!(
     input,
     id: parse_le_u16 >>

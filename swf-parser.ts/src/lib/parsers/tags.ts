@@ -305,13 +305,14 @@ function parseDefineShapeAny(byteStream: Stream, version: ShapeVersion): tags.De
 export function parseDefineEditText(byteStream: Stream): tags.DefineDynamicText {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
+
   const flags: Uint16 = byteStream.readUint16BE();
   const hasText: boolean = (flags & (1 << 15)) !== 0;
   const wordWrap: boolean = (flags & (1 << 14)) !== 0;
   const multiline: boolean = (flags & (1 << 13)) !== 0;
   const password: boolean = (flags & (1 << 12)) !== 0;
   const readonly: boolean = (flags & (1 << 11)) !== 0;
-  const hasTextColor: boolean = (flags & (1 << 10)) !== 0;
+  const hasColor: boolean = (flags & (1 << 10)) !== 0;
   const hasMaxLength: boolean = (flags & (1 << 9)) !== 0;
   const hasFont: boolean = (flags & (1 << 8)) !== 0;
   const hasFontClass: boolean = (flags & (1 << 7)) !== 0;
@@ -326,8 +327,8 @@ export function parseDefineEditText(byteStream: Stream): tags.DefineDynamicText 
   const fontId: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
   const fontClass: string | undefined = hasFontClass ? byteStream.readCString() : undefined;
   const fontSize: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
-  const color: StraightSRgba8 | undefined = hasTextColor ? parseStraightSRgba8(byteStream) : undefined;
-  const maxLength: number | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
+  const color: StraightSRgba8 | undefined = hasColor ? parseStraightSRgba8(byteStream) : undefined;
+  const maxLength: UintSize | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
   const align: text.TextAlignment | undefined = hasLayout ? parseTextAlignment(byteStream) : undefined;
   const marginLeft: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const marginRight: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
@@ -352,8 +353,8 @@ export function parseDefineEditText(byteStream: Stream): tags.DefineDynamicText 
     html,
     useGlyphFont,
     fontId,
-    fontSize,
     fontClass,
+    fontSize,
     color,
     maxLength,
     align,
