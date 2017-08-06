@@ -62,9 +62,11 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           // TODO: Ignore DoAction if version >= 9 && use_as3
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
+          22 => map!(record_data, parse_define_shape2, |t| ast::Tag::DefineShape(t)),
           // TODO(demurgos): Throw error if the version is unknown
           26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
           28 => map!(record_data, parse_remove_object2, |t| ast::Tag::RemoveObject(t)),
+          32 => map!(record_data, parse_define_shape3, |t| ast::Tag::DefineShape(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
@@ -253,11 +255,23 @@ pub fn parse_define_scene_and_frame_label_data_tag(input: &[u8]) -> IResult<&[u8
 }
 
 pub fn parse_define_shape(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+  parse_define_shape_any(input, ShapeVersion::Shape1)
+}
+
+pub fn parse_define_shape2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+  parse_define_shape_any(input, ShapeVersion::Shape2)
+}
+
+pub fn parse_define_shape3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+  parse_define_shape_any(input, ShapeVersion::Shape3)
+}
+
+fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> IResult<&[u8], ast::tags::DefineShape> {
   do_parse!(
     input,
     id: parse_le_u16 >>
     bounds: parse_rect >>
-    shape: apply!(parse_shape, ShapeVersion::Shape1) >>
+    shape: apply!(parse_shape, version) >>
     (ast::tags::DefineShape {
       id: id,
       bounds: bounds,
