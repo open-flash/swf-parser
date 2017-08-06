@@ -53,26 +53,26 @@ export function parseBlendMode(byteStream: ByteStream): BlendMode {
   }
 }
 
-export function parseClipActionsString(byteStream: ByteStream, swfVersion: UintSize): ClipActions[] {
+export function parseClipActionsString(byteStream: ByteStream, extendedEvents: boolean): ClipActions[] {
   byteStream.skip(2);
   // We skip the 4 bytes of the list of all events
   byteStream.skip(4);
-  const clipActionsString: ClipActions[] = [];
+  const result: ClipActions[] = [];
   while (true) {
     const savedPos: UintSize = byteStream.bytePos;
-    const peek: Uint32 = swfVersion >= 6 ? byteStream.readUint32BE() : byteStream.readUint32BE();
+    const peek: Uint32 = extendedEvents ? byteStream.readUint32BE() : byteStream.readUint32BE();
     if (peek === 0) {
       break;
     } else {
       byteStream.bytePos = savedPos;
     }
-    clipActionsString.push(parseClipActions(byteStream, swfVersion));
+    result.push(parseClipActions(byteStream, extendedEvents));
   }
 
-  return clipActionsString;
+  return result;
 }
 
-export function parseClipEventFlags(byteStream: ByteStream, swfVersion: UintSize): ClipEventFlags {
+export function parseClipEventFlags(byteStream: ByteStream, extendedEvents: boolean): ClipEventFlags {
   const flags: Uint16 = byteStream.readUint16BE();
   const keyUp: boolean = (flags & (1 << 15)) !== 0;
   const keyDown: boolean = (flags & (1 << 14)) !== 0;
@@ -93,7 +93,7 @@ export function parseClipEventFlags(byteStream: ByteStream, swfVersion: UintSize
   let construct: boolean = false;
   let keyPress: boolean = false;
   let dragOut: boolean = false;
-  if (swfVersion >= 6) {
+  if (extendedEvents) {
     const flags: Uint16 = byteStream.readUint16BE();
     construct = (flags & (1 << 10)) !== 0;
     keyPress = (flags & (1 << 9)) !== 0;
@@ -123,17 +123,16 @@ export function parseClipEventFlags(byteStream: ByteStream, swfVersion: UintSize
   };
 }
 
-export function parseClipActions(byteStream: ByteStream, swfVersion: UintSize): ClipActions {
-  const events: ClipEventFlags = parseClipEventFlags(byteStream, swfVersion);
+export function parseClipActions(byteStream: ByteStream, extendedEvents: boolean): ClipActions {
+  const events: ClipEventFlags = parseClipEventFlags(byteStream, extendedEvents);
   let actionsSize: UintSize = byteStream.readUint32LE();
   let keyCode: Uint8 | undefined = undefined;
   if (events.keyPress) {
     keyCode = byteStream.readUint8();
     actionsSize = Math.max(actionsSize - 1, 0);
   }
-  // TODO
   const actions: avm1.Action[] = parseActionsBlock(byteStream.take(actionsSize));
-  return {events, actions};
+  return {events, keyCode, actions};
 }
 
 export function parseFilterList(byteStream: ByteStream): Filter[] {
@@ -156,13 +155,13 @@ export function parseFilter(byteStream: ByteStream): Filter {
     case 3:
       return parseBevelFilter(byteStream);
     case 4:
-      return parseGradientGlow(byteStream);
+      return parseGradientGlowFilter(byteStream);
     case 5:
       return parseConvolutionFilter(byteStream);
     case 6:
       return parseColorMatrixFilter(byteStream);
     case 7:
-      return parseGradientBevel(byteStream);
+      return parseGradientBevelFilter(byteStream);
     default:
       throw new Incident("UnreachableCode");
   }
@@ -203,7 +202,7 @@ export function parseBlurFilter(byteStream: ByteStream): filters.Blur {
   const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
   const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
   const flags: Uint8 = byteStream.readUint8();
-  const passes: Uint5 = <Uint5> (flags & ((1 << 8) - 1) >>> 3);
+  const passes: Uint5 = <Uint5> ((flags & ((1 << 8) - 1)) >>> 3);
   return {
     filter: FilterType.Blur,
     blurX,
@@ -260,7 +259,7 @@ export function parseDropShadowFilter(byteStream: ByteStream): filters.DropShado
   const inner: boolean = (flags & (1 << 7)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
   const compositeSource: boolean = (flags & (1 << 5)) !== 0;
-  const passes: UintSize = flags & ((1 << 5) - 1);
+  const passes: Uint5 = flags & ((1 << 5) - 1);
   return {
     filter: FilterType.DropShadow,
     color,
@@ -285,7 +284,7 @@ export function parseGlowFilter(byteStream: ByteStream): filters.Glow {
   const inner: boolean = (flags & (1 << 7)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
   const compositeSource: boolean = (flags & (1 << 5)) !== 0;
-  const passes: UintSize = flags & ((1 << 5) - 1);
+  const passes: Uint5 = flags & ((1 << 5) - 1);
   return {
     filter: FilterType.Glow,
     color,
@@ -299,7 +298,7 @@ export function parseGlowFilter(byteStream: ByteStream): filters.Glow {
   };
 }
 
-export function parseGradientBevel(byteStream: ByteStream): filters.GradientBevel {
+export function parseGradientBevelFilter(byteStream: ByteStream): filters.GradientBevel {
   const colorCount: UintSize = byteStream.readUint8();
   const gradient: ColorStop[] = [];
   for (let i: number = 0; i < colorCount; i++) {
@@ -335,7 +334,7 @@ export function parseGradientBevel(byteStream: ByteStream): filters.GradientBeve
   };
 }
 
-export function parseGradientGlow(byteStream: ByteStream): filters.GradientGlow {
+export function parseGradientGlowFilter(byteStream: ByteStream): filters.GradientGlow {
   const colorCount: UintSize = byteStream.readUint8();
   const gradient: ColorStop[] = [];
   for (let i: number = 0; i < colorCount; i++) {

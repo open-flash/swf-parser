@@ -24,6 +24,7 @@ export function parseGlyph(byteStream: ByteStream): Glyph {
 export function parseGlyphBits(bitStream: BitStream): Glyph {
   const fillBits: UintSize = bitStream.readUint32Bits(4);
   const lineBits: UintSize = bitStream.readUint32Bits(4);
+  // TODO: Check which shape version to use
   const records: ShapeRecord[] = parseShapeRecordStringBits(bitStream, fillBits, lineBits, ShapeVersion.Shape1);
   return {records};
 }
@@ -179,18 +180,30 @@ export function parseStyleChangeBits(
  * Parse a fill style list length or line style list length.
  *
  * @param byteStream Stream to use to parse this list length. Will mutate its state.
- * @param allowExtended Allow extended size (`> 255`). Here are the recommended values:
+ * @param supportExtended Allow extended size (`> 255`). Here are the recommended values:
  *                      - `true` for `DefineShape2`, `DefineShape3`
  *                      - `false` for `DefineShape`
  * @returns List length
  */
-export function parseListLength(byteStream: ByteStream, allowExtended: boolean): UintSize {
+export function parseListLength(byteStream: ByteStream, supportExtended: boolean): UintSize {
   const len: UintSize = byteStream.readUint8();
-  if (len === 0xff && allowExtended) {
+  if (len === 0xff && supportExtended) {
     return byteStream.readUint16LE();
   } else {
     return len;
   }
+}
+
+export function parseFillStyleList(
+  byteStream: ByteStream,
+  version: ShapeVersion,
+): FillStyle[] {
+  const result: FillStyle[] = [];
+  const len: UintSize = parseListLength(byteStream, version !== ShapeVersion.Shape1);
+  for (let i: UintSize = 0; i < len; i++) {
+    result.push(parseFillStyle(byteStream, version === ShapeVersion.Shape3));
+  }
+  return result;
 }
 
 export function parseFillStyle(byteStream: ByteStream, withAlpha: boolean): FillStyle {
@@ -275,18 +288,19 @@ export function parseSolidFill(byteStream: ByteStream, withAlpha: boolean): fill
   };
 }
 
-export function parseFillStyleList(
+export function parseLineStyleList(
   byteStream: ByteStream,
   version: ShapeVersion,
-): FillStyle[] {
-  const result: FillStyle[] = [];
+): LineStyle[] {
+  const result: LineStyle[] = [];
   const len: UintSize = parseListLength(byteStream, version !== ShapeVersion.Shape1);
   for (let i: UintSize = 0; i < len; i++) {
-    result.push(parseFillStyle(byteStream, version === ShapeVersion.Shape3));
+    result.push(parseLineStyle(byteStream));
   }
   return result;
 }
 
+// TODO: Linestyle2
 export function parseLineStyle(byteStream: ByteStream): LineStyle {
   const width: Uint16 = byteStream.readUint16LE();
   const color: SRgb8 = parseSRgb8(byteStream);
@@ -304,16 +318,4 @@ export function parseLineStyle(byteStream: ByteStream): LineStyle {
       color: {...color, a: 255},
     },
   };
-}
-
-export function parseLineStyleList(
-  byteStream: ByteStream,
-  version: ShapeVersion,
-): LineStyle[] {
-  const result: LineStyle[] = [];
-  const len: UintSize = parseListLength(byteStream, version !== ShapeVersion.Shape1);
-  for (let i: UintSize = 0; i < len; i++) {
-    result.push(parseLineStyle(byteStream));
-  }
-  return result;
 }

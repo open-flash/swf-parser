@@ -488,11 +488,12 @@ export function parsePlaceObject(byteStream: Stream): tags.PlaceObject {
 
   return {
     type: TagType.PlaceObject,
+    isMove: false,
     depth,
     characterId,
     matrix,
     colorTransform,
-    filters: [],
+    filters: undefined,
   };
 }
 
@@ -516,11 +517,12 @@ export function parsePlaceObject2(byteStream: Stream, swfVersion: UintSize): tag
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
 
   const clipActions: ClipActions[] | undefined = hasClipActions ?
-    parseClipActionsString(byteStream, swfVersion) :
+    parseClipActionsString(byteStream, swfVersion >= 6) :
     undefined;
 
   return {
     type: TagType.PlaceObject,
+    isMove,
     depth,
     characterId,
     matrix,
@@ -528,7 +530,7 @@ export function parsePlaceObject2(byteStream: Stream, swfVersion: UintSize): tag
     ratio,
     name,
     clipDepth,
-    filters: [],
+    filters: undefined,
     clipActions: clipActions,
   };
 }
@@ -544,13 +546,13 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
   const hasCharacterId: boolean = (flags & (1 << 9)) !== 0;
   const isMove: boolean = (flags & (1 << 8)) !== 0;
   // Reserved: (flags & (1 << 7))
-  const isOpaqueBackground: boolean = (flags & (1 << 6)) !== 0;
-  const maybeIsVisible: boolean = (flags & (1 << 5)) !== 0;
+  const hasBackgroundColor: boolean = (flags & (1 << 6)) !== 0;
+  const hasVisibility: boolean = (flags & (1 << 5)) !== 0;
   const hasImage: boolean = (flags & (1 << 4)) !== 0;
   const hasClassName: boolean = (flags & (1 << 3)) !== 0;
-  const maybeUseBitmapCache: boolean = (flags & (1 << 2)) !== 0;
+  const hasCacheHint: boolean = (flags & (1 << 2)) !== 0;
   const hasBlendMode: boolean = (flags & (1 << 1)) !== 0;
-  const hasFilterList: boolean = (flags & (1 << 0)) !== 0;
+  const hasFilters: boolean = (flags & (1 << 0)) !== 0;
 
   const depth: Uint16 = byteStream.readUint16LE();
   const className: string | undefined = hasClassName || (hasImage && hasCharacterId) ?
@@ -564,33 +566,36 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
-  const filters: Filter[] = hasFilterList ? parseFilterList(byteStream) : [];
+  const filters: Filter[] = hasFilters ? parseFilterList(byteStream) : [];
   const blendMode: BlendMode = hasBlendMode ? parseBlendMode(byteStream) : BlendMode.Normal;
-  const useBitmapCache: boolean = maybeUseBitmapCache ? byteStream.readUint8() !== 0 : false;
-  const isVisible: boolean = maybeIsVisible ? byteStream.readUint8() !== 0 : false;
-  // TODO: This is strange, maybe it's "isOpaqueBackground".
-  const backgoundColor: StraightSRgba8 | undefined = maybeIsVisible ? parseStraightSRgba8(byteStream) : undefined;
+  const useBitmapCache: boolean = hasCacheHint ? byteStream.readUint8() !== 0 : false;
+  const isVisible: boolean = hasVisibility ? byteStream.readUint8() !== 0 : false;
+  // This does not match the spec, see Shumway
+  // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L158
+  // TODO(demurgos): Check if it is RGBA or ARGB
+  const backgroundColor: StraightSRgba8 | undefined = hasBackgroundColor ? parseStraightSRgba8(byteStream) : undefined;
 
   const clipActions: ClipActions[] | undefined = hasClipActions ?
-    parseClipActionsString(byteStream, swfVersion) :
+    parseClipActionsString(byteStream, swfVersion >= 6) :
     undefined;
 
   return {
     type: TagType.PlaceObject,
+    isMove,
     depth,
     characterId,
     matrix,
     colorTransform,
     ratio,
     name,
-    className: undefined,
+    className,
     clipDepth,
-    filters: filters,
-    blendMode: undefined,
-    bitmapCache: undefined,
-    visible: undefined,
-    backgroundColor: undefined,
-    clipActions: clipActions,
+    filters,
+    blendMode,
+    bitmapCache: useBitmapCache,
+    visible: isVisible,
+    backgroundColor,
+    clipActions,
   };
 }
 

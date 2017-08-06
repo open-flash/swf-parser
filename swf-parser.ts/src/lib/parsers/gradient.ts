@@ -16,11 +16,11 @@ export function parseColorStop(byteStream: ByteStream, withAlpha: boolean): Colo
 
 export function parseGradient(byteStream: ByteStream, withAlpha: boolean): Gradient {
   const flags: Uint8 = byteStream.readUint8();
-  const spreadBits: Uint2 = <Uint2> (flags & ((1 << 8) - 1) >>> 6);
-  const colorSpaceBits: Uint2 = <Uint2> (flags & ((1 << 6) - 1) >>> 4);
+  const spreadId: Uint2 = <Uint2> ((flags & ((1 << 8) - 1)) >>> 6);
+  const colorSpaceId: Uint2 = <Uint2> ((flags & ((1 << 6) - 1)) >>> 4);
   const colorCount: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
   let spread: GradientSpread;
-  switch (spreadBits) {
+  switch (spreadId) {
     case 0:
       spread = GradientSpread.Pad;
       break;
@@ -34,7 +34,7 @@ export function parseGradient(byteStream: ByteStream, withAlpha: boolean): Gradi
       throw new Error("Unexpected gradient spread");
   }
   let colorSpace: ColorSpace;
-  switch (colorSpaceBits) {
+  switch (colorSpaceId) {
     case 0:
       colorSpace = ColorSpace.SRgb;
       break;
