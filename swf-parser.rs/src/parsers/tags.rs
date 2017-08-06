@@ -17,7 +17,7 @@ use parsers::basic_data_types::{
   skip_bits
 };
 use parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
-use parsers::shapes::parse_shape;
+use parsers::shapes::{parse_shape, ShapeVersion};
 use parsers::movie::parse_tag_string;
 use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_record_string, parse_text_renderer_bits};
 use state::ParseState;
@@ -252,7 +252,7 @@ pub fn parse_define_shape(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape
     input,
     id: parse_le_u16 >>
     bounds: parse_rect >>
-    shape: parse_shape >>
+    shape: apply!(parse_shape, ShapeVersion::Shape1) >>
     (ast::tags::DefineShape {
       id: id,
       bounds: bounds,
