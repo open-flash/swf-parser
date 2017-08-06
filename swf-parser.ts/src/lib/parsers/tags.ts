@@ -10,6 +10,7 @@ import {
   Label,
   LanguageCode,
   Matrix,
+  NamedId,
   Rect,
   Scene,
   Shape,
@@ -18,7 +19,6 @@ import {
   tags,
   TagType,
   text,
-  NamedId,
 } from "swf-tree";
 import {GlyphCountProvider, ParseContext} from "../parse-context";
 import {ByteStream, Stream} from "../stream";
@@ -39,7 +39,8 @@ import {
   parseFontLayout,
   parseGridFittingBits,
   parseLanguageCode,
-  parseOffsetGlyphs, parseTextAlignment,
+  parseOffsetGlyphs,
+  parseTextAlignment,
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
@@ -120,10 +121,10 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       }
       return parsePlaceObject2(byteStream, swfVersion);
     }
-    case 32:
-      return parseDefineShape3(byteStream);
     case 28:
       return parseRemoveObject2(byteStream);
+    case 32:
+      return parseDefineShape3(byteStream);
     case 37:
       return parseDefineEditText(byteStream);
     case 39:

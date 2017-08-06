@@ -56,16 +56,21 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
         let record_result = match rh.tag_code {
           1 => IResult::Done(&record_data[rh.length..], ast::Tag::ShowFrame),
           2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
+          4 => map!(record_data, parse_place_object, |t| ast::Tag::PlaceObject(t)),
+          5 => map!(record_data, parse_remove_object, |t| ast::Tag::RemoveObject(t)),
           9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           // TODO: Ignore DoAction if version >= 9 && use_as3
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
           // TODO(demurgos): Throw error if the version is unknown
           26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
+          28 => map!(record_data, parse_remove_object2, |t| ast::Tag::RemoveObject(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
+          // TODO(demurgos): Throw error if the version is unknown
+          70 => map!(record_data, apply!(parse_place_object3, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
           73 => map!(record_data, apply!(parse_define_font_align_zones, |font_id| state.get_glyph_count(font_id)), |t| ast::Tag::DefineFontAlignZones(t)),
           74 => map!(record_data, parse_csm_text_settings, |t| ast::Tag::CsmTextSettings(t)),
           75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont(t)),
@@ -357,8 +362,7 @@ pub fn parse_metadata(input: &[u8]) -> IResult<&[u8], ast::tags::Metadata> {
   do_parse!(
     input,
     metadata: parse_c_string >>
-    (
-      ast::tags::Metadata {
+    (ast::tags::Metadata {
       metadata: metadata,
     })
   )
@@ -457,12 +461,12 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
     flags: parse_be_u16 >>
     has_clip_actions: value!((flags & (1 << 15)) != 0) >>
     has_clip_depth: value!((flags & (1 << 14)) != 0) >>
-    has_name: value!((flags & (1 << 5)) != 13) >>
-    has_ratio: value!((flags & (1 << 4)) != 12) >>
+    has_name: value!((flags & (1 << 13)) != 0) >>
+    has_ratio: value!((flags & (1 << 12)) != 0) >>
     has_color_transform: value!((flags & (1 << 11)) != 0) >>
     has_matrix: value!((flags & (1 << 10)) != 0) >>
     has_character_id: value!((flags & (1 << 9)) != 0) >>
-    is_move: value!((flags & (1 << 0)) != 0) >>
+    is_move: value!((flags & (1 << 8)) != 0) >>
     has_background_color: value!((flags & (1 << 6)) != 0) >>
     has_visibility: value!((flags & (1 << 5)) != 0) >>
     has_image: value!((flags & (1 << 4)) != 0) >>
@@ -501,6 +505,29 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
       visible: is_visible,
       background_color: background_color,
       clip_actions: clip_actions,
+    })
+  )
+}
+
+pub fn parse_remove_object(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObject> {
+  do_parse!(
+    input,
+    character_id: parse_le_u16 >>
+    depth: parse_le_u16 >>
+    (ast::tags::RemoveObject {
+      character_id: Option::Some(character_id),
+      depth: depth,
+    })
+  )
+}
+
+pub fn parse_remove_object2(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObject> {
+  do_parse!(
+    input,
+    depth: parse_le_u16 >>
+    (ast::tags::RemoveObject {
+      character_id: Option::None,
+      depth: depth,
     })
   )
 }
