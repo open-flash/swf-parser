@@ -70,10 +70,12 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           37 => map!(record_data, parse_define_edit_text, |t| ast::Tag::DefineDynamicText(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
+          57 => map!(record_data, parse_import_assets, |t| ast::Tag::ImportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
           // TODO(demurgos): Throw error if the version is unknown
           70 => map!(record_data, apply!(parse_place_object3, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
+          71 => map!(record_data, parse_import_assets2, |t| ast::Tag::ImportAssets(t)),
           73 => map!(record_data, apply!(parse_define_font_align_zones, |font_id| state.get_glyph_count(font_id)), |t| ast::Tag::DefineFontAlignZones(t)),
           74 => map!(record_data, parse_csm_text_settings, |t| ast::Tag::CsmTextSettings(t)),
           75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont(t)),
@@ -436,6 +438,33 @@ pub fn parse_file_attributes_tag(input: &[u8]) -> IResult<&[u8], ast::tags::File
         use_network: use_network,
       })
     )
+  )
+}
+
+pub fn parse_import_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ImportAssets> {
+  do_parse!(
+    input,
+    url: parse_c_string >>
+    assets: length_count!(parse_le_u16, parse_named_id) >>
+    (ast::tags::ImportAssets {
+      url: url,
+      assets: assets,
+    })
+  )
+}
+
+#[allow(unused_variables)]
+pub fn parse_import_assets2(input: &[u8]) -> IResult<&[u8], ast::tags::ImportAssets> {
+  do_parse!(
+    input,
+    url: parse_c_string >>
+    // TODO: Find how to use anonymous variable `_` to solve the unused_variables warning
+    skipped: take!(2) >>
+    assets: length_count!(parse_le_u16, parse_named_id) >>
+    (ast::tags::ImportAssets {
+      url: url,
+      assets: assets,
+    })
   )
 }
 
