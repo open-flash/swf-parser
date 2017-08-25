@@ -1,13 +1,13 @@
-import {Incident} from "incident";
-import {Uint16, Uint32, Uint8} from "semantic-types";
-import {CompressionMethod, Header, Rect, SwfSignature, Ufixed8P8} from "swf-tree";
-import {IncompleteStreamError} from "../errors/incomplete-stream";
-import {Stream} from "../stream";
-import {parseRect} from "./basic-data-types";
+import { Incident } from "incident";
+import { Uint16, Uint32, Uint8 } from "semantic-types";
+import { CompressionMethod, Header, Rect, SwfSignature, Ufixed8P8 } from "swf-tree";
+import { createIncompleteStreamError } from "../errors/incomplete-stream";
+import { Stream } from "../stream";
+import { parseRect } from "./basic-data-types";
 
 export function parseCompressionMethod(byteStream: Stream): CompressionMethod {
   if (byteStream.byteEnd < 3) {
-    throw IncompleteStreamError.create(3);
+    throw createIncompleteStreamError(3);
   }
   // Read FWS, CWS or ZWS
   if (
@@ -37,7 +37,7 @@ export function parseCompressionMethod(byteStream: Stream): CompressionMethod {
 
 export function parseSwfSignature(byteStream: Stream): SwfSignature {
   if (byteStream.byteEnd < 8) {
-    throw IncompleteStreamError.create(8);
+    throw createIncompleteStreamError(8);
   }
 
   const compressionMethod: CompressionMethod = parseCompressionMethod(byteStream);

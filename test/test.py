@@ -55,34 +55,10 @@ class TestItem:
 
 test_items = [
     TestItem(
-        os.path.join(TEST_ROOT, "end-to-end", "blank", "blank.swf"),
-        os.path.join(TEST_ROOT, "end-to-end", "blank", "blank.expected.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "blank", "blank.rs.actual.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "blank", "blank.ts.actual.json"),
-    ),
-    TestItem(
-        os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.swf"),
-        os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.expected.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.rs.actual.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "hre-flash8", "main.flash8.ts.actual.json"),
-    ),
-    TestItem(
-        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.swf"),
-        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.expected.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.rs.actual.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "shumway", "swfs", "movieclip", "empty-mc-scenes", "empty-mc-scenes.ts.actual.json"),
-    ),
-    TestItem(
-        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.swf"),
-        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.expected.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.rs.actual.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "squares", "squares.ts.actual.json"),
-    ),
-    TestItem(
-        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.swf"),
-        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.expected.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.rs.actual.json"),
-        os.path.join(TEST_ROOT, "end-to-end", "hello-world", "hello-world.ts.actual.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "simple", "morphing", "movieclip", "rotating-square", "morph.swf"),
+        os.path.join(TEST_ROOT, "end-to-end", "simple", "morphing", "movieclip", "rotating-square", "morph.expected.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "simple", "morphing", "movieclip", "rotating-square", "morph.rs.actual.json"),
+        os.path.join(TEST_ROOT, "end-to-end", "simple", "morphing", "movieclip", "rotating-square", "morph.ts.actual.json"),
     ),
 ]
 

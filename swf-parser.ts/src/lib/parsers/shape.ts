@@ -1,12 +1,11 @@
-import {Sint32, Uint16, UintSize} from "semantic-types";
+import { Sint32, Uint16, UintSize } from "semantic-types";
 import {
-  CapStyle, FillStyle, fillStyles, FillStyleType, Fixed8P8, Glyph, Gradient, JoinStyleType, LineStyle, Matrix, Shape,
-  ShapeRecord,
-  shapeRecords, ShapeRecordType, SRgb8, StraightSRgba8, Vector2D,
+  CapStyle, FillStyle, fillStyles, FillStyleType, Fixed8P8, Glyph, Gradient, JoinStyleType, LineStyle, Matrix,
+  Shape, ShapeRecord, shapeRecords, ShapeRecordType, SRgb8, StraightSRgba8, Vector2D,
 } from "swf-tree";
-import {BitStream, ByteStream} from "../stream";
-import {parseMatrix, parseSRgb8, parseStraightSRgba8} from "./basic-data-types";
-import {parseGradient} from "./gradient";
+import { BitStream, ByteStream } from "../stream";
+import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
+import { parseGradient } from "./gradient";
 
 export enum ShapeVersion {
   Shape1,
@@ -114,7 +113,7 @@ export function parseCurvedEdgeBits(bitStream: BitStream): shapeRecords.CurvedEd
   return {
     type: ShapeRecordType.CurvedEdge,
     controlDelta: {x: controlX, y: controlY},
-    endDelta: {x: deltaX, y: deltaY},
+    anchorDelta: {x: deltaX, y: deltaY},
   };
 }
 
@@ -126,7 +125,7 @@ export function parseStraightEdgeBits(bitStream: BitStream): shapeRecords.Straig
   const deltaY: Sint32 = isDiagonal || isVertical ? bitStream.readSint32Bits(nBits) : 0;
   return {
     type: ShapeRecordType.StraightEdge,
-    endDelta: {x: deltaX, y: deltaY},
+    delta: {x: deltaX, y: deltaY},
   };
 }
 
@@ -156,6 +155,8 @@ export function parseStyleChangeBits(
   let fillStyles: FillStyle[] | undefined = undefined;
   let lineStyles: LineStyle[] | undefined = undefined;
   if (hasNewStyles) {
+    // TODO: Shumway forces `hasNewStyle` to `false` if version is `Shape1`, should we do it too?
+    // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L851
     const styles: ShapeStyles = parseShapeStylesBits(bitStream, version);
     fillStyles = styles.fill;
     lineStyles = styles.line;

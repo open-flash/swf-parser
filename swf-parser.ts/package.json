@@ -4,31 +4,45 @@
   "description": "SWF parser loosely based on Shumway",
   "main": "dist/lib-es2015/lib/index.js",
   "types": "dist/lib-es2015/lib/index.d.ts",
-  "keywords": [],
+  "keywords": [
+    "swf",
+    "parser"
+  ],
   "license": "MIT",
   "scripts": {
-    "prepare": "gulp all:tsconfig.json && gulp :tslint.json && gulp all:dist",
-    "test": "gulp :lint && gulp lib-test",
+    "prepare": "gulp all:tsconfig.json && gulp :tslint.json && gulp dist",
+    "test": "gulp :lint && gulp test",
     "prestart": "gulp main:build",
     "start": "node build/main/main/main.js",
     "prepublishOnly": "npm test",
-    ":lint": "gulp :lint"
+    "lint": "gulp :lint:fix"
   },
   "dependencies": {
-    "incident": "^2.0.0",
-    "kryo": "^0.5.0-alpha.9",
+    "incident": "^3.0.1",
     "semantic-types": "^0.1.1",
-    "swf-tree": "^0.0.10"
+    "swf-tree": "^0.0.11"
   },
   "devDependencies": {
     "@types/chai": "^4.0.2",
-    "@types/mocha": "^2.2.40",
-    "@types/node": "^8.0.19",
+    "@types/mocha": "^2.2.46",
+    "@types/node": "^8.5.7",
     "bson": "^1.0.4",
-    "chai": "^3.5.0",
-    "demurgos-web-build-tools": "^0.14.3",
-    "gulp": "github:gulpjs/gulp#4.0",
-    "tslint": "^5.5.0",
-    "typescript": "^2.4.2"
+    "chai": "^4.1.2",
+    "gulp": "^4.0.0",
+    "gulp-cli": "^2.0.0",
+    "minimist": "^1.2.0",
+    "ts-node": "^4.1.0",
+    "tslint": "^5.8.0",
+    "turbo-gulp": "^0.15.8",
+    "typescript": "^2.6.2"
+  },
+  "nyc": {
+    "include": [
+      "build/test/lib/**/*.js"
+    ],
+    "reporter": [
+      "text",
+      "html"
+    ]
   }
 }

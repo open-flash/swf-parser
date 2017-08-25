@@ -32,7 +32,7 @@ import {
   parseStraightSRgba8,
 } from "./basic-data-types";
 import {parseBlendMode, parseClipActionsString, parseFilterList} from "./display";
-import {parseShape, ShapeVersion} from "./shapes";
+import { parseShape, ShapeVersion } from "./shape";
 import {
   parseCsmTableHintBits,
   parseFontAlignmentZone,
@@ -44,6 +44,8 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
+import { MorphShape } from "swf-tree/morph-shape";
+import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -129,6 +131,8 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseDefineEditText(byteStream);
     case 39:
       return parseDefineSprite(byteStream, context);
+    case 46:
+      return parseDefineMorphShape(byteStream);
     case 56:
       return parseExportAssets(byteStream);
     case 57:
@@ -248,6 +252,25 @@ export function parseDefineFontName(byteStream: Stream): tags.DefineFontName {
   const name: string = byteStream.readCString();
   const copyright: string = byteStream.readCString();
   return {type: TagType.DefineFontName, fontId, name, copyright};
+}
+
+export function parseDefineMorphShape(byteStream: Stream): tags.DefineMorphShape {
+  const id: Uint16 = byteStream.readUint16LE();
+  const startBounds: Rect = parseRect(byteStream);
+  const endBounds: Rect = parseRect(byteStream);
+  const shape: MorphShape = parseMorphShape(byteStream, MorphShapeVersion.MorphShape1);
+
+  return {
+    type: TagType.DefineMorphShape,
+    id,
+    startBounds,
+    endBounds,
+    startEdgeBounds: undefined,
+    endEdgeBounds: undefined,
+    hasNonScalingStrokes: false,
+    hasScalingStrokes: false,
+    shape,
+  };
 }
 
 export function parseDefineSceneAndFrameLabelData(byteStream: Stream): tags.DefineSceneAndFrameLabelData {

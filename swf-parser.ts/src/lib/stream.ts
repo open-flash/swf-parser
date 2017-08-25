@@ -12,7 +12,7 @@ import {
   UintSize,
 } from "semantic-types";
 import {Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8} from "swf-tree";
-import {IncompleteStreamError} from "./errors/incomplete-stream";
+import { createIncompleteStreamError, IncompleteStreamError } from "./errors/incomplete-stream";
 
 /**
  * Represents a non-byte-aligned stream
@@ -104,7 +104,8 @@ export class Stream implements BitStream, ByteStream {
 
   constructor(buffer: ArrayBuffer | Buffer, byteOffset: UintSize = 0, bitOffset: UintSize = 0) {
     if (buffer instanceof Buffer) {
-      buffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+      // TODO(demurgos): Remove type cast
+      buffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
     }
     this.bytes = new Uint8Array(buffer, byteOffset, buffer.byteLength);
     this.view = new DataView(buffer, byteOffset, buffer.byteLength);
@@ -130,7 +131,8 @@ export class Stream implements BitStream, ByteStream {
   }
 
   tail(): Stream {
-    return new Stream(this.bytes.buffer.slice(this.bytePos), 0, this.bitPos);
+    // TODO(demurgos): Remove type cast
+    return new Stream(this.bytes.buffer.slice(this.bytePos) as ArrayBuffer, 0, this.bitPos);
   }
 
   available(): number {
@@ -138,17 +140,20 @@ export class Stream implements BitStream, ByteStream {
   }
 
   toBuffer(): Buffer {
-    return Buffer.from(this.bytes.buffer.slice(this.bytePos, this.byteEnd));
+    // TODO(demurgos): Remove type cast
+    return Buffer.from(this.bytes.buffer.slice(this.bytePos, this.byteEnd) as ArrayBuffer);
   }
 
   take(length: number): Stream {
-    const result: Stream = new Stream(this.bytes.buffer.slice(this.bytePos, this.bytePos + length), 0, 0);
+    // TODO(demurgos): Remove type cast
+    const result: Stream = new Stream(this.bytes.buffer.slice(this.bytePos, this.bytePos + length) as ArrayBuffer, 0, 0);
     this.bytePos += length;
     return result;
   }
 
   substream(byteStart: number, byteEnd: number): Stream {
-    const result: Stream = new Stream(this.bytes.buffer, byteStart, 0);
+    // TODO(demurgos): Remove type cast
+    const result: Stream = new Stream(this.bytes.buffer as ArrayBuffer, byteStart, 0);
     result.byteEnd = byteEnd;
     return result;
   }
@@ -319,9 +324,10 @@ export class Stream implements BitStream, ByteStream {
   readCString(): string {
     const endOfString: number = this.bytes.indexOf(0, this.bytePos);
     if (endOfString < this.bytePos) {
-      throw IncompleteStreamError.create();
+      throw createIncompleteStreamError();
     }
-    const strBuffer: Buffer = Buffer.from(this.bytes.buffer, this.bytePos, endOfString - this.bytePos);
+    // TODO(demurgos): Remove type cast
+    const strBuffer: Buffer = Buffer.from(this.bytes.buffer as ArrayBuffer, this.bytePos, endOfString - this.bytePos);
     const result: string = strBuffer.toString("utf8");
     this.bytePos = endOfString + 1;
     return result;

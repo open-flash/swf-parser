@@ -1,9 +1,9 @@
-import {assert} from "chai";
-import {tags} from "swf-tree";
-import {parsePlaceObject3} from "../../../lib/parsers/tags";
-import {Stream} from "../../../lib/stream";
-import {readTestJson} from "../../_utils";
-import {readStreamJson, StreamJson} from "../_utils";
+import { assert } from "chai";
+import { tags } from "swf-tree";
+import { parsePlaceObject3 } from "../../../lib/parsers/tags";
+import { Stream } from "../../../lib/stream";
+import { readTestJson } from "../../_utils";
+import { readStreamJson, StreamJson } from "../_utils";
 
 describe("tags.parsePlaceObject3", function () {
   interface Item {
@@ -28,7 +28,7 @@ describe("tags.parsePlaceObject3", function () {
     items.push({
       input: readStreamJson(itemJson.input),
       expected: {
-        result: tags.PlaceObject.type.read("json", itemJson.expected.result),
+        result: tags.PlaceObject.type.readJson(itemJson.expected.result),
         stream: readStreamJson(itemJson.expected.stream),
       },
     });

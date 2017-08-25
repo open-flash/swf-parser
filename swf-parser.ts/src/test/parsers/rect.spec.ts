@@ -28,7 +28,7 @@ describe("parseRect", function () {
     items.push({
       input: readStreamJson(itemJson.input),
       expected: {
-        result: Rect.type.read("json", itemJson.expected.result),
+        result: Rect.type.readJson(itemJson.expected.result),
         stream: readStreamJson(itemJson.expected.stream),
       },
     });

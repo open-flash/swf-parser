@@ -1,7 +1,7 @@
 import {Incident} from "incident";
 import {Uint16, Uint8, UintSize} from "semantic-types";
 import {avm1} from "swf-tree";
-import {IncompleteStreamError} from "../errors/incomplete-stream";
+import { createIncompleteStreamError, IncompleteStreamError } from "../errors/incomplete-stream";
 import {ByteStream, Stream} from "../stream";
 
 export interface ActionHeader {
@@ -20,7 +20,7 @@ export function parseActionsString(byteStream: Stream): avm1.Action[] {
 
   while (true) {
     if (byteStream.available() === 0) {
-      throw IncompleteStreamError.create();
+      throw createIncompleteStreamError();
     }
     if (byteStream.peekUint8() === 0) {
       break;
@@ -46,7 +46,7 @@ export function parseAction(byteStream: Stream): avm1.Action {
   const header: ActionHeader = parseActionHeader(byteStream);
   if (byteStream.available() < header.length) {
     const headerLength: number = byteStream.bytePos - startPos;
-    throw IncompleteStreamError.create(headerLength + header.length);
+    throw createIncompleteStreamError(headerLength + header.length);
   }
   const actionDataStartPos: number = byteStream.bytePos;
   let result: avm1.Action;

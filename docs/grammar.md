@@ -25,6 +25,7 @@ tag :
   | tagHeader(2) tags_defineShape
   | tagHeader(9) tags_setBackgroundColor
   | tagHeader(11) tags_defineText
+  | tagHeader(84) tags_defineMorphShape2
   | TODO
 tagHeader(code) : TODO;
 tags_showFrame : ε
@@ -61,4 +62,8 @@ textRecordStringBits(indexBits, advanceBits) :
 textRecordBits(indexBits, advanceBits) : BOOL_BITS(hasFont) BOOL_BITS(hasColor) BOOL_BITS(hasOffsetX) BOOL_BITS(hasOffsetY) textRecordFontId(hasFont) TODO
 textRecordFontId(⊥) : ε
 textRecordFontId(⊤) : UINT16_LE
+
+tags_defineShape : UINT16_LE rect rect rect rect UINT8  UINT32_LE
+
+
 ```

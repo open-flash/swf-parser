@@ -28,7 +28,7 @@ describe("parseHeader", function () {
     items.push({
       input: readStreamJson(itemJson.input),
       expected: {
-        result: Header.type.read("json", itemJson.expected.result),
+        result: Header.type.readJson(itemJson.expected.result),
         stream: readStreamJson(itemJson.expected.stream),
       },
     });
