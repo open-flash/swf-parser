@@ -60,7 +60,7 @@ export function parseMatrixBits(bitStream: BitStream): Matrix {
   const hasSkew: boolean = bitStream.readBoolBits();
   let skew0: Fixed16P16;
   let skew1: Fixed16P16;
-  if (hasScale) {
+  if (hasSkew) {
     const skewBits: UintSize = bitStream.readUint16Bits(5);
     skew0 = bitStream.readFixed16P16Bits(skewBits);
     skew1 = bitStream.readFixed16P16Bits(skewBits);

@@ -1,4 +1,4 @@
-import { Sint32, Uint16, UintSize } from "semantic-types";
+import { Sint32, Uint16, Uint8, UintSize } from "semantic-types";
 import {
   CapStyle, FillStyle, fillStyles, FillStyleType, Fixed8P8, Glyph, Gradient, JoinStyleType, LineStyle, Matrix,
   Shape, ShapeRecord, shapeRecords, ShapeRecordType, SRgb8, StraightSRgba8, Vector2D,
@@ -208,7 +208,8 @@ export function parseFillStyleList(
 }
 
 export function parseFillStyle(byteStream: ByteStream, withAlpha: boolean): FillStyle {
-  switch (byteStream.readUint8()) {
+  const code: Uint8 = byteStream.readUint8();
+  switch (code) {
     case 0x00:
       return parseSolidFill(byteStream, withAlpha);
     case 0x10:
@@ -226,7 +227,7 @@ export function parseFillStyle(byteStream: ByteStream, withAlpha: boolean): Fill
     case 0x43:
       return parseBitmapFill(byteStream, false, false);
     default:
-      throw new Error("Unexpected fill style");
+      throw new Error(`Unexpected fill style code: ${code}`);
   }
 }
 
