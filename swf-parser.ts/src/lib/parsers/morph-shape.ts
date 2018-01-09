@@ -1,28 +1,28 @@
-import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
-import { BitStream, ByteStream } from "../stream";
-import { parseMorphGradient } from "./gradient";
+import { Incident } from "incident";
 import { Sint32, Uint16, UintSize } from "semantic-types";
-import { MorphLineStyle } from "swf-tree/morph-line-style";
+import { morphFillStyles, MorphFillStyleType } from "swf-tree";
+import { CapStyle } from "swf-tree/cap-style";
+import { Fixed8P8 } from "swf-tree/fixed-point/fixed8p8";
+import { JoinStyleType } from "swf-tree/join-styles/_type";
+import { Matrix } from "swf-tree/matrix";
 import { MorphFillStyle } from "swf-tree/morph-fill-style";
+import { MorphGradient } from "swf-tree/morph-gradient";
+import { MorphLineStyle } from "swf-tree/morph-line-style";
 import { MorphShape } from "swf-tree/morph-shape";
 import { MorphShapeRecord } from "swf-tree/morph-shape-record";
-import { morphFillStyles, MorphFillStyleType } from "swf-tree";
-import { parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits, } from "./shape";
-import { Matrix } from "swf-tree/matrix";
-import { MorphGradient } from "swf-tree/morph-gradient";
-import { Fixed8P8 } from "swf-tree/fixed-point/fixed8p8";
-import { StraightSRgba8 } from "swf-tree/straight-s-rgba8";
-import { StraightEdge } from "swf-tree/shape-records/straight-edge";
-import { CurvedEdge } from "swf-tree/shape-records/curved-edge";
-import { MorphStyleChange } from "swf-tree/morph-shape-records/morph-style-change";
-import { Vector2D } from "swf-tree/vector-2d";
 import { MorphShapeRecordType } from "swf-tree/morph-shape-records/_type";
-import { Incident } from "incident";
-import { MorphStraightEdge } from "swf-tree/morph-shape-records/morph-straight-edge";
 import { MorphCurvedEdge } from "swf-tree/morph-shape-records/morph-curved-edge";
+import { MorphStraightEdge } from "swf-tree/morph-shape-records/morph-straight-edge";
+import { MorphStyleChange } from "swf-tree/morph-shape-records/morph-style-change";
 import { ShapeRecordType } from "swf-tree/shape-records/_type";
-import { CapStyle } from "swf-tree/cap-style";
-import { JoinStyleType } from "swf-tree/join-styles/_type";
+import { CurvedEdge } from "swf-tree/shape-records/curved-edge";
+import { StraightEdge } from "swf-tree/shape-records/straight-edge";
+import { StraightSRgba8 } from "swf-tree/straight-s-rgba8";
+import { Vector2D } from "swf-tree/vector-2d";
+import { BitStream, ByteStream } from "../stream";
+import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
+import { parseMorphGradient } from "./gradient";
+import { parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape";
 
 export enum MorphShapeVersion {
   MorphShape1,
@@ -81,7 +81,8 @@ export function parseMorphShapeStylesBits(bitStream: BitStream, version: MorphSh
   return {fill, line, fillBits, lineBits};
 }
 
-// TODO: Replace by a more reliable type: the discriminant property `type` does not have the same base type (ShapeRecordType and MorphShapeRecordType)
+// TODO: Replace by a more reliable type: the discriminant property `type` does not have the same base type
+// (ShapeRecordType and MorphShapeRecordType)
 // It works here because they have corresponding keys defined in the same order
 export type MixedShapeRecord = StraightEdge | CurvedEdge | MorphStyleChange;
 
@@ -187,6 +188,7 @@ export function parseMorphShapeEndRecordStringBits(
       }
       const startEdge: StraightEdge | CurvedEdge = startRecord;
       const isStraightEdge: boolean = bitStream.readBoolBits();
+      // tslint:disable-next-line:max-line-length
       const endEdge: StraightEdge | CurvedEdge = isStraightEdge ? parseStraightEdgeBits(bitStream) : parseCurvedEdgeBits(bitStream);
       result.push(asMorphEdge(startEdge, endEdge));
     } else {
@@ -376,7 +378,11 @@ export function parseMorphLineStyleList(byteStream: ByteStream, version: MorphSh
   const result: MorphLineStyle[] = [];
   const len: UintSize = parseListLength(byteStream, true);
   for (let i: UintSize = 0; i < len; i++) {
-    result.push(version === MorphShapeVersion.MorphShape1 ? parseMorphLineStyle1(byteStream) : parseMorphLineStyle2(byteStream));
+    if (version === MorphShapeVersion.MorphShape1) {
+      result.push(parseMorphLineStyle1(byteStream));
+    } else {
+      result.push(parseMorphLineStyle2(byteStream));
+    }
   }
   return result;
 }

@@ -1,4 +1,4 @@
-import {Uint16, UintSize} from "semantic-types";
+import { Uint16, UintSize } from "semantic-types";
 
 /**
  * Return the major SWF version or undefined if the version is unknown.

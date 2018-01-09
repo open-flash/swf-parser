@@ -1,8 +1,8 @@
-import {assert} from "chai";
-import {Uint32} from "semantic-types";
-import {Stream} from "../../lib/stream";
-import {readTestJson} from "../_utils";
-import {readStreamJson, StreamJson} from "./_utils";
+import { assert } from "chai";
+import { Uint32 } from "semantic-types";
+import { Stream } from "../../lib/stream";
+import { readTestJson } from "../_utils";
+import { readStreamJson, StreamJson } from "./_utils";
 
 describe("readEncodedUint32LE", function () {
   interface Item {

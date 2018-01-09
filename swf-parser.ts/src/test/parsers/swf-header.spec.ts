@@ -1,9 +1,9 @@
-import {assert} from "chai";
-import {Header} from "swf-tree";
-import {parseHeader} from "../../lib/parsers/header";
-import {Stream} from "../../lib/stream";
-import {readTestJson} from "../_utils";
-import {readStreamJson, StreamJson} from "./_utils";
+import { assert } from "chai";
+import { Header } from "swf-tree";
+import { parseHeader } from "../../lib/parsers/header";
+import { Stream } from "../../lib/stream";
+import { readTestJson } from "../_utils";
+import { readStreamJson, StreamJson } from "./_utils";
 
 describe("parseHeader", function () {
   interface Item {

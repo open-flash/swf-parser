@@ -1,6 +1,6 @@
 {
   "name": "swf-parser",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "SWF parser loosely based on Shumway",
   "main": "dist/lib-es2015/lib/index.js",
   "types": "dist/lib-es2015/lib/index.d.ts",

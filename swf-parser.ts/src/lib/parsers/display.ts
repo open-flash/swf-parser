@@ -1,5 +1,5 @@
-import {Incident} from "incident";
-import {Float32, Uint16, Uint32, Uint4, Uint5, Uint8, UintSize} from "semantic-types";
+import { Incident } from "incident";
+import { Float32, Uint16, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
 import {
   avm1,
   BlendMode,
@@ -13,9 +13,9 @@ import {
   Fixed8P8,
   StraightSRgba8,
 } from "swf-tree";
-import {ByteStream} from "../stream";
-import {parseActionsBlock} from "./avm1";
-import {parseStraightSRgba8} from "./basic-data-types";
+import { ByteStream } from "../stream";
+import { parseActionsBlock } from "./avm1";
+import { parseStraightSRgba8 } from "./basic-data-types";
 
 export function parseBlendMode(byteStream: ByteStream): BlendMode {
   switch (byteStream.readUint8()) {

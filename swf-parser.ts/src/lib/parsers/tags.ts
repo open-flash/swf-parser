@@ -1,5 +1,5 @@
-import {Incident} from "incident";
-import {Float32, Sint16, Uint16, Uint32, Uint8, UintSize} from "semantic-types";
+import { Incident } from "incident";
+import { Float32, Sint16, Uint16, Uint32, Uint8, UintSize } from "semantic-types";
 import {
   BlendMode,
   ClipActions,
@@ -20,9 +20,10 @@ import {
   TagType,
   text,
 } from "swf-tree";
-import {GlyphCountProvider, ParseContext} from "../parse-context";
-import {ByteStream, Stream} from "../stream";
-import {parseActionsString} from "./avm1";
+import { MorphShape } from "swf-tree/morph-shape";
+import { GlyphCountProvider, ParseContext } from "../parse-context";
+import { ByteStream, Stream } from "../stream";
+import { parseActionsString } from "./avm1";
 import {
   parseColorTransform,
   parseColorTransformWithAlpha,
@@ -31,7 +32,8 @@ import {
   parseSRgb8,
   parseStraightSRgba8,
 } from "./basic-data-types";
-import {parseBlendMode, parseClipActionsString, parseFilterList} from "./display";
+import { parseBlendMode, parseClipActionsString, parseFilterList } from "./display";
+import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
 import { parseShape, ShapeVersion } from "./shape";
 import {
   parseCsmTableHintBits,
@@ -44,8 +46,6 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
-import { MorphShape } from "swf-tree/morph-shape";
-import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -556,7 +556,7 @@ export function parsePlaceObject2(byteStream: Stream, swfVersion: UintSize): tag
     name,
     clipDepth,
     filters: undefined,
-    clipActions: clipActions,
+    clipActions,
   };
 }
 

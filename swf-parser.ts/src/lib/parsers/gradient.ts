@@ -1,7 +1,10 @@
-import {Uint2, Uint4, Uint8} from "semantic-types";
-import {ColorSpace, ColorStop, Gradient, GradientSpread, MorphColorStop, MorphGradient, StraightSRgba8} from "swf-tree";
-import {ByteStream} from "../stream";
-import {parseSRgb8, parseStraightSRgba8} from "./basic-data-types";
+import { Uint2, Uint4, Uint8 } from "semantic-types";
+import {
+  ColorSpace, ColorStop, Gradient, GradientSpread, MorphColorStop, MorphGradient,
+  StraightSRgba8,
+} from "swf-tree";
+import { ByteStream } from "../stream";
+import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 
 export function parseColorStop(byteStream: ByteStream, withAlpha: boolean): ColorStop {
   const ratio: Uint8 = byteStream.readUint8();

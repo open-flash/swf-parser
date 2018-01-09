@@ -1,6 +1,6 @@
 import * as ast from "swf-tree";
-import {parseMovie} from "./parsers/movie";
-import {Stream} from "./stream";
+import { parseMovie } from "./parsers/movie";
+import { Stream } from "./stream";
 
 export {ast};
 

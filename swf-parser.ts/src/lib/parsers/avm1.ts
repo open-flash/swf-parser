@@ -1,8 +1,8 @@
-import {Incident} from "incident";
-import {Uint16, Uint8, UintSize} from "semantic-types";
-import {avm1} from "swf-tree";
+import { Incident } from "incident";
+import { Uint16, Uint8, UintSize } from "semantic-types";
+import { avm1 } from "swf-tree";
 import { createIncompleteStreamError, IncompleteStreamError } from "../errors/incomplete-stream";
-import {ByteStream, Stream} from "../stream";
+import { ByteStream, Stream } from "../stream";
 
 export interface ActionHeader {
   actionCode: Uint8;
@@ -508,7 +508,7 @@ export function parseTryAction(byteStream: Stream): avm1.actions.Try {
     action: avm1.ActionType.Try,
     try: tryBody,
     catch: catchBody,
-    catchTarget: catchTarget,
+    catchTarget,
     finally: finallyBody,
   };
 }
@@ -529,7 +529,7 @@ export function parsePushAction(byteStream: Stream): avm1.actions.Push {
   }
   return {
     action: avm1.ActionType.Push,
-    values: values,
+    values,
   };
 }
 

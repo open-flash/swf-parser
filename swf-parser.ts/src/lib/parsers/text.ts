@@ -1,9 +1,9 @@
-import {Incident} from "incident";
-import {Float16, Sint16, SintSize, Uint16, Uint8, UintSize} from "semantic-types";
-import {Glyph, LanguageCode, Rect, StraightSRgba8, text} from "swf-tree";
-import {BitStream, ByteStream} from "../stream";
-import {parseRect, parseSRgb8, parseStraightSRgba8} from "./basic-data-types";
-import {parseGlyph} from "./shape";
+import { Incident } from "incident";
+import { Float16, Sint16, SintSize, Uint16, Uint8, UintSize } from "semantic-types";
+import { Glyph, LanguageCode, Rect, StraightSRgba8, text } from "swf-tree";
+import { BitStream, ByteStream } from "../stream";
+import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
+import { parseGlyph } from "./shape";
 
 export function parseGridFittingBits(bitStream: BitStream): text.GridFitting {
   const code: UintSize = bitStream.readUint32Bits(3);

@@ -1,5 +1,5 @@
-import {Incident} from "incident";
-import {Stream} from "../../lib/stream";
+import { Incident } from "incident";
+import { Stream } from "../../lib/stream";
 
 export interface StreamJson {
   buffer: string;

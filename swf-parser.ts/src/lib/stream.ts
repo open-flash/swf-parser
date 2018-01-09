@@ -1,4 +1,4 @@
-import {Incident} from "incident";
+import { Incident } from "incident";
 import {
   Float16,
   Float32,
@@ -11,7 +11,7 @@ import {
   Uint8,
   UintSize,
 } from "semantic-types";
-import {Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8} from "swf-tree";
+import { Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8 } from "swf-tree";
 import { createIncompleteStreamError, IncompleteStreamError } from "./errors/incomplete-stream";
 
 /**
@@ -146,7 +146,11 @@ export class Stream implements BitStream, ByteStream {
 
   take(length: number): Stream {
     // TODO(demurgos): Remove type cast
-    const result: Stream = new Stream(this.bytes.buffer.slice(this.bytePos, this.bytePos + length) as ArrayBuffer, 0, 0);
+    const result: Stream = new Stream(
+      this.bytes.buffer.slice(this.bytePos, this.bytePos + length) as ArrayBuffer,
+      0,
+      0,
+    );
     this.bytePos += length;
     return result;
   }
@@ -372,5 +376,3 @@ export class Stream implements BitStream, ByteStream {
     }
   }
 }
-
-export default Stream;
