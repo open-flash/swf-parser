@@ -1,18 +1,7 @@
 import { Incident } from "incident";
-import {
-  Float16,
-  Float32,
-  Float64,
-  Sint16,
-  Sint32,
-  Sint8,
-  Uint16,
-  Uint32,
-  Uint8,
-  UintSize,
-} from "semantic-types";
+import { Float16, Float32, Float64, Sint16, Sint32, Sint8, Uint16, Uint32, Uint8, UintSize } from "semantic-types";
 import { Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8 } from "swf-tree";
-import { createIncompleteStreamError, IncompleteStreamError } from "./errors/incomplete-stream";
+import { createIncompleteStreamError } from "./errors/incomplete-stream";
 
 /**
  * Represents a non-byte-aligned stream

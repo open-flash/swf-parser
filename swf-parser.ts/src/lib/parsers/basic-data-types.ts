@@ -1,9 +1,15 @@
 import { Sint16, UintSize } from "semantic-types";
 import {
-  ColorTransform, ColorTransformWithAlpha, Fixed16P16, Fixed8P8, Matrix, Rect, SRgb8,
+  ColorTransform,
+  ColorTransformWithAlpha,
+  Fixed16P16,
+  Fixed8P8,
+  Matrix,
+  Rect,
+  SRgb8,
   StraightSRgba8,
 } from "swf-tree";
-import { BitStream, ByteStream, Stream } from "../stream";
+import { BitStream, ByteStream } from "../stream";
 
 export function parseRect(byteStream: ByteStream): Rect {
   const bitStream: BitStream = byteStream.asBitStream();
@@ -102,9 +108,9 @@ export function parseColorTransformBits(bitStream: BitStream): ColorTransform {
     greenMult = Fixed8P8.fromEpsilons(bitStream.readSint16Bits(nBits));
     blueMult = Fixed8P8.fromEpsilons(bitStream.readSint16Bits(nBits));
   } else {
-    redMult = Fixed16P16.fromValue(1);
-    greenMult = Fixed16P16.fromValue(1);
-    blueMult = Fixed16P16.fromValue(1);
+    redMult = Fixed8P8.fromValue(1);
+    greenMult = Fixed8P8.fromValue(1);
+    blueMult = Fixed8P8.fromValue(1);
   }
 
   let redAdd: Sint16;
@@ -152,10 +158,10 @@ export function parseColorTransformWithAlphaBits(bitStream: BitStream): ColorTra
     blueMult = Fixed8P8.fromEpsilons(bitStream.readSint16Bits(nBits));
     alphaMult = Fixed8P8.fromEpsilons(bitStream.readSint16Bits(nBits));
   } else {
-    redMult = Fixed16P16.fromValue(1);
-    greenMult = Fixed16P16.fromValue(1);
-    blueMult = Fixed16P16.fromValue(1);
-    alphaMult = Fixed16P16.fromValue(1);
+    redMult = Fixed8P8.fromValue(1);
+    greenMult = Fixed8P8.fromValue(1);
+    blueMult = Fixed8P8.fromValue(1);
+    alphaMult = Fixed8P8.fromValue(1);
   }
 
   let redAdd: Sint16;

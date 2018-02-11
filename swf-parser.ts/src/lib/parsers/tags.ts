@@ -46,6 +46,7 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
+import { SpriteTag } from "swf-tree/sprite-tag";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -398,7 +399,8 @@ export function parseDefineSprite(byteStream: Stream, context: ParseContext): ta
     type: TagType.DefineSprite,
     id,
     frameCount,
-    tags,
+    // TODO: Check validity of the tags
+    tags: tags as SpriteTag[],
   };
 }
 
