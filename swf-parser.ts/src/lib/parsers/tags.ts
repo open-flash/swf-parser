@@ -20,7 +20,11 @@ import {
   TagType,
   text,
 } from "swf-tree";
+import { ButtonCondAction } from "swf-tree/buttons/button-cond-action";
+import { ButtonRecord } from "swf-tree/buttons/button-record";
+import { ImageType } from "swf-tree/image-type";
 import { MorphShape } from "swf-tree/morph-shape";
+import { SpriteTag } from "swf-tree/sprite-tag";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import { ByteStream, Stream } from "../stream";
 import { parseActionsString } from "./avm1";
@@ -32,7 +36,19 @@ import {
   parseSRgb8,
   parseStraightSRgba8,
 } from "./basic-data-types";
+import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString } from "./button";
 import { parseBlendMode, parseClipActionsString, parseFilterList } from "./display";
+import {
+  ERRONEOUS_JPEG_START,
+  getGifImageDimensions,
+  getJpegImageDimensions,
+  getPngImageDimensions,
+  GIF_START,
+  ImageDimensions,
+  JPEG_START,
+  PNG_START,
+  testImageStart,
+} from "./image";
 import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
 import { parseShape, ShapeVersion } from "./shape";
 import {
@@ -46,7 +62,6 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
-import { SpriteTag } from "swf-tree/sprite-tag";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -72,6 +87,7 @@ export function parseTag(byteStream: Stream, context: ParseContext): Tag {
       if (tag.glyphs !== undefined) {
         context.setGlyphCount(tag.id, tag.glyphs.length);
       } else {
+        // TODO: Explain why we are using 0: does it make sense? Maybe `undefined` is better?
         context.setGlyphCount(tag.id, 0);
       }
       break;
@@ -99,6 +115,7 @@ function parseTagHeader(byteStream: Stream): TagHeader {
   }
 }
 
+// tslint:disable-next-line:cyclomatic-complexity
 function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext): Tag {
   switch (tagCode) {
     case 1:
@@ -115,10 +132,12 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseDefineText(byteStream);
     case 12:
       return parseDoAction(byteStream);
+    case 20:
+      return parseDefineBitsLossless(byteStream);
     case 22:
       return parseDefineShape2(byteStream);
     case 26: {
-      const swfVersion: UintSize | undefined = context.getVersion();
+      const swfVersion: Uint8 | undefined = context.getVersion();
       if (swfVersion === undefined) {
         throw new Incident("Missing SWF version, unable to parse placeObject2");
       }
@@ -128,10 +147,23 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseRemoveObject2(byteStream);
     case 32:
       return parseDefineShape3(byteStream);
+    case 34:
+      return parseDefineButton2(byteStream);
+    case 35: {
+      const swfVersion: Uint8 | undefined = context.getVersion();
+      if (swfVersion === undefined) {
+        throw new Incident("Missing SWF version, unable to parse defineBitsJpeg3");
+      }
+      return parseDefineBitsJpeg3(byteStream, swfVersion);
+    }
+    case 36:
+      return parseDefineBitsLossless2(byteStream);
     case 37:
       return parseDefineEditText(byteStream);
     case 39:
       return parseDefineSprite(byteStream, context);
+    case 43:
+      return parseFrameLabel(byteStream);
     case 46:
       return parseDefineMorphShape(byteStream);
     case 56:
@@ -159,6 +191,10 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
       return parseDefineFont(byteStream);
     case 77:
       return parseMetadata(byteStream);
+    case 83:
+      return parseDefineShape4(byteStream);
+    case 84:
+      return parseDefineMorphShape2(byteStream);
     case 86:
       return parseDefineSceneAndFrameLabelData(byteStream);
     case 88:
@@ -166,6 +202,72 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
     default:
       return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.bytes)};
   }
+}
+
+export function parseDefineBitsJpeg3(byteStream: Stream, swfVersion: Uint8): tags.DefineBitmap {
+  const id: Uint16 = byteStream.readUint16LE();
+
+  const bytePos: UintSize = byteStream.bytePos;
+
+  const dataSize: Uint32 = byteStream.readUint32LE();
+  let data: Uint8Array = byteStream.takeBytes(dataSize);
+
+  let mediaType: ImageType;
+  let imageDimensions: ImageDimensions;
+
+  if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
+    mediaType = "image/jpeg";
+    imageDimensions = getJpegImageDimensions(new Stream(data));
+    if (byteStream.available() > 0) {
+      mediaType = "image/x-ajpeg";
+      byteStream.bytePos = bytePos;
+      data = byteStream.tailBytes();
+    }
+  } else if (testImageStart(data, PNG_START)) {
+    mediaType = "image/png";
+    imageDimensions = getPngImageDimensions(new Stream(data));
+  } else if (testImageStart(data, GIF_START)) {
+    mediaType = "image/gif";
+    imageDimensions = getGifImageDimensions(new Stream(data));
+  } else {
+    throw new Incident("UnknownBitmapType");
+  }
+
+  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
+}
+
+export function parseDefineBitsLossless(byteStream: Stream): tags.DefineBitmap {
+  return parseDefineBitsLosslessAny(byteStream, "image/x-swf-bmp");
+}
+
+export function parseDefineBitsLossless2(byteStream: Stream): tags.DefineBitmap {
+  return parseDefineBitsLosslessAny(byteStream, "image/x-swf-abmp");
+}
+
+export function parseDefineBitsLosslessAny(
+  byteStream: Stream,
+  mediaType: "image/x-swf-abmp" | "image/x-swf-bmp",
+): tags.DefineBitmap {
+  const id: Uint16 = byteStream.readUint16LE();
+
+  const startPos: UintSize = byteStream.bytePos;
+  byteStream.skip(1); // BitmapFormat
+  const width: Uint16 = byteStream.readUint16LE();
+  const height: Uint16 = byteStream.readUint16LE();
+  byteStream.bytePos = startPos;
+  const data: Uint8Array = byteStream.tailBytes();
+
+  return {type: TagType.DefineBitmap, id, width, height, mediaType, data};
+}
+
+export function parseDefineButton2(byteStream: Stream): tags.DefineButton {
+  const buttonId: Uint16 = byteStream.readUint16LE();
+  const flags: Uint8 = byteStream.readUint8();
+  const trackAsMenu: boolean = (flags & (1 << 0)) !== 0;
+  const actionOffset: Uint16 = byteStream.readUint16LE();
+  const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button2);
+  const actions: ButtonCondAction[] = actionOffset === 0 ? [] : parseButton2CondActionString(byteStream);
+  return {type: TagType.DefineButton, buttonId, trackAsMenu, characters, actions};
 }
 
 export function parseCsmTextSettings(byteStream: Stream): tags.CsmTextSettings {
@@ -256,20 +358,45 @@ export function parseDefineFontName(byteStream: Stream): tags.DefineFontName {
 }
 
 export function parseDefineMorphShape(byteStream: Stream): tags.DefineMorphShape {
+  return parseDefineMorphShapeAny(byteStream, MorphShapeVersion.MorphShape1);
+}
+
+export function parseDefineMorphShape2(byteStream: Stream): tags.DefineMorphShape {
+  return parseDefineMorphShapeAny(byteStream, MorphShapeVersion.MorphShape2);
+}
+
+export function parseDefineMorphShapeAny(
+  byteStream: Stream,
+  morphShapeVersion: MorphShapeVersion,
+): tags.DefineMorphShape {
   const id: Uint16 = byteStream.readUint16LE();
   const startBounds: Rect = parseRect(byteStream);
   const endBounds: Rect = parseRect(byteStream);
-  const shape: MorphShape = parseMorphShape(byteStream, MorphShapeVersion.MorphShape1);
+
+  let startEdgeBounds: Rect | undefined = undefined;
+  let endEdgeBounds: Rect | undefined = undefined;
+  let hasNonScalingStrokes: boolean = false;
+  let hasScalingStrokes: boolean = false;
+  if (morphShapeVersion === MorphShapeVersion.MorphShape2) {
+    startEdgeBounds = parseRect(byteStream);
+    endEdgeBounds = parseRect(byteStream);
+    const flags: Uint8 = byteStream.readUint8();
+    // (Skip first 6 bits)
+    hasNonScalingStrokes = (flags & (1 << 1)) !== 0;
+    hasScalingStrokes = (flags & (1 << 0)) !== 0;
+  }
+
+  const shape: MorphShape = parseMorphShape(byteStream, morphShapeVersion);
 
   return {
     type: TagType.DefineMorphShape,
     id,
     startBounds,
     endBounds,
-    startEdgeBounds: undefined,
-    endEdgeBounds: undefined,
-    hasNonScalingStrokes: false,
-    hasScalingStrokes: false,
+    startEdgeBounds,
+    endEdgeBounds,
+    hasNonScalingStrokes,
+    hasScalingStrokes,
     shape,
   };
 }
@@ -309,19 +436,35 @@ export function parseDefineShape3(byteStream: Stream): tags.DefineShape {
   return parseDefineShapeAny(byteStream, ShapeVersion.Shape3);
 }
 
-function parseDefineShapeAny(byteStream: Stream, version: ShapeVersion): tags.DefineShape {
+export function parseDefineShape4(byteStream: Stream): tags.DefineShape {
+  return parseDefineShapeAny(byteStream, ShapeVersion.Shape4);
+}
+
+function parseDefineShapeAny(byteStream: Stream, shapeVersion: ShapeVersion): tags.DefineShape {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
-  const shape: Shape = parseShape(byteStream, version);
+  let edgeBounds: Rect | undefined = undefined;
+  let hasFillWinding: boolean = false;
+  let hasNonScalingStrokes: boolean = false;
+  let hasScalingStrokes: boolean = false;
+  if (shapeVersion === ShapeVersion.Shape4) {
+    edgeBounds = parseRect(byteStream);
+    const flags: Uint8 = byteStream.readUint8();
+    // (Skip first 5 bits)
+    hasFillWinding = (flags & (1 << 2)) !== 0;
+    hasNonScalingStrokes = (flags & (1 << 1)) !== 0;
+    hasScalingStrokes = (flags & (1 << 0)) !== 0;
+  }
+  const shape: Shape = parseShape(byteStream, shapeVersion);
 
   return {
     type: TagType.DefineShape,
     id,
     bounds,
-    edgeBounds: undefined,
-    hasFillWinding: false,
-    hasNonScalingStrokes: false,
-    hasScalingStrokes: false,
+    edgeBounds,
+    hasFillWinding,
+    hasNonScalingStrokes,
+    hasScalingStrokes,
     shape,
   };
 }
@@ -460,6 +603,16 @@ export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
     noCrossDomainCaching: (flags & (1 << 2)) !== 0,
     useRelativeUrls: (flags & (1 << 1)) !== 0,
     useNetwork: (flags & (1 << 0)) !== 0,
+  };
+}
+
+export function parseFrameLabel(byteStream: Stream): tags.FrameLabel {
+  const name: string = byteStream.readCString();
+  const anchorFlag: boolean = byteStream.available() > 1 && byteStream.readUint8() !== 0;
+  return {
+    type: TagType.FrameLabel,
+    name,
+    anchorFlag,
   };
 }
 

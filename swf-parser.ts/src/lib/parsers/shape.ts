@@ -1,16 +1,34 @@
-import { Sint32, Uint16, Uint8, UintSize } from "semantic-types";
+import { Incident } from "incident";
+import { Sint32, Uint16, Uint2, Uint4, Uint8, UintSize } from "semantic-types";
 import {
-  CapStyle, FillStyle, fillStyles, FillStyleType, Fixed8P8, Glyph, Gradient, JoinStyleType, LineStyle, Matrix,
-  Shape, ShapeRecord, shapeRecords, ShapeRecordType, SRgb8, StraightSRgba8, Vector2D,
+  CapStyle,
+  FillStyle,
+  fillStyles,
+  FillStyleType,
+  Fixed8P8,
+  Glyph,
+  Gradient,
+  JoinStyleType,
+  LineStyle,
+  Matrix,
+  Shape,
+  ShapeRecord,
+  shapeRecords,
+  ShapeRecordType,
+  SRgb8,
+  StraightSRgba8,
+  Vector2D,
 } from "swf-tree";
+import { JoinStyle } from "swf-tree/join-style";
 import { BitStream, ByteStream } from "../stream";
 import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGradient } from "./gradient";
 
 export enum ShapeVersion {
-  Shape1,
-  Shape2,
-  Shape3,
+  Shape1 = 1,
+  Shape2 = 2,
+  Shape3 = 3,
+  Shape4 = 4,
 }
 
 export function parseGlyph(byteStream: ByteStream): Glyph {
@@ -28,20 +46,20 @@ export function parseGlyphBits(bitStream: BitStream): Glyph {
   return {records};
 }
 
-export function parseShape(byteStream: ByteStream, version: ShapeVersion): Shape {
+export function parseShape(byteStream: ByteStream, shapeVersion: ShapeVersion): Shape {
   const bitStream: BitStream = byteStream.asBitStream();
-  const result: Shape = parseShapeBits(bitStream, version);
+  const result: Shape = parseShapeBits(bitStream, shapeVersion);
   bitStream.align();
   return result;
 }
 
-export function parseShapeBits(bitStream: BitStream, version: ShapeVersion): Shape {
-  const styles: ShapeStyles = parseShapeStylesBits(bitStream, version);
+export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion): Shape {
+  const styles: ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
   const records: ShapeRecord[] = parseShapeRecordStringBits(
     bitStream,
     styles.fillBits,
     styles.lineBits,
-    version,
+    shapeVersion,
   );
   return {
     fillStyles: styles.fill,
@@ -57,10 +75,10 @@ export interface ShapeStyles {
   lineBits: UintSize;
 }
 
-export function parseShapeStylesBits(bitStream: BitStream, version: ShapeVersion): ShapeStyles {
+export function parseShapeStylesBits(bitStream: BitStream, shapeVersion: ShapeVersion): ShapeStyles {
   const byteStream: ByteStream = bitStream.asByteStream();
-  const fill: FillStyle[] = parseFillStyleList(byteStream, version);
-  const line: LineStyle[] = parseLineStyleList(byteStream, version);
+  const fill: FillStyle[] = parseFillStyleList(byteStream, shapeVersion);
+  const line: LineStyle[] = parseLineStyleList(byteStream, shapeVersion);
   bitStream = byteStream.asBitStream();
   const fillBits: UintSize = bitStream.readUint32Bits(4);
   const lineBits: UintSize = bitStream.readUint32Bits(4);
@@ -71,7 +89,7 @@ export function parseShapeRecordStringBits(
   bitStream: BitStream,
   fillBits: UintSize,
   lineBits: UintSize,
-  version: ShapeVersion,
+  shapeVersion: ShapeVersion,
 ): ShapeRecord[] {
   const result: ShapeRecord[] = [];
 
@@ -96,7 +114,7 @@ export function parseShapeRecordStringBits(
       }
     } else {
       let styles: shapeRecords.StyleChange;
-      [styles, [fillBits, lineBits]] = parseStyleChangeBits(bitStream, fillBits, lineBits, version);
+      [styles, [fillBits, lineBits]] = parseStyleChangeBits(bitStream, fillBits, lineBits, shapeVersion);
       result.push(styles);
     }
   }
@@ -133,7 +151,7 @@ export function parseStyleChangeBits(
   bitStream: BitStream,
   fillBits: UintSize,
   lineBits: UintSize,
-  version: ShapeVersion,
+  shapeVersion: ShapeVersion,
 ): [shapeRecords.StyleChange, [UintSize, UintSize]] {
   const hasNewStyles: boolean = bitStream.readBoolBits();
   const changeLineStyle: boolean = bitStream.readBoolBits();
@@ -155,9 +173,9 @@ export function parseStyleChangeBits(
   let fillStyles: FillStyle[] | undefined = undefined;
   let lineStyles: LineStyle[] | undefined = undefined;
   if (hasNewStyles) {
-    // TODO: Shumway forces `hasNewStyle` to `false` if version is `Shape1`, should we do it too?
+    // TODO: Shumway forces `hasNewStyle` to `false` if shapeVersion is `Shape1`, should we do it too?
     // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L851
-    const styles: ShapeStyles = parseShapeStylesBits(bitStream, version);
+    const styles: ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
     fillStyles = styles.fill;
     lineStyles = styles.line;
     fillBits = styles.fillBits;
@@ -182,7 +200,7 @@ export function parseStyleChangeBits(
  *
  * @param byteStream Stream to use to parse this list length. Will mutate its state.
  * @param supportExtended Allow extended size (`> 255`). Here are the recommended values:
- *                      - `true` for `DefineShape2`, `DefineShape3`
+ *                      - `true` for `DefineShape2`, `DefineShape3`, `DefineShape4`
  *                      - `false` for `DefineShape`
  * @returns List length
  */
@@ -197,12 +215,12 @@ export function parseListLength(byteStream: ByteStream, supportExtended: boolean
 
 export function parseFillStyleList(
   byteStream: ByteStream,
-  version: ShapeVersion,
+  shapeVersion: ShapeVersion,
 ): FillStyle[] {
   const result: FillStyle[] = [];
-  const len: UintSize = parseListLength(byteStream, version !== ShapeVersion.Shape1);
+  const len: UintSize = parseListLength(byteStream, shapeVersion > ShapeVersion.Shape1);
   for (let i: UintSize = 0; i < len; i++) {
-    result.push(parseFillStyle(byteStream, version === ShapeVersion.Shape3));
+    result.push(parseFillStyle(byteStream, shapeVersion >= ShapeVersion.Shape3));
   }
   return result;
 }
@@ -217,6 +235,7 @@ export function parseFillStyle(byteStream: ByteStream, withAlpha: boolean): Fill
     case 0x12:
       return parseRadialGradientFill(byteStream, withAlpha);
     case 0x13:
+      // TODO: Check if this requires shapeVersion >= Shape4
       return parseFocalGradientFill(byteStream, withAlpha);
     case 0x40:
       return parseBitmapFill(byteStream, true, true);
@@ -258,7 +277,6 @@ export function parseFocalGradientFill(byteStream: ByteStream, withAlpha: boolea
 export function parseLinearGradientFill(byteStream: ByteStream, withAlpha: boolean): fillStyles.LinearGradient {
   const matrix: Matrix = parseMatrix(byteStream);
   const gradient: Gradient = parseGradient(byteStream, withAlpha);
-  const focalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
   return {
     type: FillStyleType.LinearGradient,
     matrix,
@@ -269,7 +287,6 @@ export function parseLinearGradientFill(byteStream: ByteStream, withAlpha: boole
 export function parseRadialGradientFill(byteStream: ByteStream, withAlpha: boolean): fillStyles.RadialGradient {
   const matrix: Matrix = parseMatrix(byteStream);
   const gradient: Gradient = parseGradient(byteStream, withAlpha);
-  const focalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
   return {
     type: FillStyleType.RadialGradient,
     matrix,
@@ -292,20 +309,23 @@ export function parseSolidFill(byteStream: ByteStream, withAlpha: boolean): fill
 
 export function parseLineStyleList(
   byteStream: ByteStream,
-  version: ShapeVersion,
+  shapeVersion: ShapeVersion,
 ): LineStyle[] {
   const result: LineStyle[] = [];
-  const len: UintSize = parseListLength(byteStream, version !== ShapeVersion.Shape1);
+  const len: UintSize = parseListLength(byteStream, shapeVersion > ShapeVersion.Shape1);
   for (let i: UintSize = 0; i < len; i++) {
-    result.push(parseLineStyle(byteStream));
+    if (shapeVersion < ShapeVersion.Shape4) {
+      result.push(parseLineStyle(byteStream, shapeVersion >= ShapeVersion.Shape3));
+    } else {
+      result.push(parseLineStyle2(byteStream));
+    }
   }
   return result;
 }
 
-// TODO: Linestyle2
-export function parseLineStyle(byteStream: ByteStream): LineStyle {
+export function parseLineStyle(byteStream: ByteStream, withAlpha: boolean): LineStyle {
   const width: Uint16 = byteStream.readUint16LE();
-  const color: SRgb8 = parseSRgb8(byteStream);
+  const color: StraightSRgba8 = withAlpha ? parseStraightSRgba8(byteStream) : {...parseSRgb8(byteStream), a: 255};
   return {
     width,
     startCap: CapStyle.Round,
@@ -317,7 +337,68 @@ export function parseLineStyle(byteStream: ByteStream): LineStyle {
     pixelHinting: false,
     fill: {
       type: FillStyleType.Solid,
-      color: {...color, a: 255},
+      color,
     },
   };
+}
+
+export function parseLineStyle2(byteStream: ByteStream): LineStyle {
+  const width: Uint16 = byteStream.readUint16LE();
+  const flags: Uint16 = byteStream.readUint16LE();
+  // (Skip first 5 bits)
+  const noClose: boolean = (flags & (1 << 10)) !== 0;
+  const endCapStyleId: Uint2 = ((flags >>> 8) & 0b11) as Uint2;
+  const startCapStyleId: Uint2 = ((flags >>> 6) & 0b11) as Uint2;
+  const joinStyleId: Uint2 = ((flags >>> 4) & 0b11) as Uint2;
+  const hasFill: boolean = (flags & (1 << 3)) !== 0;
+  const noHScale: boolean = (flags & (1 << 2)) !== 0;
+  const noVScale: boolean = (flags & (1 << 1)) !== 0;
+  const pixelHinting: boolean = (flags & (1 << 0)) !== 0;
+
+  let join: JoinStyle;
+  switch (joinStyleId) {
+    case 0:
+      join = {type: JoinStyleType.Round};
+      break;
+    case 1:
+      join = {type: JoinStyleType.Bevel};
+      break;
+    case 2:
+      join = {type: JoinStyleType.Miter, limit: byteStream.readFixed8P8LE()};
+      break;
+    default:
+      throw new Incident("UnexpectedJoinStyleId", {id: joinStyleId});
+  }
+
+  let fill: FillStyle;
+  if (hasFill) {
+    fill = parseFillStyle(byteStream, true);
+  } else {
+    fill = {type: FillStyleType.Solid, color: parseStraightSRgba8(byteStream)};
+  }
+
+  return {
+    width,
+    startCap: capStyleFromId(startCapStyleId),
+    endCap: capStyleFromId(endCapStyleId),
+    join,
+    noHScale,
+    noVScale,
+    noClose,
+    pixelHinting,
+    fill,
+  };
+}
+
+export function capStyleFromId(capStyleId: Uint2): CapStyle {
+  switch (capStyleId) {
+    case 0:
+      return CapStyle.Round;
+    case 1:
+      return CapStyle.None;
+    case 2:
+      return CapStyle.Square;
+    default:
+      throw new Incident("UnexpectedCapStyleId", {id: capStyleId});
+  }
 }

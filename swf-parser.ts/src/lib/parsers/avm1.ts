@@ -1,21 +1,21 @@
 import { Incident } from "incident";
 import { Uint16, Uint8, UintSize } from "semantic-types";
 import { avm1 } from "swf-tree";
-import { createIncompleteStreamError, IncompleteStreamError } from "../errors/incomplete-stream";
-import { ByteStream, Stream } from "../stream";
+import { createIncompleteStreamError } from "../errors/incomplete-stream";
+import { BitStream, ByteStream } from "../stream";
 
 export interface ActionHeader {
   actionCode: Uint8;
   length: Uint16;
 }
 
-export function parseActionHeader(byteStream: Stream): ActionHeader {
+export function parseActionHeader(byteStream: ByteStream): ActionHeader {
   const actionCode: Uint8 = byteStream.readUint8();
   const length: Uint16 = actionCode < 0x80 ? 0 : byteStream.readUint16LE();
   return {actionCode, length};
 }
 
-export function parseActionsString(byteStream: Stream): avm1.Action[] {
+export function parseActionsString(byteStream: ByteStream): avm1.Action[] {
   const result: avm1.Action[] = [];
 
   while (true) {
@@ -23,6 +23,7 @@ export function parseActionsString(byteStream: Stream): avm1.Action[] {
       throw createIncompleteStreamError();
     }
     if (byteStream.peekUint8() === 0) {
+      // TODO: Consume the last byte?!
       break;
     }
     result.push(parseAction(byteStream));
@@ -34,14 +35,13 @@ export function parseActionsString(byteStream: Stream): avm1.Action[] {
 export function parseActionsBlock(byteStream: ByteStream): avm1.Action[] {
   const block: avm1.Action[] = [];
   while (byteStream.available() > 0) {
-    // TODO: type AVM1 parsers to no longer require Stream but either ByteStream or BitStream
-    block.push(parseAction(byteStream as Stream));
+    block.push(parseAction(byteStream));
   }
   return block;
 }
 
 /* tslint:disable-next-line:cyclomatic-complexity */
-export function parseAction(byteStream: Stream): avm1.Action {
+export function parseAction(byteStream: ByteStream): avm1.Action {
   const startPos: number = byteStream.bytePos;
   const header: ActionHeader = parseActionHeader(byteStream);
   if (byteStream.available() < header.length) {
@@ -364,7 +364,7 @@ export function parseAction(byteStream: Stream): avm1.Action {
   return result;
 }
 
-export function parseGotoFrameAction(byteStream: Stream): avm1.actions.GotoFrame {
+export function parseGotoFrameAction(byteStream: ByteStream): avm1.actions.GotoFrame {
   const frame: Uint16 = byteStream.readUint16LE();
   return {
     action: avm1.ActionType.GotoFrame,
@@ -372,7 +372,7 @@ export function parseGotoFrameAction(byteStream: Stream): avm1.actions.GotoFrame
   };
 }
 
-export function parseGetUrlAction(byteStream: Stream): avm1.actions.GetUrl {
+export function parseGetUrlAction(byteStream: ByteStream): avm1.actions.GetUrl {
   const url: string = byteStream.readCString();
   const target: string = byteStream.readCString();
   return {
@@ -382,7 +382,7 @@ export function parseGetUrlAction(byteStream: Stream): avm1.actions.GetUrl {
   };
 }
 
-export function parseStoreRegisterAction(byteStream: Stream): avm1.actions.StoreRegister {
+export function parseStoreRegisterAction(byteStream: ByteStream): avm1.actions.StoreRegister {
   const registerNumber: Uint8 = byteStream.readUint8();
   return {
     action: avm1.ActionType.StoreRegister,
@@ -390,7 +390,7 @@ export function parseStoreRegisterAction(byteStream: Stream): avm1.actions.Store
   };
 }
 
-export function parseConstantPoolAction(byteStream: Stream): avm1.actions.ConstantPool {
+export function parseConstantPoolAction(byteStream: ByteStream): avm1.actions.ConstantPool {
   const length: UintSize = byteStream.readUint16LE();
   const constantPool: string[] = [];
   for (let i: number = 0; i < 0; i++) {
@@ -402,7 +402,7 @@ export function parseConstantPoolAction(byteStream: Stream): avm1.actions.Consta
   };
 }
 
-export function parseWaitForFrameAction(byteStream: Stream): avm1.actions.WaitForFrame {
+export function parseWaitForFrameAction(byteStream: ByteStream): avm1.actions.WaitForFrame {
   const frame: UintSize = byteStream.readUint16LE();
   const skipCount: UintSize = byteStream.readUint8();
   return {
@@ -412,7 +412,7 @@ export function parseWaitForFrameAction(byteStream: Stream): avm1.actions.WaitFo
   };
 }
 
-export function parseSetTargetAction(byteStream: Stream): avm1.actions.SetTarget {
+export function parseSetTargetAction(byteStream: ByteStream): avm1.actions.SetTarget {
   const targetName: string = byteStream.readCString();
   return {
     action: avm1.ActionType.SetTarget,
@@ -420,7 +420,7 @@ export function parseSetTargetAction(byteStream: Stream): avm1.actions.SetTarget
   };
 }
 
-export function parseGotoLabelAction(byteStream: Stream): avm1.actions.GotoLabel {
+export function parseGotoLabelAction(byteStream: ByteStream): avm1.actions.GotoLabel {
   const label: string = byteStream.readCString();
   return {
     action: avm1.ActionType.GotoLabel,
@@ -428,7 +428,7 @@ export function parseGotoLabelAction(byteStream: Stream): avm1.actions.GotoLabel
   };
 }
 
-export function parseWaitForFrame2Action(byteStream: Stream): avm1.actions.WaitForFrame2 {
+export function parseWaitForFrame2Action(byteStream: ByteStream): avm1.actions.WaitForFrame2 {
   const skipCount: UintSize = byteStream.readUint8();
   return {
     action: avm1.ActionType.WaitForFrame2,
@@ -436,21 +436,24 @@ export function parseWaitForFrame2Action(byteStream: Stream): avm1.actions.WaitF
   };
 }
 
-export function parseDefineFunction2Action(byteStream: Stream): avm1.actions.DefineFunction2 {
+export function parseDefineFunction2Action(byteStream: ByteStream): avm1.actions.DefineFunction2 {
   const name: string = byteStream.readCString();
   const parameterCount: UintSize = byteStream.readUint16LE();
   const registerCount: UintSize = byteStream.readUint8();
-  const preloadParent: boolean = byteStream.readBoolBits();
-  const preloadRoot: boolean = byteStream.readBoolBits();
-  const suppressSuper: boolean = byteStream.readBoolBits();
-  const preloadSuper: boolean = byteStream.readBoolBits();
-  const suppressArguments: boolean = byteStream.readBoolBits();
-  const preloadArguments: boolean = byteStream.readBoolBits();
-  const suppressThis: boolean = byteStream.readBoolBits();
-  const preloadThis: boolean = byteStream.readBoolBits();
-  byteStream.skipBits(7);
-  const preloadGlobal: boolean = byteStream.readBoolBits();
-  // TODO(demurgos): Assert that byteStream.align() is a no-op
+
+  const bitStream: BitStream = byteStream.asBitStream();
+  const preloadParent: boolean = bitStream.readBoolBits();
+  const preloadRoot: boolean = bitStream.readBoolBits();
+  const suppressSuper: boolean = bitStream.readBoolBits();
+  const preloadSuper: boolean = bitStream.readBoolBits();
+  const suppressArguments: boolean = bitStream.readBoolBits();
+  const preloadArguments: boolean = bitStream.readBoolBits();
+  const suppressThis: boolean = bitStream.readBoolBits();
+  const preloadThis: boolean = bitStream.readBoolBits();
+  bitStream.skipBits(7);
+  const preloadGlobal: boolean = bitStream.readBoolBits();
+  bitStream.align(); // TODO(demurgos): Assert that bitStream.align() is a no-op
+
   const parameters: avm1.Parameter[] = [];
   for (let i: number = 0; i < parameterCount; i++) {
     const register: Uint8 = byteStream.readUint8();
@@ -478,7 +481,7 @@ export function parseDefineFunction2Action(byteStream: Stream): avm1.actions.Def
   };
 }
 
-function parseCatchTarget(byteStream: Stream, catchInRegister: boolean): avm1.CatchTarget {
+function parseCatchTarget(byteStream: ByteStream, catchInRegister: boolean): avm1.CatchTarget {
   if (catchInRegister) {
     return {type: avm1.CatchTargetType.Register, register: byteStream.readUint8()};
   } else {
@@ -486,11 +489,13 @@ function parseCatchTarget(byteStream: Stream, catchInRegister: boolean): avm1.Ca
   }
 }
 
-export function parseTryAction(byteStream: Stream): avm1.actions.Try {
-  byteStream.skipBits(5);
-  const catchInRegister: boolean = byteStream.readBoolBits();
-  const hasFinallyBlock: boolean = byteStream.readBoolBits();
-  const hasCatchBlock: boolean = byteStream.readBoolBits();
+export function parseTryAction(byteStream: ByteStream): avm1.actions.Try {
+  const flags: Uint8 = byteStream.readUint8();
+  // (Skip first 5 bits)
+  const catchInRegister: boolean = (flags & (1 << 2)) !== 0;
+  const hasFinallyBlock: boolean = (flags & (1 << 1)) !== 0;
+  const hasCatchBlock: boolean = (flags & (1 << 0)) !== 0;
+
   const trySize: Uint16 = byteStream.readUint16LE();
   const finallySize: Uint16 = byteStream.readUint16LE();
   const catchSize: Uint16 = byteStream.readUint16LE();
@@ -513,7 +518,7 @@ export function parseTryAction(byteStream: Stream): avm1.actions.Try {
   };
 }
 
-export function parseWithAction(byteStream: Stream): avm1.actions.With {
+export function parseWithAction(byteStream: ByteStream): avm1.actions.With {
   const withSize: Uint16 = byteStream.readUint16LE();
   const withBody: avm1.Action[] = parseActionsBlock(byteStream.take(withSize));
   return {
@@ -522,7 +527,7 @@ export function parseWithAction(byteStream: Stream): avm1.actions.With {
   };
 }
 
-export function parsePushAction(byteStream: Stream): avm1.actions.Push {
+export function parsePushAction(byteStream: ByteStream): avm1.actions.Push {
   const values: avm1.Value[] = [];
   while (byteStream.available() > 0) {
     values.push(parseActionValue(byteStream));
@@ -533,7 +538,7 @@ export function parsePushAction(byteStream: Stream): avm1.actions.Push {
   };
 }
 
-export function parseActionValue(byteStream: Stream): avm1.Value {
+export function parseActionValue(byteStream: ByteStream): avm1.Value {
   const typeCode: Uint8 = byteStream.readUint8();
   switch (typeCode) {
     case 0:
@@ -561,7 +566,7 @@ export function parseActionValue(byteStream: Stream): avm1.Value {
   }
 }
 
-export function parseJumpAction(byteStream: Stream): avm1.actions.Jump {
+export function parseJumpAction(byteStream: ByteStream): avm1.actions.Jump {
   const offset: Uint16 = byteStream.readUint16LE();
   return {
     action: avm1.ActionType.Jump,
@@ -569,9 +574,11 @@ export function parseJumpAction(byteStream: Stream): avm1.actions.Jump {
   };
 }
 
-export function parseGetUrl2Action(byteStream: Stream): avm1.actions.GetUrl2 {
+export function parseGetUrl2Action(byteStream: ByteStream): avm1.actions.GetUrl2 {
+  const bitStream: BitStream = byteStream.asBitStream();
+
   let method: avm1.GetUrl2Method;
-  switch (byteStream.readUint16Bits(2)) {
+  switch (bitStream.readUint16Bits(2)) {
     case 0:
       method = avm1.GetUrl2Method.None;
       break;
@@ -584,9 +591,12 @@ export function parseGetUrl2Action(byteStream: Stream): avm1.actions.GetUrl2 {
     default:
       throw new Incident("UnexpectGetUrl2Method", "Unexpected value for the getUrl2 method");
   }
-  byteStream.skipBits(4);
-  const loadTarget: boolean = byteStream.readBoolBits();
-  const loadVariables: boolean = byteStream.readBoolBits();
+  bitStream.skipBits(4);
+  const loadTarget: boolean = bitStream.readBoolBits();
+  const loadVariables: boolean = bitStream.readBoolBits();
+
+  bitStream.align();
+
   return {
     action: avm1.ActionType.GetUrl2,
     method,
@@ -595,7 +605,7 @@ export function parseGetUrl2Action(byteStream: Stream): avm1.actions.GetUrl2 {
   };
 }
 
-export function parseDefineFunctionAction(byteStream: Stream): avm1.actions.DefineFunction {
+export function parseDefineFunctionAction(byteStream: ByteStream): avm1.actions.DefineFunction {
   const name: string = byteStream.readCString();
   const parameterCount: UintSize = byteStream.readUint16LE();
   const parameters: string[] = [];
@@ -613,7 +623,7 @@ export function parseDefineFunctionAction(byteStream: Stream): avm1.actions.Defi
   };
 }
 
-export function parseIfAction(byteStream: Stream): avm1.actions.If {
+export function parseIfAction(byteStream: ByteStream): avm1.actions.If {
   const offset: Uint16 = byteStream.readUint16LE();
   return {
     action: avm1.ActionType.If,
@@ -621,10 +631,11 @@ export function parseIfAction(byteStream: Stream): avm1.actions.If {
   };
 }
 
-export function parseGotoFrame2Action(byteStream: Stream): avm1.actions.GotoFrame2 {
-  byteStream.skipBits(6);
-  const hasSceneBias: boolean = byteStream.readBoolBits();
-  const play: boolean = byteStream.readBoolBits();
+export function parseGotoFrame2Action(byteStream: ByteStream): avm1.actions.GotoFrame2 {
+  const flags: Uint8 = byteStream.readUint8();
+  // (Skip first 6 bits)
+  const hasSceneBias: boolean = (flags & (1 << 1)) !== 0;
+  const play: boolean = (flags & (1 << 0)) !== 0;
   const sceneBias: Uint16 = hasSceneBias ? byteStream.readUint16LE() : 0;
   return {
     action: avm1.ActionType.GotoFrame2,

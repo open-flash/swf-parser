@@ -41,9 +41,13 @@ export interface ByteStream {
 
   available(): UintSize;
 
+  tailBytes(): Uint8Array;
+
   asBitStream(): BitStream;
 
   take(length: UintSize): ByteStream;
+
+  takeBytes(length: UintSize): Uint8Array;
 
   readCString(): string;
 
@@ -91,16 +95,12 @@ export class Stream implements BitStream, ByteStream {
   byteEnd: UintSize;
   bitPos: UintSize;
 
-  constructor(buffer: ArrayBuffer | Buffer, byteOffset: UintSize = 0, bitOffset: UintSize = 0) {
-    if (buffer instanceof Buffer) {
-      // TODO(demurgos): Remove type cast
-      buffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
-    }
-    this.bytes = new Uint8Array(buffer, byteOffset, buffer.byteLength);
-    this.view = new DataView(buffer, byteOffset, buffer.byteLength);
+  constructor(bytes: Uint8Array, byteOffset: UintSize = 0, bitOffset: UintSize = 0) {
+    this.bytes = bytes;
+    this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
     this.bytePos = 0;
     this.bitPos = bitOffset;
-    this.byteEnd = buffer.byteLength;
+    this.byteEnd = bytes.length;
   }
 
   asBitStream(): this {
@@ -120,34 +120,28 @@ export class Stream implements BitStream, ByteStream {
   }
 
   tail(): Stream {
-    // TODO(demurgos): Remove type cast
-    return new Stream(this.bytes.buffer.slice(this.bytePos) as ArrayBuffer, 0, this.bitPos);
+    return new Stream(this.tailBytes(), 0, this.bitPos);
+  }
+
+  tailBytes(): Uint8Array {
+    const result: Uint8Array = this.bytes.subarray(this.bytePos);
+    this.bytePos = this.byteEnd;
+    this.bitPos = 0;
+    return result;
   }
 
   available(): number {
     return this.byteEnd - this.bytePos;
   }
 
-  toBuffer(): Buffer {
-    // TODO(demurgos): Remove type cast
-    return Buffer.from(this.bytes.buffer.slice(this.bytePos, this.byteEnd) as ArrayBuffer);
+  take(length: UintSize): Stream {
+    return new Stream(this.takeBytes(length), 0, 0);
   }
 
-  take(length: number): Stream {
-    // TODO(demurgos): Remove type cast
-    const result: Stream = new Stream(
-      this.bytes.buffer.slice(this.bytePos, this.bytePos + length) as ArrayBuffer,
-      0,
-      0,
-    );
+  takeBytes(length: UintSize): Uint8Array {
+    const result: Uint8Array = this.bytes.subarray(this.bytePos, this.bytePos + length);
     this.bytePos += length;
-    return result;
-  }
-
-  substream(byteStart: number, byteEnd: number): Stream {
-    // TODO(demurgos): Remove type cast
-    const result: Stream = new Stream(this.bytes.buffer as ArrayBuffer, byteStart, 0);
-    result.byteEnd = byteEnd;
+    this.bitPos = 0;
     return result;
   }
 
@@ -262,7 +256,6 @@ export class Stream implements BitStream, ByteStream {
   }
 
   skipBits(n: number): void {
-    // TODO(demurgos): Reverse the dependency between skipBits and readUintBits
     this.readUintBits(n);
   }
 
@@ -316,11 +309,11 @@ export class Stream implements BitStream, ByteStream {
 
   readCString(): string {
     const endOfString: number = this.bytes.indexOf(0, this.bytePos);
-    if (endOfString < this.bytePos) {
+    if (endOfString < 0) {
       throw createIncompleteStreamError();
     }
     // TODO(demurgos): Remove type cast
-    const strBuffer: Buffer = Buffer.from(this.bytes.buffer as ArrayBuffer, this.bytePos, endOfString - this.bytePos);
+    const strBuffer: Buffer = Buffer.from(this.bytes.subarray(this.bytePos, endOfString) as Buffer);
     const result: string = strBuffer.toString("utf8");
     this.bytePos = endOfString + 1;
     return result;

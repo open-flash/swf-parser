@@ -2,9 +2,9 @@ import * as ast from "swf-tree";
 import { parseMovie } from "./parsers/movie";
 import { Stream } from "./stream";
 
-export {ast};
+export { ast };
 
-export function parseBuffer(buffer: ArrayBuffer): ast.Movie {
-  const byteStream: Stream = new Stream(buffer);
+export function parseBytes(bytes: Uint8Array): ast.Movie {
+  const byteStream: Stream = new Stream(bytes);
   return parseMovie(byteStream);
 }

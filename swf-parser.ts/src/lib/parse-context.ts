@@ -1,9 +1,9 @@
-import { Uint16, UintSize } from "semantic-types";
+import { Uint16, Uint8, UintSize } from "semantic-types";
 
 /**
  * Return the major SWF version or undefined if the version is unknown.
  */
-export type VersionProvider = () => UintSize | undefined;
+export type VersionProvider = () => Uint8 | undefined;
 
 /**
  * Type representing a function returning the number of glyphs in the font with ID `fontId`.
@@ -27,7 +27,7 @@ export class DefaultParseContext implements ParseContext {
     this.glyphCounts = new Map();
   }
 
-  getVersion(): UintSize | undefined {
+  getVersion(): Uint8 | undefined {
     return this.version;
   }
 

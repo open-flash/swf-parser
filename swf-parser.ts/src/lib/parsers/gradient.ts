@@ -19,6 +19,8 @@ export function parseColorStop(byteStream: ByteStream, withAlpha: boolean): Colo
 
 export function parseGradient(byteStream: ByteStream, withAlpha: boolean): Gradient {
   const flags: Uint8 = byteStream.readUint8();
+  // The spec says that spreadId and colorSpaceId should be ignored for shapeVersion < Shape4
+  // and color count should be capped at 8. We're ignoring it for the moment.
   const spreadId: Uint2 = <Uint2> ((flags & ((1 << 8) - 1)) >>> 6);
   const colorSpaceId: Uint2 = <Uint2> ((flags & ((1 << 6) - 1)) >>> 4);
   const colorCount: Uint4 = <Uint4> (flags & ((1 << 4) - 1));

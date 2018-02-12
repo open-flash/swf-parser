@@ -1,10 +1,10 @@
 import * as fs from "fs";
+import { JsonValueWriter } from "kryo/writers/json-value";
 import * as sysPath from "path";
 import { Movie } from "swf-tree";
+import { $Movie } from "swf-tree/movie";
 import { parseMovie } from "../lib/parsers/movie";
 import { Stream } from "../lib/stream";
-import { $Movie } from "swf-tree/movie";
-import { JsonValueWriter } from "kryo/writers/json-value";
 
 async function main(): Promise<void> {
   if (process.argv.length < 3) {
