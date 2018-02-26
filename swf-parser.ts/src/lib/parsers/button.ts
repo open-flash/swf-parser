@@ -1,5 +1,5 @@
 import { Incident } from "incident";
-import { Uint16, Uint32, Uint8 } from "semantic-types";
+import { Uint16, Uint32, Uint7, Uint8 } from "semantic-types";
 import { Action } from "swf-tree/avm1/action";
 import { BlendMode } from "swf-tree/blend-mode";
 import { ButtonCond } from "swf-tree/buttons/button-cond";
@@ -15,11 +15,11 @@ import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types";
 import { parseBlendMode, parseFilterList } from "./display";
 
 export enum ButtonVersion {
-  Button1,
-  Button2,
+  Button1 = 1,
+  Button2 = 2,
 }
 
-export function parseButtonRecordString(byteStream: Stream, buttonVersion: ButtonVersion): ButtonRecord[] {
+export function parseButtonRecordString(byteStream: ByteStream, buttonVersion: ButtonVersion): ButtonRecord[] {
   const result: ButtonRecord[] = [];
 
   while (true) {
@@ -37,30 +37,30 @@ export function parseButtonRecordString(byteStream: Stream, buttonVersion: Butto
   return result;
 }
 
-export function parseButtonRecord(byteStream: Stream, buttonVersion: ButtonVersion): ButtonRecord {
+export function parseButtonRecord(byteStream: ByteStream, buttonVersion: ButtonVersion): ButtonRecord {
   const flags: Uint8 = byteStream.readUint8();
-  // (Skip first 2 bits)
-  const hasBlendMode: boolean = (flags & (1 << 5)) !== 0;
-  const hasFilterList: boolean = (flags & (1 << 4)) !== 0;
-  const stateHitTest: boolean = (flags & (1 << 3)) !== 0;
-  const stateDown: boolean = (flags & (1 << 2)) !== 0;
-  const stateOver: boolean = (flags & (1 << 1)) !== 0;
   const stateUp: boolean = (flags & (1 << 0)) !== 0;
+  const stateOver: boolean = (flags & (1 << 1)) !== 0;
+  const stateDown: boolean = (flags & (1 << 2)) !== 0;
+  const stateHitTest: boolean = (flags & (1 << 3)) !== 0;
+  const hasFilterList: boolean = (flags & (1 << 4)) !== 0;
+  const hasBlendMode: boolean = (flags & (1 << 5)) !== 0;
+  // (Skip 2 bits)
 
   const characterId: Uint16 = byteStream.readUint16LE();
   const depth: Uint16 = byteStream.readUint16LE();
   const matrix: Matrix = parseMatrix(byteStream);
   let colorTransform: ColorTransformWithAlpha | undefined = undefined;
-  if (buttonVersion !== ButtonVersion.Button1) {
-    colorTransform = parseColorTransformWithAlpha(byteStream);
-  }
   let filters: Filter[] | undefined = undefined;
-  if (buttonVersion !== ButtonVersion.Button1 && hasFilterList) {
-    filters = parseFilterList(byteStream);
-  }
   let blendMode: BlendMode = BlendMode.Normal;
-  if (buttonVersion !== ButtonVersion.Button1 && hasBlendMode) {
-    blendMode = parseBlendMode(byteStream);
+  if (buttonVersion >= ButtonVersion.Button1) {
+    colorTransform = parseColorTransformWithAlpha(byteStream);
+    if (hasFilterList) {
+      filters = parseFilterList(byteStream);
+    }
+    if (hasBlendMode) {
+      blendMode = parseBlendMode(byteStream);
+    }
   }
   return {
     stateHitTest,
@@ -79,7 +79,7 @@ export function parseButtonRecord(byteStream: Stream, buttonVersion: ButtonVersi
 /**
  * Reads a string of at least one Button2 cond actions
  */
-export function parseButton2CondActionString(byteStream: Stream): ButtonCondAction[] {
+export function parseButton2CondActionString(byteStream: ByteStream): ButtonCondAction[] {
   const result: ButtonCondAction[] = [];
 
   let nextActionOffset: Uint16;
@@ -98,18 +98,9 @@ export function parseButton2CondAction(byteStream: ByteStream): ButtonCondAction
 }
 
 export function parseButtonCond(byteStream: ByteStream): ButtonCond {
-  const bitStream: BitStream = byteStream.asBitStream();
+  const flags: Uint16 = byteStream.readUint16LE();
 
-  const idleToOverDown: boolean = bitStream.readBoolBits();
-  const outDownToIdle: boolean = bitStream.readBoolBits();
-  const outDownToOverDown: boolean = bitStream.readBoolBits();
-  const overDownToOutDown: boolean = bitStream.readBoolBits();
-  const overDownToOverUp: boolean = bitStream.readBoolBits();
-  const overUpToOverDown: boolean = bitStream.readBoolBits();
-  const overUpToIdle: boolean = bitStream.readBoolBits();
-  const idleToOverUp: boolean = bitStream.readBoolBits();
-
-  let keyPress: Uint32 | undefined = bitStream.readUint32Bits(7);
+  let keyPress: Uint7 | undefined = (flags >> 0) & 0x7f;
   if (keyPress === 0) {
     keyPress = undefined;
   } else if (
@@ -121,20 +112,26 @@ export function parseButtonCond(byteStream: ByteStream): ButtonCond {
     throw new Incident("InvalidKeyCode", {code: keyPress});
   }
 
-  const overDownToIdle: boolean = bitStream.readBoolBits();
-
-  bitStream.align();
+  const overDownToIdle: boolean = (flags & (1 << 7)) !== 0;
+  const idleToOverUp: boolean = (flags & (1 << 8)) !== 0;
+  const overUpToIdle: boolean = (flags & (1 << 9)) !== 0;
+  const overUpToOverDown: boolean = (flags & (1 << 10)) !== 0;
+  const overDownToOverUp: boolean = (flags & (1 << 11)) !== 0;
+  const overDownToOutDown: boolean = (flags & (1 << 12)) !== 0;
+  const outDownToOverDown: boolean = (flags & (1 << 13)) !== 0;
+  const outDownToIdle: boolean = (flags & (1 << 14)) !== 0;
+  const idleToOverDown: boolean = (flags & (1 << 15)) !== 0;
 
   return {
-    idleToOverDown,
-    outDownToIdle,
-    outDownToOverDown,
-    overDownToOutDown,
-    overDownToOverUp,
-    overUpToOverDown,
-    overUpToIdle,
-    idleToOverUp,
-    overDownToIdle,
     keyPress,
+    overDownToIdle,
+    idleToOverUp,
+    overUpToIdle,
+    overUpToOverDown,
+    overDownToOverUp,
+    overDownToOutDown,
+    outDownToOverDown,
+    outDownToIdle,
+    idleToOverDown,
   };
 }

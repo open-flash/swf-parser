@@ -26,7 +26,7 @@ import { ImageType } from "swf-tree/image-type";
 import { MorphShape } from "swf-tree/morph-shape";
 import { SpriteTag } from "swf-tree/sprite-tag";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
-import { ByteStream, Stream } from "../stream";
+import { BitStream, ByteStream, Stream } from "../stream";
 import { parseActionsString } from "./avm1";
 import {
   parseColorTransform,
@@ -66,7 +66,7 @@ import {
 /**
  * Read tags until the end of the stream or "end-of-tags".
  */
-export function parseTagBlockString(byteStream: Stream, context: ParseContext): Tag[] {
+export function parseTagBlockString(byteStream: ByteStream, context: ParseContext): Tag[] {
   const tags: Tag[] = [];
   while (byteStream.available() > 0) {
     // A null byte indicates the end-of-tags
@@ -79,7 +79,7 @@ export function parseTagBlockString(byteStream: Stream, context: ParseContext): 
   return tags;
 }
 
-export function parseTag(byteStream: Stream, context: ParseContext): Tag {
+export function parseTag(byteStream: ByteStream, context: ParseContext): Tag {
   const {code, length}: TagHeader = parseTagHeader(byteStream);
   const tag: Tag = parseTagBody(byteStream.take(length), code, context);
   switch (tag.type) {
@@ -102,7 +102,7 @@ interface TagHeader {
   length: Uint32;
 }
 
-function parseTagHeader(byteStream: Stream): TagHeader {
+function parseTagHeader(byteStream: ByteStream): TagHeader {
   const codeAndLength: Uint16 = byteStream.readUint16LE();
   const code: Uint16 = codeAndLength >>> 6;
   const maxLength: number = (1 << 6) - 1;
@@ -116,7 +116,7 @@ function parseTagHeader(byteStream: Stream): TagHeader {
 }
 
 // tslint:disable-next-line:cyclomatic-complexity
-function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext): Tag {
+function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseContext): Tag {
   switch (tagCode) {
     case 1:
       return {type: TagType.ShowFrame};
@@ -188,7 +188,7 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
     case 74:
       return parseCsmTextSettings(byteStream);
     case 75:
-      return parseDefineFont(byteStream);
+      return parseDefineFont3(byteStream);
     case 77:
       return parseMetadata(byteStream);
     case 83:
@@ -200,11 +200,11 @@ function parseTagBody(byteStream: Stream, tagCode: Uint8, context: ParseContext)
     case 88:
       return parseDefineFontName(byteStream);
     default:
-      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.bytes)};
+      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.tailBytes())};
   }
 }
 
-export function parseDefineBitsJpeg3(byteStream: Stream, swfVersion: Uint8): tags.DefineBitmap {
+export function parseDefineBitsJpeg3(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
   const id: Uint16 = byteStream.readUint16LE();
 
   const bytePos: UintSize = byteStream.bytePos;
@@ -236,16 +236,16 @@ export function parseDefineBitsJpeg3(byteStream: Stream, swfVersion: Uint8): tag
   return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
 }
 
-export function parseDefineBitsLossless(byteStream: Stream): tags.DefineBitmap {
+export function parseDefineBitsLossless(byteStream: ByteStream): tags.DefineBitmap {
   return parseDefineBitsLosslessAny(byteStream, "image/x-swf-bmp");
 }
 
-export function parseDefineBitsLossless2(byteStream: Stream): tags.DefineBitmap {
+export function parseDefineBitsLossless2(byteStream: ByteStream): tags.DefineBitmap {
   return parseDefineBitsLosslessAny(byteStream, "image/x-swf-abmp");
 }
 
 export function parseDefineBitsLosslessAny(
-  byteStream: Stream,
+  byteStream: ByteStream,
   mediaType: "image/x-swf-abmp" | "image/x-swf-bmp",
 ): tags.DefineBitmap {
   const id: Uint16 = byteStream.readUint16LE();
@@ -260,7 +260,7 @@ export function parseDefineBitsLosslessAny(
   return {type: TagType.DefineBitmap, id, width, height, mediaType, data};
 }
 
-export function parseDefineButton2(byteStream: Stream): tags.DefineButton {
+export function parseDefineButton2(byteStream: ByteStream): tags.DefineButton {
   const buttonId: Uint16 = byteStream.readUint16LE();
   const flags: Uint8 = byteStream.readUint8();
   const trackAsMenu: boolean = (flags & (1 << 0)) !== 0;
@@ -270,32 +270,40 @@ export function parseDefineButton2(byteStream: Stream): tags.DefineButton {
   return {type: TagType.DefineButton, buttonId, trackAsMenu, characters, actions};
 }
 
-export function parseCsmTextSettings(byteStream: Stream): tags.CsmTextSettings {
+export function parseCsmTextSettings(byteStream: ByteStream): tags.CsmTextSettings {
   const textId: Uint16 = byteStream.readUint16LE();
-  const renderer: text.TextRenderer = parseTextRendererBits(byteStream);
-  const fitting: text.GridFitting = parseGridFittingBits(byteStream);
-  byteStream.skipBits(3);
+  const bitStream: BitStream = byteStream.asBitStream();
+  const renderer: text.TextRenderer = parseTextRendererBits(bitStream);
+  const fitting: text.GridFitting = parseGridFittingBits(bitStream);
+  bitStream.align();
   const thickness: Float32 = byteStream.readFloat32BE();
   const sharpness: Float32 = byteStream.readFloat32BE();
   byteStream.skip(1);
   return {type: TagType.CsmTextSettings, textId, renderer, fitting, thickness, sharpness};
 }
 
-export function parseDefineFont(byteStream: Stream): tags.DefineFont {
+export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
   const id: Uint16 = byteStream.readUint16LE();
-  const hasLayout: boolean = byteStream.readBoolBits();
-  const isShiftJis: boolean = byteStream.readBoolBits();
-  const isAnsi: boolean = byteStream.readBoolBits();
-  const isSmall: boolean = byteStream.readBoolBits();
-  const useWideOffsets: boolean = byteStream.readBoolBits();
-  const useWideCodes: boolean = byteStream.readBoolBits();
-  const isItalic: boolean = byteStream.readBoolBits();
-  const isBold: boolean = byteStream.readBoolBits();
+
+  const flags: Uint8 = byteStream.readUint8();
+  const isBold = (flags & (1 << 0)) !== 0;
+  const isItalic = (flags & (1 << 1)) !== 0;
+  const useWideCodes = (flags & (1 << 2)) !== 0;
+  const useWideOffsets = (flags & (1 << 3)) !== 0;
+  const isSmall = (flags & (1 << 4)) !== 0;
+  const isAnsi = (flags & (1 << 5)) !== 0;
+  const isShiftJis = (flags & (1 << 6)) !== 0;
+  const hasLayout = (flags & (1 << 7)) !== 0;
+
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
-  const fontName: string = byteStream.take(fontNameLength).readCString();
+  const fontName: string = byteStream.take(fontNameLength).readCString(); // TODO: Check if there is a null byte
+
   const glyphCount: UintSize = byteStream.readUint16LE();
   if (glyphCount === 0) {
+    // According to Shumway:
+    // > The SWF format docs doesn't say that, but the DefineFont{2,3} tag ends here for device fonts.
+
     // System font
     return {
       type: TagType.DefineFont,
@@ -333,7 +341,7 @@ export function parseDefineFont(byteStream: Stream): tags.DefineFont {
 }
 
 export function parseDefineFontAlignZones(
-  byteStream: Stream,
+  byteStream: ByteStream,
   glyphCountProvider: GlyphCountProvider,
 ): tags.DefineFontAlignZones {
   const fontId: Uint16 = byteStream.readUint16LE();
@@ -341,8 +349,9 @@ export function parseDefineFontAlignZones(
   if (glyphCount === undefined) {
     throw new Incident("ParseError", `ParseDefineFontAlignZones: Unknown font for id: ${fontId}`);
   }
-  const csmTableHint: text.CsmTableHint = parseCsmTableHintBits(byteStream);
-  byteStream.skipBits(6);
+  const bitStream: BitStream = byteStream.asBitStream();
+  const csmTableHint: text.CsmTableHint = parseCsmTableHintBits(bitStream);
+  bitStream.align();
   const zones: text.FontAlignmentZone[] = [];
   for (let i: number = 0; i < glyphCount; i++) {
     zones.push(parseFontAlignmentZone(byteStream));
@@ -350,23 +359,23 @@ export function parseDefineFontAlignZones(
   return {type: TagType.DefineFontAlignZones, fontId, csmTableHint, zones};
 }
 
-export function parseDefineFontName(byteStream: Stream): tags.DefineFontName {
+export function parseDefineFontName(byteStream: ByteStream): tags.DefineFontName {
   const fontId: Uint16 = byteStream.readUint16LE();
   const name: string = byteStream.readCString();
   const copyright: string = byteStream.readCString();
   return {type: TagType.DefineFontName, fontId, name, copyright};
 }
 
-export function parseDefineMorphShape(byteStream: Stream): tags.DefineMorphShape {
+export function parseDefineMorphShape(byteStream: ByteStream): tags.DefineMorphShape {
   return parseDefineMorphShapeAny(byteStream, MorphShapeVersion.MorphShape1);
 }
 
-export function parseDefineMorphShape2(byteStream: Stream): tags.DefineMorphShape {
+export function parseDefineMorphShape2(byteStream: ByteStream): tags.DefineMorphShape {
   return parseDefineMorphShapeAny(byteStream, MorphShapeVersion.MorphShape2);
 }
 
 export function parseDefineMorphShapeAny(
-  byteStream: Stream,
+  byteStream: ByteStream,
   morphShapeVersion: MorphShapeVersion,
 ): tags.DefineMorphShape {
   const id: Uint16 = byteStream.readUint16LE();
@@ -401,18 +410,18 @@ export function parseDefineMorphShapeAny(
   };
 }
 
-export function parseDefineSceneAndFrameLabelData(byteStream: Stream): tags.DefineSceneAndFrameLabelData {
-  const sceneCount: Uint32 = byteStream.readEncodedUint32LE();
+export function parseDefineSceneAndFrameLabelData(byteStream: ByteStream): tags.DefineSceneAndFrameLabelData {
+  const sceneCount: Uint32 = byteStream.readUint32Leb128();
   const scenes: Scene[] = [];
   for (let i: number = 0; i < sceneCount; i++) {
-    const offset: number = byteStream.readEncodedUint32LE();
+    const offset: number = byteStream.readUint32Leb128();
     const name: string = byteStream.readCString();
     scenes.push({offset, name});
   }
-  const labelCount: Uint32 = byteStream.readEncodedUint32LE();
+  const labelCount: Uint32 = byteStream.readUint32Leb128();
   const labels: Label[] = [];
   for (let i: number = 0; i < labelCount; i++) {
-    const frame: number = byteStream.readEncodedUint32LE();
+    const frame: number = byteStream.readUint32Leb128();
     const name: string = byteStream.readCString();
     labels.push({frame, name});
   }
@@ -424,23 +433,23 @@ export function parseDefineSceneAndFrameLabelData(byteStream: Stream): tags.Defi
   };
 }
 
-export function parseDefineShape(byteStream: Stream): tags.DefineShape {
+export function parseDefineShape(byteStream: ByteStream): tags.DefineShape {
   return parseDefineShapeAny(byteStream, ShapeVersion.Shape1);
 }
 
-export function parseDefineShape2(byteStream: Stream): tags.DefineShape {
+export function parseDefineShape2(byteStream: ByteStream): tags.DefineShape {
   return parseDefineShapeAny(byteStream, ShapeVersion.Shape2);
 }
 
-export function parseDefineShape3(byteStream: Stream): tags.DefineShape {
+export function parseDefineShape3(byteStream: ByteStream): tags.DefineShape {
   return parseDefineShapeAny(byteStream, ShapeVersion.Shape3);
 }
 
-export function parseDefineShape4(byteStream: Stream): tags.DefineShape {
+export function parseDefineShape4(byteStream: ByteStream): tags.DefineShape {
   return parseDefineShapeAny(byteStream, ShapeVersion.Shape4);
 }
 
-function parseDefineShapeAny(byteStream: Stream, shapeVersion: ShapeVersion): tags.DefineShape {
+function parseDefineShapeAny(byteStream: ByteStream, shapeVersion: ShapeVersion): tags.DefineShape {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
   let edgeBounds: Rect | undefined = undefined;
@@ -469,7 +478,7 @@ function parseDefineShapeAny(byteStream: Stream, shapeVersion: ShapeVersion): ta
   };
 }
 
-export function parseDefineEditText(byteStream: Stream): tags.DefineDynamicText {
+export function parseDefineEditText(byteStream: ByteStream): tags.DefineDynamicText {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
 
@@ -534,7 +543,7 @@ export function parseDefineEditText(byteStream: Stream): tags.DefineDynamicText 
   };
 }
 
-export function parseDefineSprite(byteStream: Stream, context: ParseContext): tags.DefineSprite {
+export function parseDefineSprite(byteStream: ByteStream, context: ParseContext): tags.DefineSprite {
   const id: Uint16 = byteStream.readUint16LE();
   const frameCount: UintSize = byteStream.readUint16LE();
   const tags: Tag[] = parseTagBlockString(byteStream, context);
@@ -547,7 +556,7 @@ export function parseDefineSprite(byteStream: Stream, context: ParseContext): ta
   };
 }
 
-export function parseDefineText(byteStream: Stream): tags.DefineText {
+export function parseDefineText(byteStream: ByteStream): tags.DefineText {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
   const matrix: Matrix = parseMatrix(byteStream);
@@ -557,7 +566,7 @@ export function parseDefineText(byteStream: Stream): tags.DefineText {
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 
-export function parseDefineText2(byteStream: Stream): tags.DefineText {
+export function parseDefineText2(byteStream: ByteStream): tags.DefineText {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
   const matrix: Matrix = parseMatrix(byteStream);
@@ -567,16 +576,16 @@ export function parseDefineText2(byteStream: Stream): tags.DefineText {
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 
-export function parseDoAction(byteStream: Stream): tags.DoAction {
+export function parseDoAction(byteStream: ByteStream): tags.DoAction {
   return {type: TagType.DoAction, actions: parseActionsString(byteStream)};
 }
 
-export function parseDoInitAction(byteStream: Stream): tags.DoInitAction {
+export function parseDoInitAction(byteStream: ByteStream): tags.DoInitAction {
   const spriteId: Uint16 = byteStream.readUint16LE();
   return {type: TagType.DoInitAction, spriteId, actions: parseActionsString(byteStream)};
 }
 
-export function parseExportAssets(byteStream: Stream): tags.ExportAssets {
+export function parseExportAssets(byteStream: ByteStream): tags.ExportAssets {
   const assetCount: UintSize = byteStream.readUint16LE();
   const assets: NamedId[] = [];
   for (let i: number = 0; i < assetCount; i++) {
@@ -590,7 +599,7 @@ export function parseExportAssets(byteStream: Stream): tags.ExportAssets {
   };
 }
 
-export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
+export function parseFileAttributes(byteStream: ByteStream): tags.FileAttributes {
   const flags: Uint8 = byteStream.readUint8();
   byteStream.skip(3);
 
@@ -606,7 +615,7 @@ export function parseFileAttributes(byteStream: Stream): tags.FileAttributes {
   };
 }
 
-export function parseFrameLabel(byteStream: Stream): tags.FrameLabel {
+export function parseFrameLabel(byteStream: ByteStream): tags.FrameLabel {
   const name: string = byteStream.readCString();
   const anchorFlag: boolean = byteStream.available() > 1 && byteStream.readUint8() !== 0;
   return {
@@ -616,7 +625,7 @@ export function parseFrameLabel(byteStream: Stream): tags.FrameLabel {
   };
 }
 
-export function parseImportAssets(byteStream: Stream): tags.ImportAssets {
+export function parseImportAssets(byteStream: ByteStream): tags.ImportAssets {
   const url: string = byteStream.readCString();
   const assetCount: UintSize = byteStream.readUint16LE();
   const assets: NamedId[] = [];
@@ -632,7 +641,7 @@ export function parseImportAssets(byteStream: Stream): tags.ImportAssets {
   };
 }
 
-export function parseImportAssets2(byteStream: Stream): tags.ImportAssets {
+export function parseImportAssets2(byteStream: ByteStream): tags.ImportAssets {
   const url: string = byteStream.readCString();
   byteStream.skip(2);
   const assetCount: UintSize = byteStream.readUint16LE();
@@ -649,11 +658,11 @@ export function parseImportAssets2(byteStream: Stream): tags.ImportAssets {
   };
 }
 
-export function parseMetadata(byteStream: Stream): tags.Metadata {
+export function parseMetadata(byteStream: ByteStream): tags.Metadata {
   return {type: TagType.Metadata, metadata: byteStream.readCString()};
 }
 
-export function parsePlaceObject(byteStream: Stream): tags.PlaceObject {
+export function parsePlaceObject(byteStream: ByteStream): tags.PlaceObject {
   const characterId: Uint16 = byteStream.readUint16LE();
   const depth: Uint16 = byteStream.readUint16LE();
   const matrix: Matrix = parseMatrix(byteStream);
@@ -677,15 +686,16 @@ export function parsePlaceObject(byteStream: Stream): tags.PlaceObject {
   };
 }
 
-export function parsePlaceObject2(byteStream: Stream, swfVersion: UintSize): tags.PlaceObject {
-  const hasClipActions: boolean = byteStream.readBoolBits();
-  const hasClipDepth: boolean = byteStream.readBoolBits();
-  const hasName: boolean = byteStream.readBoolBits();
-  const hasRatio: boolean = byteStream.readBoolBits();
-  const hasColorTransform: boolean = byteStream.readBoolBits();
-  const hasMatrix: boolean = byteStream.readBoolBits();
-  const hasCharacterId: boolean = byteStream.readBoolBits();
-  const isMove: boolean = byteStream.readBoolBits();
+export function parsePlaceObject2(byteStream: ByteStream, swfVersion: UintSize): tags.PlaceObject {
+  const flags: Uint16 = byteStream.readUint8();
+  const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
+  const hasClipDepth: boolean = (flags & (1 << 6)) !== 0;
+  const hasName: boolean = (flags & (1 << 5)) !== 0;
+  const hasRatio: boolean = (flags & (1 << 4)) !== 0;
+  const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
+  const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
+  const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
+  const isMove: boolean = (flags & (1 << 0)) !== 0;
   const depth: Uint16 = byteStream.readUint16LE();
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
   const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
@@ -716,24 +726,23 @@ export function parsePlaceObject2(byteStream: Stream, swfVersion: UintSize): tag
 }
 
 export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize): tags.PlaceObject {
-  const flags: Uint16 = byteStream.readUint16BE();
-  const hasClipActions: boolean = (flags & (1 << 15)) !== 0;
-  const hasClipDepth: boolean = (flags & (1 << 14)) !== 0;
-  const hasName: boolean = (flags & (1 << 13)) !== 0;
-  const hasRatio: boolean = (flags & (1 << 12)) !== 0;
-  const hasColorTransform: boolean = (flags & (1 << 11)) !== 0;
-  const hasMatrix: boolean = (flags & (1 << 10)) !== 0;
-  const hasCharacterId: boolean = (flags & (1 << 9)) !== 0;
-  const isMove: boolean = (flags & (1 << 8)) !== 0;
-  // Reserved: (flags & (1 << 7))
-  const hasBackgroundColor: boolean = (flags & (1 << 6)) !== 0;
-  const hasVisibility: boolean = (flags & (1 << 5)) !== 0;
-  const hasImage: boolean = (flags & (1 << 4)) !== 0;
-  const hasClassName: boolean = (flags & (1 << 3)) !== 0;
-  const hasCacheHint: boolean = (flags & (1 << 2)) !== 0;
-  const hasBlendMode: boolean = (flags & (1 << 1)) !== 0;
-  const hasFilters: boolean = (flags & (1 << 0)) !== 0;
-
+  const flags: Uint16 = byteStream.readUint16LE();
+  // Skip one bit (bit 15)
+  const hasBackgroundColor: boolean = (flags & (1 << 14)) !== 0;
+  const hasVisibility: boolean = (flags & (1 << 13)) !== 0;
+  const hasImage: boolean = (flags & (1 << 12)) !== 0;
+  const hasClassName: boolean = (flags & (1 << 11)) !== 0;
+  const hasCacheHint: boolean = (flags & (1 << 10)) !== 0;
+  const hasBlendMode: boolean = (flags & (1 << 9)) !== 0;
+  const hasFilters: boolean = (flags & (1 << 8)) !== 0;
+  const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
+  const hasClipDepth: boolean = (flags & (1 << 6)) !== 0;
+  const hasName: boolean = (flags & (1 << 5)) !== 0;
+  const hasRatio: boolean = (flags & (1 << 4)) !== 0;
+  const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
+  const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
+  const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
+  const isMove: boolean = (flags & (1 << 0)) !== 0;
   const depth: Uint16 = byteStream.readUint16LE();
   const className: string | undefined = hasClassName || (hasImage && hasCharacterId) ?
     byteStream.readCString() :
@@ -779,17 +788,17 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
   };
 }
 
-export function parseRemoveObject(byteStream: Stream): tags.RemoveObject {
+export function parseRemoveObject(byteStream: ByteStream): tags.RemoveObject {
   const characterId: Uint16 = byteStream.readUint16LE();
   const depth: Uint16 = byteStream.readUint16LE();
   return {type: TagType.RemoveObject, characterId, depth};
 }
 
-export function parseRemoveObject2(byteStream: Stream): tags.RemoveObject {
+export function parseRemoveObject2(byteStream: ByteStream): tags.RemoveObject {
   const depth: Uint16 = byteStream.readUint16LE();
   return {type: TagType.RemoveObject, depth};
 }
 
-export function parseSetBackgroundColor(byteStream: Stream): tags.SetBackgroundColor {
+export function parseSetBackgroundColor(byteStream: ByteStream): tags.SetBackgroundColor {
   return {type: TagType.SetBackgroundColor, color: parseSRgb8(byteStream)};
 }

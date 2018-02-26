@@ -21,7 +21,7 @@ import { StraightEdge } from "swf-tree/shape-records/straight-edge";
 import { StraightSRgba8 } from "swf-tree/straight-s-rgba8";
 import { Vector2D } from "swf-tree/vector-2d";
 import { BitStream, ByteStream } from "../stream";
-import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
+import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types";
 import { parseMorphGradient } from "./gradient";
 import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape";
 
@@ -267,23 +267,22 @@ export function parseMorphFillStyleList(byteStream: ByteStream): MorphFillStyle[
   const result: MorphFillStyle[] = [];
   const len: UintSize = parseListLength(byteStream, true);
   for (let i: UintSize = 0; i < len; i++) {
-    result.push(parseMorphFillStyle(byteStream, true));
+    result.push(parseMorphFillStyle(byteStream));
   }
   return result;
 }
 
-export function parseMorphFillStyle(byteStream: ByteStream, withAlpha: boolean): MorphFillStyle {
-  // TODO: Remove `withAlph` parameter (always true)
+export function parseMorphFillStyle(byteStream: ByteStream): MorphFillStyle {
   switch (byteStream.readUint8()) {
     case 0x00:
-      return parseMorphSolidFill(byteStream, withAlpha);
+      return parseMorphSolidFill(byteStream);
     case 0x10:
-      return parseMorphLinearGradientFill(byteStream, withAlpha);
+      return parseMorphLinearGradientFill(byteStream);
     case 0x12:
-      return parseMorphRadialGradientFill(byteStream, withAlpha);
+      return parseMorphRadialGradientFill(byteStream);
     case 0x13:
       // TODO: Check if this requires shapeVersion >= Shape4
-      return parseMorphFocalGradientFill(byteStream, withAlpha);
+      return parseMorphFocalGradientFill(byteStream);
     case 0x40:
       return parseMorphBitmapFill(byteStream, true, true);
     case 0x41:
@@ -315,10 +314,10 @@ export function parseMorphBitmapFill(
   };
 }
 
-export function parseMorphFocalGradientFill(byteStream: ByteStream, withAlpha: boolean): morphFillStyles.FocalGradient {
+export function parseMorphFocalGradientFill(byteStream: ByteStream): morphFillStyles.FocalGradient {
   const startMatrix: Matrix = parseMatrix(byteStream);
   const endMatrix: Matrix = parseMatrix(byteStream);
-  const gradient: MorphGradient = parseMorphGradient(byteStream, withAlpha);
+  const gradient: MorphGradient = parseMorphGradient(byteStream, true);
   const startFocalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
   const endFocalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
   return {
@@ -333,12 +332,10 @@ export function parseMorphFocalGradientFill(byteStream: ByteStream, withAlpha: b
 
 export function parseMorphLinearGradientFill(
   byteStream: ByteStream,
-  withAlpha: boolean,
 ): morphFillStyles.LinearGradient {
   const startMatrix: Matrix = parseMatrix(byteStream);
   const endMatrix: Matrix = parseMatrix(byteStream);
-  const gradient: MorphGradient = parseMorphGradient(byteStream, withAlpha);
-  const focalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
+  const gradient: MorphGradient = parseMorphGradient(byteStream, true);
   return {
     type: MorphFillStyleType.LinearGradient,
     startMatrix,
@@ -349,11 +346,10 @@ export function parseMorphLinearGradientFill(
 
 export function parseMorphRadialGradientFill(
   byteStream: ByteStream,
-  withAlpha: boolean,
 ): morphFillStyles.RadialGradient {
   const startMatrix: Matrix = parseMatrix(byteStream);
   const endMatrix: Matrix = parseMatrix(byteStream);
-  const gradient: MorphGradient = parseMorphGradient(byteStream, withAlpha);
+  const gradient: MorphGradient = parseMorphGradient(byteStream, true);
   return {
     type: MorphFillStyleType.RadialGradient,
     startMatrix,
@@ -362,16 +358,9 @@ export function parseMorphRadialGradientFill(
   };
 }
 
-export function parseMorphSolidFill(byteStream: ByteStream, withAlpha: boolean): morphFillStyles.Solid {
-  let startColor: StraightSRgba8;
-  let endColor: StraightSRgba8;
-  if (withAlpha) {
-    startColor = parseStraightSRgba8(byteStream);
-    endColor = parseStraightSRgba8(byteStream);
-  } else {
-    startColor = {...parseSRgb8(byteStream), a: 255};
-    endColor = {...parseSRgb8(byteStream), a: 255};
-  }
+export function parseMorphSolidFill(byteStream: ByteStream): morphFillStyles.Solid {
+  const startColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
+  const endColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
   return {
     type: MorphFillStyleType.Solid,
     startColor,

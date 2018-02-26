@@ -5,6 +5,7 @@ import { createIncompleteStreamError } from "../errors/incomplete-stream";
 import { Stream } from "../stream";
 import { parseRect } from "./basic-data-types";
 
+// TODO: Move to `movie.ts`
 export function parseCompressionMethod(byteStream: Stream): CompressionMethod {
   if (byteStream.byteEnd < 3) {
     throw createIncompleteStreamError(3);
@@ -52,5 +53,5 @@ export function parseHeader(byteStream: Stream): Header {
   const frameSize: Rect = parseRect(byteStream);
   const frameRate: Ufixed8P8 = byteStream.readUfixed8P8LE();
   const frameCount: Uint16 = byteStream.readUint16LE();
-  return {...signature, frameSize, frameRate, frameCount};
+  return {swfVersion: signature.swfVersion, frameSize, frameRate, frameCount};
 }

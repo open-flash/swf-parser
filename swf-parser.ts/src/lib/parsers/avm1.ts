@@ -23,7 +23,7 @@ export function parseActionsString(byteStream: ByteStream): avm1.Action[] {
       throw createIncompleteStreamError();
     }
     if (byteStream.peekUint8() === 0) {
-      // TODO: Consume the last byte?!
+      byteStream.skip(1);
       break;
     }
     result.push(parseAction(byteStream));
@@ -40,7 +40,7 @@ export function parseActionsBlock(byteStream: ByteStream): avm1.Action[] {
   return block;
 }
 
-/* tslint:disable-next-line:cyclomatic-complexity */
+// tslint:disable-next-line:cyclomatic-complexity
 export function parseAction(byteStream: ByteStream): avm1.Action {
   const startPos: number = byteStream.bytePos;
   const header: ActionHeader = parseActionHeader(byteStream);
@@ -391,9 +391,9 @@ export function parseStoreRegisterAction(byteStream: ByteStream): avm1.actions.S
 }
 
 export function parseConstantPoolAction(byteStream: ByteStream): avm1.actions.ConstantPool {
-  const length: UintSize = byteStream.readUint16LE();
+  const constantCount: UintSize = byteStream.readUint16LE();
   const constantPool: string[] = [];
-  for (let i: number = 0; i < 0; i++) {
+  for (let i: number = 0; i < constantCount; i++) {
     constantPool.push(byteStream.readCString());
   }
   return {
@@ -441,18 +441,17 @@ export function parseDefineFunction2Action(byteStream: ByteStream): avm1.actions
   const parameterCount: UintSize = byteStream.readUint16LE();
   const registerCount: UintSize = byteStream.readUint8();
 
-  const bitStream: BitStream = byteStream.asBitStream();
-  const preloadParent: boolean = bitStream.readBoolBits();
-  const preloadRoot: boolean = bitStream.readBoolBits();
-  const suppressSuper: boolean = bitStream.readBoolBits();
-  const preloadSuper: boolean = bitStream.readBoolBits();
-  const suppressArguments: boolean = bitStream.readBoolBits();
-  const preloadArguments: boolean = bitStream.readBoolBits();
-  const suppressThis: boolean = bitStream.readBoolBits();
-  const preloadThis: boolean = bitStream.readBoolBits();
-  bitStream.skipBits(7);
-  const preloadGlobal: boolean = bitStream.readBoolBits();
-  bitStream.align(); // TODO(demurgos): Assert that bitStream.align() is a no-op
+  const flags: Uint16 = byteStream.readUint16LE();
+  const preloadThis: boolean = (flags & (1 << 0)) !== 0;
+  const suppressThis: boolean = (flags & (1 << 1)) !== 0;
+  const preloadArguments: boolean = (flags & (1 << 2)) !== 0;
+  const suppressArguments: boolean = (flags & (1 << 3)) !== 0;
+  const preloadSuper: boolean = (flags & (1 << 4)) !== 0;
+  const suppressSuper: boolean = (flags & (1 << 5)) !== 0;
+  const preloadRoot: boolean = (flags & (1 << 6)) !== 0;
+  const preloadParent: boolean = (flags & (1 << 7)) !== 0;
+  const preloadGlobal: boolean = (flags & (1 << 8)) !== 0;
+  // Skip 7 bits
 
   const parameters: avm1.Parameter[] = [];
   for (let i: number = 0; i < parameterCount; i++) {

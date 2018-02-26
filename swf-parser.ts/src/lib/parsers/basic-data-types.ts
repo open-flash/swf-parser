@@ -139,7 +139,7 @@ export function parseColorTransformBits(bitStream: BitStream): ColorTransform {
 export function parseColorTransformWithAlpha(byteStream: ByteStream): ColorTransformWithAlpha {
   const bitStream: BitStream = byteStream.asBitStream();
   const result: ColorTransformWithAlpha = parseColorTransformWithAlphaBits(bitStream);
-  byteStream.align();
+  bitStream.align();
   return result;
 }
 

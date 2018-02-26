@@ -63,6 +63,8 @@ export interface ByteStream {
 
   readUint32LE(): Uint32;
 
+  readUint32Leb128(): Uint32;
+
   readSint8(): Sint8;
 
   readSint16LE(): Sint16;
@@ -289,7 +291,10 @@ export class Stream implements BitStream, ByteStream {
     return Fixed16P16.fromEpsilons(this.readIntBits(n));
   }
 
-  readEncodedUint32LE(): Uint32 {
+  /**
+   * LEB128-encoded Uint32 (1 to 5 bytes)
+   */
+  readUint32Leb128(): Uint32 {
     let result: Uint32 = 0;
     for (let i: number = 0; i < 5; i++) {
       const nextByte: Uint8 = this.bytes[this.bytePos++];

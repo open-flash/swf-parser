@@ -54,9 +54,8 @@ export function parseBlendMode(byteStream: ByteStream): BlendMode {
 }
 
 export function parseClipActionsString(byteStream: ByteStream, extendedEvents: boolean): ClipActions[] {
-  byteStream.skip(2);
-  // We skip the 4 bytes of the list of all events
-  byteStream.skip(4);
+  byteStream.skip(2); // Reserved
+  byteStream.skip(4); // All events (union of the events)
   const result: ClipActions[] = [];
   while (true) {
     const savedPos: UintSize = byteStream.bytePos;
@@ -73,53 +72,48 @@ export function parseClipActionsString(byteStream: ByteStream, extendedEvents: b
 }
 
 export function parseClipEventFlags(byteStream: ByteStream, extendedEvents: boolean): ClipEventFlags {
-  const flags: Uint16 = byteStream.readUint16BE();
-  const keyUp: boolean = (flags & (1 << 15)) !== 0;
-  const keyDown: boolean = (flags & (1 << 14)) !== 0;
-  const mouseUp: boolean = (flags & (1 << 13)) !== 0;
-  const mouseDown: boolean = (flags & (1 << 12)) !== 0;
-  const mouseMove: boolean = (flags & (1 << 11)) !== 0;
-  const unload: boolean = (flags & (1 << 10)) !== 0;
-  const enterFrame: boolean = (flags & (1 << 9)) !== 0;
-  const load: boolean = (flags & (1 << 8)) !== 0;
-  const dragOver: boolean = (flags & (1 << 7)) !== 0;
-  const rollOut: boolean = (flags & (1 << 6)) !== 0;
-  const rollOver: boolean = (flags & (1 << 5)) !== 0;
-  const releaseOutside: boolean = (flags & (1 << 4)) !== 0;
-  const release: boolean = (flags & (1 << 3)) !== 0;
-  const press: boolean = (flags & (1 << 2)) !== 0;
-  const initialize: boolean = (flags & (1 << 1)) !== 0;
-  const data: boolean = (flags & (1 << 0)) !== 0;
-  let construct: boolean = false;
-  let keyPress: boolean = false;
-  let dragOut: boolean = false;
-  if (extendedEvents) {
-    const flags: Uint16 = byteStream.readUint16BE();
-    construct = (flags & (1 << 10)) !== 0;
-    keyPress = (flags & (1 << 9)) !== 0;
-    dragOut = (flags & (1 << 8)) !== 0;
-  }
+  const flags: Uint32 = extendedEvents ? byteStream.readFloat32LE() : byteStream.readUint16LE();
+
+  const load: boolean = (flags & (1 << 0)) !== 0;
+  const enterFrame: boolean = (flags & (1 << 1)) !== 0;
+  const unload: boolean = (flags & (1 << 2)) !== 0;
+  const mouseMove: boolean = (flags & (1 << 3)) !== 0;
+  const mouseDown: boolean = (flags & (1 << 4)) !== 0;
+  const mouseUp: boolean = (flags & (1 << 5)) !== 0;
+  const keyDown: boolean = (flags & (1 << 6)) !== 0;
+  const keyUp: boolean = (flags & (1 << 7)) !== 0;
+  const data: boolean = (flags & (1 << 8)) !== 0;
+  const initialize: boolean = (flags & (1 << 9)) !== 0;
+  const press: boolean = (flags & (1 << 10)) !== 0;
+  const release: boolean = (flags & (1 << 11)) !== 0;
+  const releaseOutside: boolean = (flags & (1 << 12)) !== 0;
+  const rollOver: boolean = (flags & (1 << 13)) !== 0;
+  const rollOut: boolean = (flags & (1 << 14)) !== 0;
+  const dragOver: boolean = (flags & (1 << 15)) !== 0;
+  const dragOut: boolean = (flags & (1 << 16)) !== 0;
+  const keyPress: boolean = (flags & (1 << 17)) !== 0;
+  const construct: boolean = (flags & (1 << 18)) !== 0;
 
   return {
-    keyUp,
-    keyDown,
-    mouseUp,
-    mouseDown,
-    mouseMove,
-    unload,
-    enterFrame,
     load,
-    dragOver,
-    rollOut,
-    rollOver,
-    releaseOutside,
-    release,
-    press,
-    initialize,
+    enterFrame,
+    unload,
+    mouseMove,
+    mouseDown,
+    mouseUp,
+    keyDown,
+    keyUp,
     data,
-    construct,
-    keyPress,
+    initialize,
+    press,
+    release,
+    releaseOutside,
+    rollOver,
+    rollOut,
+    dragOver,
     dragOut,
+    keyPress,
+    construct,
   };
 }
 
@@ -129,7 +123,7 @@ export function parseClipActions(byteStream: ByteStream, extendedEvents: boolean
   let keyCode: Uint8 | undefined = undefined;
   if (events.keyPress) {
     keyCode = byteStream.readUint8();
-    actionsSize = Math.max(actionsSize - 1, 0);
+    actionsSize -= 1;
   }
   const actions: avm1.Action[] = parseActionsBlock(byteStream.take(actionsSize));
   return {events, keyCode, actions};
@@ -202,7 +196,7 @@ export function parseBlurFilter(byteStream: ByteStream): filters.Blur {
   const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
   const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
   const flags: Uint8 = byteStream.readUint8();
-  const passes: Uint5 = <Uint5> ((flags & ((1 << 8) - 1)) >>> 3);
+  const passes: Uint5 = <Uint5> ((flags >> 3) & 0x1f);
   return {
     filter: FilterType.Blur,
     blurX,
