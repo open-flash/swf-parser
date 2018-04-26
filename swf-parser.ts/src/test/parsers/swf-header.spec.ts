@@ -1,9 +1,12 @@
 import { assert } from "chai";
-import { Header } from "swf-tree";
 import { parseHeader } from "../../lib/parsers/header";
 import { Stream } from "../../lib/stream";
 import { readTestJson } from "../_utils";
 import { readStreamJson, StreamJson } from "./_utils";
+import { $Header, Header } from "swf-tree/header";
+import { JsonValueReader } from "kryo/readers/json-value";
+
+const JSON_VALUE_READER = new JsonValueReader();
 
 describe("parseHeader", function () {
   interface Item {
@@ -17,7 +20,7 @@ describe("parseHeader", function () {
   interface ItemJson {
     input: StreamJson;
     expected: {
-      result: Header.Json;
+      result: any;
       stream: StreamJson;
     };
   }
@@ -28,7 +31,7 @@ describe("parseHeader", function () {
     items.push({
       input: readStreamJson(itemJson.input),
       expected: {
-        result: Header.type.readJson(itemJson.expected.result),
+        result: $Header.read(JSON_VALUE_READER, itemJson.expected.result),
         stream: readStreamJson(itemJson.expected.stream),
       },
     });
@@ -38,8 +41,8 @@ describe("parseHeader", function () {
     const item: Item = items[i];
     it(`Should parse the Header in the test case ${i}`, function () {
       const actual: Header = parseHeader(item.input);
-      assert.isTrue(Header.type.equals(actual, item.expected.result));
-      assert.deepEqual(item.input.tail(), item.expected.stream);
+      assert.isTrue($Header.equals(actual, item.expected.result), "Header equality failed");
+      assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream), "Stream equality failed");
     });
   }
 });

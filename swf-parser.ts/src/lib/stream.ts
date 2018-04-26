@@ -1,6 +1,6 @@
 import { Incident } from "incident";
 import { Float16, Float32, Float64, Sint16, Sint32, Sint8, Uint16, Uint32, Uint8, UintSize } from "semantic-types";
-import { Fixed16P16, Fixed8P8, Ufixed16P16, Ufixed8P8 } from "swf-tree";
+import { Sfixed16P16, Sfixed8P8, Ufixed16P16, Ufixed8P8 } from "swf-tree";
 import { createIncompleteStreamError } from "./errors/incomplete-stream";
 
 /**
@@ -26,7 +26,7 @@ export interface BitStream {
 
   readUint32Bits(n: UintSize): Uint32;
 
-  readFixed16P16Bits(n: UintSize): Fixed16P16;
+  readFixed16P16Bits(n: UintSize): Sfixed16P16;
 }
 
 /**
@@ -81,11 +81,11 @@ export interface ByteStream {
 
   readFloat64LE(): Float64;
 
-  readFixed8P8LE(): Fixed8P8;
+  readFixed8P8LE(): Sfixed8P8;
 
   readUfixed8P8LE(): Ufixed8P8;
 
-  readFixed16P16LE(): Fixed16P16;
+  readFixed16P16LE(): Sfixed16P16;
 
   readUfixed16P16LE(): Ufixed16P16;
 }
@@ -237,16 +237,16 @@ export class Stream implements BitStream, ByteStream {
     return result;
   }
 
-  readFixed8P8LE(): Fixed8P8 {
-    return Fixed8P8.fromEpsilons(this.readSint16LE());
+  readFixed8P8LE(): Sfixed8P8 {
+    return Sfixed8P8.fromEpsilons(this.readSint16LE());
   }
 
   readUfixed8P8LE(): Ufixed8P8 {
     return Ufixed8P8.fromEpsilons(this.readUint16LE());
   }
 
-  readFixed16P16LE(): Fixed16P16 {
-    return Fixed16P16.fromEpsilons(this.readSint32LE());
+  readFixed16P16LE(): Sfixed16P16 {
+    return Sfixed16P16.fromEpsilons(this.readSint32LE());
   }
 
   readUfixed16P16LE(): Ufixed16P16 {
@@ -287,8 +287,8 @@ export class Stream implements BitStream, ByteStream {
     return this.readUintBits(n);
   }
 
-  readFixed16P16Bits(n: number): Fixed16P16 {
-    return Fixed16P16.fromEpsilons(this.readIntBits(n));
+  readFixed16P16Bits(n: number): Sfixed16P16 {
+    return Sfixed16P16.fromEpsilons(this.readIntBits(n));
   }
 
   /**
@@ -361,5 +361,34 @@ export class Stream implements BitStream, ByteStream {
     } else {
       return -Math.pow(2, n) + unsigned;
     }
+  }
+
+  static equals(left: Stream, right: Stream): boolean {
+    if (left.bitPos !== right.bitPos) {
+      return false;
+    }
+    const leftLen = left.byteEnd - left.bytePos;
+    const rightLen = right.byteEnd - right.bytePos;
+    if (leftLen !== rightLen) {
+      return false;
+    } else if (leftLen === 0) {
+      return true;
+    }
+    let i: number = 0;
+    if (left.bitPos !== 0) {
+      i = 1;
+      const leftPartialByte = left.bytes[left.bytePos];
+      const rightPartialByte = right.bytes[right.bytePos];
+      const mask = (1 << (8 - left.bitPos)) - 1;
+      if ((leftPartialByte & mask) !== (rightPartialByte & mask)) {
+        return false;
+      }
+    }
+    for (; i < leftLen; i++) {
+      if (left.bytes[left.bytePos + i] !== right.bytes[right.bytePos + i]) {
+        return false;
+      }
+    }
+    return true;
   }
 }

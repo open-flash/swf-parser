@@ -1,8 +1,7 @@
 import { Incident } from "incident";
 import { Sint32, Uint16, Uint2, UintSize } from "semantic-types";
-import { morphFillStyles, MorphFillStyleType } from "swf-tree";
+import { fillStyles } from "swf-tree";
 import { CapStyle } from "swf-tree/cap-style";
-import { Fixed8P8 } from "swf-tree/fixed-point/fixed8p8";
 import { JoinStyle } from "swf-tree/join-style";
 import { JoinStyleType } from "swf-tree/join-styles/_type";
 import { Matrix } from "swf-tree/matrix";
@@ -11,10 +10,6 @@ import { MorphGradient } from "swf-tree/morph-gradient";
 import { MorphLineStyle } from "swf-tree/morph-line-style";
 import { MorphShape } from "swf-tree/morph-shape";
 import { MorphShapeRecord } from "swf-tree/morph-shape-record";
-import { MorphShapeRecordType } from "swf-tree/morph-shape-records/_type";
-import { MorphCurvedEdge } from "swf-tree/morph-shape-records/morph-curved-edge";
-import { MorphStraightEdge } from "swf-tree/morph-shape-records/morph-straight-edge";
-import { MorphStyleChange } from "swf-tree/morph-shape-records/morph-style-change";
 import { ShapeRecordType } from "swf-tree/shape-records/_type";
 import { CurvedEdge } from "swf-tree/shape-records/curved-edge";
 import { StraightEdge } from "swf-tree/shape-records/straight-edge";
@@ -24,6 +19,10 @@ import { BitStream, ByteStream } from "../stream";
 import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types";
 import { parseMorphGradient } from "./gradient";
 import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape";
+import { MorphCurvedEdge, MorphStraightEdge, MorphStyleChange } from "swf-tree/shape-records";
+import { FillStyleType, Sfixed8P8 } from "swf-tree";
+import { ShapeStyles } from "swf-tree/shape-style";
+import { MorphShapeStyles } from "swf-tree/morph-shape-style";
 
 export enum MorphShapeVersion {
   MorphShape1 = 1,
@@ -39,7 +38,7 @@ export function parseMorphShape(byteStream: ByteStream, morphShapeVersion: Morph
 }
 
 export function parseMorphShapeBits(bitStream: BitStream, morphShapeVersion: MorphShapeVersion): MorphShape {
-  const styles: MorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
+  const styles: _MorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
   const startRecords: MixedShapeRecord[] = parseMorphShapeStartRecordStringBits(
     bitStream,
     styles.fillBits,
@@ -65,7 +64,7 @@ export function parseMorphShapeBits(bitStream: BitStream, morphShapeVersion: Mor
   };
 }
 
-export interface MorphShapeStyles {
+export interface _MorphShapeStyles {
   fill: MorphFillStyle[];
   line: MorphLineStyle[];
   fillBits: UintSize;
@@ -75,7 +74,7 @@ export interface MorphShapeStyles {
 export function parseMorphShapeStylesBits(
   bitStream: BitStream,
   morphShapeVersion: MorphShapeVersion,
-): MorphShapeStyles {
+): _MorphShapeStyles {
   const byteStream: ByteStream = bitStream.asByteStream();
   const fill: MorphFillStyle[] = parseMorphFillStyleList(byteStream);
   const line: MorphLineStyle[] = parseMorphLineStyleList(byteStream, morphShapeVersion);
@@ -144,19 +143,19 @@ function asMorphEdge(
 ): MorphStraightEdge | MorphCurvedEdge {
   if (startEdge.type === ShapeRecordType.StraightEdge && endEdge.type === ShapeRecordType.StraightEdge) {
     return {
-      type: MorphShapeRecordType.MorphStraightEdge,
-      startDelta: startEdge.delta,
-      endDelta: endEdge.delta,
+      type: ShapeRecordType.StraightEdge,
+      delta: startEdge.delta,
+      morphDelta: endEdge.delta,
     };
   }
   const startCurve: CurvedEdge = asCurvedEdge(startEdge);
   const endCurve: CurvedEdge = asCurvedEdge(endEdge);
   return {
-    type: MorphShapeRecordType.MorphCurvedEdge,
-    startControlDelta: startCurve.controlDelta,
-    endControlDelta: endCurve.controlDelta,
-    startAnchorDelta: startCurve.anchorDelta,
-    endAnchorDelta: endCurve.anchorDelta,
+    type: ShapeRecordType.CurvedEdge,
+    controlDelta: startCurve.controlDelta,
+    anchorDelta: startCurve.anchorDelta,
+    morphControlDelta: endCurve.controlDelta,
+    morphAnchorDelta: endCurve.anchorDelta,
   };
 }
 
@@ -170,7 +169,7 @@ export function parseMorphShapeEndRecordStringBits(
   const result: MorphShapeRecord[] = [];
 
   for (const startRecord of startRecords) {
-    if (startRecord.type === MorphShapeRecordType.MorphStyleChange && startRecord.startMoveTo === undefined) {
+    if (startRecord.type === ShapeRecordType.StyleChange && startRecord.moveTo === undefined) {
       // The end shape contains only edge (straight or curved) or moveTo records, it matches the start records
       continue;
     }
@@ -196,16 +195,16 @@ export function parseMorphShapeEndRecordStringBits(
       const endEdge: StraightEdge | CurvedEdge = isStraightEdge ? parseStraightEdgeBits(bitStream) : parseCurvedEdgeBits(bitStream);
       result.push(asMorphEdge(startEdge, endEdge));
     } else {
-      if (startRecord.type !== MorphShapeRecordType.MorphStyleChange) {
+      if (startRecord.type !== ShapeRecordType.StyleChange) {
         throw new Incident("UnexpectedStyleChange");
       }
       const startStyle: MorphStyleChange = startRecord;
       let styleChange: MorphStyleChange;
       [styleChange, [fillBits, lineBits]] = parseMorphStyleChangeBits(bitStream, fillBits, lineBits, morphShapeVersion);
-      if (styleChange.startMoveTo === undefined) {
+      if (styleChange.moveTo === undefined) {
         throw new Incident("ExpectedMoveTo");
       }
-      result.push({...startStyle, endMoveTo: styleChange.startMoveTo});
+      result.push({...startStyle, morphMoveTo: styleChange.moveTo});
     }
   }
   const head: number = bitStream.readUint16Bits(6);
@@ -235,29 +234,30 @@ export function parseMorphStyleChangeBits(
     const y: Sint32 = bitStream.readSint32Bits(nBits);
     moveTo = {x, y};
   }
+
   const leftFill: UintSize | undefined = changeLeftFill ? bitStream.readUint16Bits(fillBits) : undefined;
   const rightFill: UintSize | undefined = changeRightFill ? bitStream.readUint16Bits(fillBits) : undefined;
   const lineStyle: UintSize | undefined = changeLineStyle ? bitStream.readUint16Bits(lineBits) : undefined;
 
-  let fillStyles: MorphFillStyle[] | undefined = undefined;
-  let lineStyles: MorphLineStyle[] | undefined = undefined;
+  let newStyles: MorphShapeStyles | undefined = undefined;
   if (hasNewStyles) {
-    const styles: MorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
-    fillStyles = styles.fill;
-    lineStyles = styles.line;
+    const styles: _MorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
+    newStyles = {
+      fill: styles.fill,
+      line: styles.line,
+    };
     fillBits = styles.fillBits;
     lineBits = styles.lineBits;
   }
 
   const styleChangeRecord: MorphStyleChange = {
-    type: MorphShapeRecordType.MorphStyleChange,
-    startMoveTo: moveTo,
-    endMoveTo: undefined,
+    type: ShapeRecordType.StyleChange,
+    moveTo: moveTo,
+    morphMoveTo: undefined,
     leftFill,
     rightFill,
     lineStyle,
-    fillStyles,
-    lineStyles,
+    newStyles,
   };
 
   return [styleChangeRecord, [fillBits, lineBits]];
@@ -300,71 +300,71 @@ export function parseMorphBitmapFill(
   byteStream: ByteStream,
   repeating: boolean,
   smoothed: boolean,
-): morphFillStyles.Bitmap {
+): fillStyles.MorphBitmap {
   const bitmapId: Uint16 = byteStream.readUint16LE();
-  const startMatrix: Matrix = parseMatrix(byteStream);
-  const endMatrix: Matrix = parseMatrix(byteStream);
+  const matrix: Matrix = parseMatrix(byteStream);
+  const morphMatrix: Matrix = parseMatrix(byteStream);
   return {
-    type: MorphFillStyleType.Bitmap,
+    type: FillStyleType.Bitmap,
     bitmapId,
-    startMatrix,
-    endMatrix,
+    matrix,
+    morphMatrix,
     repeating,
     smoothed,
   };
 }
 
-export function parseMorphFocalGradientFill(byteStream: ByteStream): morphFillStyles.FocalGradient {
-  const startMatrix: Matrix = parseMatrix(byteStream);
-  const endMatrix: Matrix = parseMatrix(byteStream);
+export function parseMorphFocalGradientFill(byteStream: ByteStream): fillStyles.MorphFocalGradient {
+  const matrix: Matrix = parseMatrix(byteStream);
+  const morphMatrix: Matrix = parseMatrix(byteStream);
   const gradient: MorphGradient = parseMorphGradient(byteStream, true);
-  const startFocalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
-  const endFocalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
+  const focalPoint: Sfixed8P8 = byteStream.readFixed8P8LE();
+  const morphFocalPoint: Sfixed8P8 = byteStream.readFixed8P8LE();
   return {
-    type: MorphFillStyleType.FocalGradient,
-    startMatrix,
-    endMatrix,
+    type: FillStyleType.FocalGradient,
+    matrix,
+    morphMatrix,
     gradient,
-    startFocalPoint,
-    endFocalPoint,
+    focalPoint,
+    morphFocalPoint,
   };
 }
 
 export function parseMorphLinearGradientFill(
   byteStream: ByteStream,
-): morphFillStyles.LinearGradient {
-  const startMatrix: Matrix = parseMatrix(byteStream);
-  const endMatrix: Matrix = parseMatrix(byteStream);
+): fillStyles.MorphLinearGradient {
+  const matrix: Matrix = parseMatrix(byteStream);
+  const morphMatrix: Matrix = parseMatrix(byteStream);
   const gradient: MorphGradient = parseMorphGradient(byteStream, true);
   return {
-    type: MorphFillStyleType.LinearGradient,
-    startMatrix,
-    endMatrix,
+    type: FillStyleType.LinearGradient,
+    matrix,
+    morphMatrix,
     gradient,
   };
 }
 
 export function parseMorphRadialGradientFill(
   byteStream: ByteStream,
-): morphFillStyles.RadialGradient {
-  const startMatrix: Matrix = parseMatrix(byteStream);
-  const endMatrix: Matrix = parseMatrix(byteStream);
+): fillStyles.MorphRadialGradient {
+  const matrix: Matrix = parseMatrix(byteStream);
+  const morphMatrix: Matrix = parseMatrix(byteStream);
   const gradient: MorphGradient = parseMorphGradient(byteStream, true);
   return {
-    type: MorphFillStyleType.RadialGradient,
-    startMatrix,
-    endMatrix,
+    type: FillStyleType.RadialGradient,
+    matrix,
+    morphMatrix,
     gradient,
   };
 }
 
-export function parseMorphSolidFill(byteStream: ByteStream): morphFillStyles.Solid {
-  const startColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const endColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
+export function parseMorphSolidFill(byteStream: ByteStream): fillStyles.MorphSolid {
+  const color: StraightSRgba8 = parseStraightSRgba8(byteStream);
+  const morphColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
   return {
-    type: MorphFillStyleType.Solid,
-    startColor,
-    endColor,
+    type: FillStyleType.Solid,
+    color,
+    morphColor,
   };
 }
 
@@ -385,13 +385,13 @@ export function parseMorphLineStyleList(
 }
 
 export function parseMorphLineStyle1(byteStream: ByteStream): MorphLineStyle {
-  const startWidth: Uint16 = byteStream.readUint16LE();
-  const endWidth: Uint16 = byteStream.readUint16LE();
-  const startColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const endColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
+  const width: Uint16 = byteStream.readUint16LE();
+  const morphWidth: Uint16 = byteStream.readUint16LE();
+  const color: StraightSRgba8 = parseStraightSRgba8(byteStream);
+  const morphColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
   return {
-    startWidth,
-    endWidth,
+    width,
+    morphWidth,
     startCap: CapStyle.Round,
     endCap: CapStyle.Round,
     join: {type: JoinStyleType.Round},
@@ -400,16 +400,16 @@ export function parseMorphLineStyle1(byteStream: ByteStream): MorphLineStyle {
     noClose: false,
     pixelHinting: false,
     fill: {
-      type: MorphFillStyleType.Solid,
-      startColor,
-      endColor,
+      type: FillStyleType.Solid,
+      color,
+      morphColor,
     },
   };
 }
 
 export function parseMorphLineStyle2(byteStream: ByteStream): MorphLineStyle {
-  const startWidth: Uint16 = byteStream.readUint16LE();
-  const endWidth: Uint16 = byteStream.readUint16LE();
+  const width: Uint16 = byteStream.readUint16LE();
+  const morphWidth: Uint16 = byteStream.readUint16LE();
 
   const flags: Uint16 = byteStream.readUint16LE();
   // (Skip first 5 bits)
@@ -439,16 +439,16 @@ export function parseMorphLineStyle2(byteStream: ByteStream): MorphLineStyle {
 
   let fill: MorphFillStyle;
   if (hasFill) {
-    fill = parseMorphFillStyle(byteStream, true);
+    fill = parseMorphFillStyle(byteStream);
   } else {
-    const startColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
-    const endColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
-    fill = {type: MorphFillStyleType.Solid, startColor, endColor};
+    const color: StraightSRgba8 = parseStraightSRgba8(byteStream);
+    const morphColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
+    fill = {type: FillStyleType.Solid, color, morphColor};
   }
 
   return {
-    startWidth,
-    endWidth,
+    width,
+    morphWidth,
     startCap: capStyleFromId(startCapStyleId),
     endCap: capStyleFromId(endCapStyleId),
     join,

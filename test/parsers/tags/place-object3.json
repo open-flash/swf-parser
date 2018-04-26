@@ -11,10 +11,10 @@
         "is_move": true,
         "depth": 1,
         "matrix": {
-          "scale_x": "-0x0001.0000",
-          "scale_y": "-0x0001.0000",
-          "rotate_skew0": "+0x0000.2b06",
-          "rotate_skew1": "+0x0000.0000",
+          "scale_x": -65536,
+          "scale_y": -65536,
+          "rotate_skew0": 11014,
+          "rotate_skew1": 0,
           "translate_x": 14,
           "translate_y": -11
         },

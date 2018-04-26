@@ -21,7 +21,7 @@ describe("readEncodedUint32LE", function () {
     };
   }
 
-  const itemsJson: ItemJson[] = readTestJson("parsers/encoded-uint32-le.json") as ItemJson[];
+  const itemsJson: ItemJson[] = readTestJson("parsers/uint32-leb128.json") as ItemJson[];
   const items: Item[] = [];
   for (const itemJson of itemsJson) {
     items.push({
@@ -36,9 +36,9 @@ describe("readEncodedUint32LE", function () {
   for (let i: number = 0; i < items.length; i++) {
     const item: Item = items[i];
     it(`Should parse the encoded Uint32 in the test case ${i}`, function () {
-      const actual: number = item.input.readEncodedUint32LE();
+      const actual: number = item.input.readUint32Leb128();
       assert.deepEqual(actual, item.expected.result);
-      assert.deepEqual(item.input.tail(), item.expected.stream);
+      assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

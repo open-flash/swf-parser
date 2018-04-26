@@ -9,8 +9,8 @@ import {
   Filter,
   filters,
   FilterType,
-  Fixed16P16,
-  Fixed8P8,
+  Sfixed16P16,
+  Sfixed8P8,
   StraightSRgba8,
 } from "swf-tree";
 import { ByteStream } from "../stream";
@@ -164,11 +164,11 @@ export function parseFilter(byteStream: ByteStream): Filter {
 export function parseBevelFilter(byteStream: ByteStream): filters.Bevel {
   const shadowColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
   const highlightColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Fixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Fixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Fixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
   const inner: boolean = (flags & (1 << 7)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
@@ -193,8 +193,8 @@ export function parseBevelFilter(byteStream: ByteStream): filters.Bevel {
 }
 
 export function parseBlurFilter(byteStream: ByteStream): filters.Blur {
-  const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
+  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
   const flags: Uint8 = byteStream.readUint8();
   const passes: Uint5 = <Uint5> ((flags >> 3) & 0x1f);
   return {
@@ -244,11 +244,11 @@ export function parseConvolutionFilter(byteStream: ByteStream): filters.Convolut
 
 export function parseDropShadowFilter(byteStream: ByteStream): filters.DropShadow {
   const color: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Fixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Fixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Fixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
   const inner: boolean = (flags & (1 << 7)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
@@ -271,9 +271,9 @@ export function parseDropShadowFilter(byteStream: ByteStream): filters.DropShado
 
 export function parseGlowFilter(byteStream: ByteStream): filters.Glow {
   const color: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Fixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
   const inner: boolean = (flags & (1 << 7)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
@@ -301,11 +301,11 @@ export function parseGradientBevelFilter(byteStream: ByteStream): filters.Gradie
   for (let i: number = 0; i < colorCount; i++) {
     gradient[i].ratio = byteStream.readUint8();
   }
-  const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Fixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Fixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Fixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
   const inner: boolean = (flags & (1 << 7)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
@@ -337,11 +337,11 @@ export function parseGradientGlowFilter(byteStream: ByteStream): filters.Gradien
   for (let i: number = 0; i < colorCount; i++) {
     gradient[i].ratio = byteStream.readUint8();
   }
-  const blurX: Fixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Fixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Fixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Fixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Fixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
+  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
   const inner: boolean = (flags & (1 << 7)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;

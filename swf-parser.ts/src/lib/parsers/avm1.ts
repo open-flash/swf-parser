@@ -541,7 +541,7 @@ export function parseActionValue(byteStream: ByteStream): avm1.Value {
   const typeCode: Uint8 = byteStream.readUint8();
   switch (typeCode) {
     case 0:
-      return {type: avm1.ValueType.CString, value: byteStream.readCString()};
+      return {type: avm1.ValueType.String, value: byteStream.readCString()};
     case 1:
       return {type: avm1.ValueType.Float32, value: byteStream.readFloat32LE()};
     case 2:
@@ -555,7 +555,7 @@ export function parseActionValue(byteStream: ByteStream): avm1.Value {
     case 6:
       return {type: avm1.ValueType.Float64, value: byteStream.readFloat64LE()};
     case 7:
-      return {type: avm1.ValueType.Int32, value: byteStream.readSint32LE()};
+      return {type: avm1.ValueType.Sint32, value: byteStream.readSint32LE()};
     case 8:
       return {type: avm1.ValueType.Constant, value: byteStream.readUint8() as Uint16};
     case 9:

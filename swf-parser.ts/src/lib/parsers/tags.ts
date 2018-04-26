@@ -5,7 +5,7 @@ import {
   ClipActions,
   ColorTransformWithAlpha,
   Filter,
-  Fixed8P8,
+  Sfixed8P8,
   Glyph,
   Label,
   LanguageCode,
@@ -670,7 +670,7 @@ export function parsePlaceObject(byteStream: ByteStream): tags.PlaceObject {
   if (byteStream.available() > 0) {
     colorTransform = {
       ...parseColorTransform(byteStream),
-      alphaMult: Fixed8P8.fromValue(1),
+      alphaMult: Sfixed8P8.fromValue(1),
       alphaAdd: 0,
     };
   }

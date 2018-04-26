@@ -1,21 +1,20 @@
 import { Incident } from "incident";
-import { Sint32, Uint16, Uint2, Uint4, Uint8, UintSize } from "semantic-types";
+import { Sint32, Uint16, Uint2, Uint8, UintSize } from "semantic-types";
 import {
   CapStyle,
   FillStyle,
   fillStyles,
   FillStyleType,
-  Fixed8P8,
   Glyph,
   Gradient,
   JoinStyleType,
   LineStyle,
   Matrix,
+  Sfixed8P8,
   Shape,
   ShapeRecord,
   shapeRecords,
   ShapeRecordType,
-  SRgb8,
   StraightSRgba8,
   Vector2D,
 } from "swf-tree";
@@ -23,6 +22,7 @@ import { JoinStyle } from "swf-tree/join-style";
 import { BitStream, ByteStream } from "../stream";
 import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGradient } from "./gradient";
+import { ShapeStyles } from "swf-tree/shape-style";
 
 export enum ShapeVersion {
   Shape1 = 1,
@@ -54,7 +54,7 @@ export function parseShape(byteStream: ByteStream, shapeVersion: ShapeVersion): 
 }
 
 export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion): Shape {
-  const styles: ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
+  const styles: _ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
   const records: ShapeRecord[] = parseShapeRecordStringBits(
     bitStream,
     styles.fillBits,
@@ -68,14 +68,14 @@ export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion)
   };
 }
 
-export interface ShapeStyles {
+export interface _ShapeStyles {
   fill: FillStyle[];
   line: LineStyle[];
   fillBits: UintSize;
   lineBits: UintSize;
 }
 
-export function parseShapeStylesBits(bitStream: BitStream, shapeVersion: ShapeVersion): ShapeStyles {
+export function parseShapeStylesBits(bitStream: BitStream, shapeVersion: ShapeVersion): _ShapeStyles {
   const byteStream: ByteStream = bitStream.asByteStream();
   const fill: FillStyle[] = parseFillStyleList(byteStream, shapeVersion);
   const line: LineStyle[] = parseLineStyleList(byteStream, shapeVersion);
@@ -170,14 +170,15 @@ export function parseStyleChangeBits(
   const rightFill: UintSize | undefined = changeRightFill ? bitStream.readUint16Bits(fillBits) : undefined;
   const lineStyle: UintSize | undefined = changeLineStyle ? bitStream.readUint16Bits(lineBits) : undefined;
 
-  let fillStyles: FillStyle[] | undefined = undefined;
-  let lineStyles: LineStyle[] | undefined = undefined;
+  let newStyles: ShapeStyles | undefined = undefined;
   if (hasNewStyles) {
     // TODO: Shumway forces `hasNewStyle` to `false` if shapeVersion is `Shape1`, should we do it too?
     // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L851
-    const styles: ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
-    fillStyles = styles.fill;
-    lineStyles = styles.line;
+    const styles: _ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
+    newStyles = {
+      fill: styles.fill,
+      line: styles.line,
+    };
     fillBits = styles.fillBits;
     lineBits = styles.lineBits;
   }
@@ -188,8 +189,7 @@ export function parseStyleChangeBits(
     leftFill,
     rightFill,
     lineStyle,
-    fillStyles,
-    lineStyles,
+    newStyles,
   };
 
   return [styleChangeRecord, [fillBits, lineBits]];
@@ -265,7 +265,7 @@ export function parseBitmapFill(byteStream: ByteStream, repeating: boolean, smoo
 export function parseFocalGradientFill(byteStream: ByteStream, withAlpha: boolean): fillStyles.FocalGradient {
   const matrix: Matrix = parseMatrix(byteStream);
   const gradient: Gradient = parseGradient(byteStream, withAlpha);
-  const focalPoint: Fixed8P8 = byteStream.readFixed8P8LE();
+  const focalPoint: Sfixed8P8 = byteStream.readFixed8P8LE();
   return {
     type: FillStyleType.FocalGradient,
     matrix,

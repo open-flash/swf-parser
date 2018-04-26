@@ -51,5 +51,8 @@
     "suppressImplicitAnyIndexErrors": false,
     "target": "es2017",
     "traceResolution": false
-  }
+  },
+  "files": [
+    "gulpfile.ts"
+  ]
 }

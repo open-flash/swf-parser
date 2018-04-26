@@ -61,9 +61,9 @@ export function parseGradient(byteStream: ByteStream, withAlpha: boolean): Gradi
 }
 
 export function parseMorphColorStop(byteStream: ByteStream, withAlpha: boolean): MorphColorStop {
-  const {ratio: startRatio, color: startColor} = parseColorStop(byteStream, withAlpha);
-  const {ratio: endRatio, color: endColor} = parseColorStop(byteStream, withAlpha);
-  return {startRatio, startColor, endRatio, endColor};
+  const {ratio, color} = parseColorStop(byteStream, withAlpha);
+  const {ratio: morphRatio, color: morphColor} = parseColorStop(byteStream, withAlpha);
+  return {ratio, color, morphRatio, morphColor};
 }
 
 export function parseMorphGradient(byteStream: ByteStream, withAlpha: boolean): MorphGradient {
