@@ -27,7 +27,7 @@ import { MorphShape } from "swf-tree/morph-shape";
 import { SpriteTag } from "swf-tree/sprite-tag";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import { BitStream, ByteStream, Stream } from "../stream";
-import { parseActionsString } from "./avm1";
+import { parseActionString } from "./avm1";
 import {
   parseColorTransform,
   parseColorTransformWithAlpha,
@@ -577,12 +577,12 @@ export function parseDefineText2(byteStream: ByteStream): tags.DefineText {
 }
 
 export function parseDoAction(byteStream: ByteStream): tags.DoAction {
-  return {type: TagType.DoAction, actions: parseActionsString(byteStream)};
+  return {type: TagType.DoAction, actions: parseActionString(byteStream)};
 }
 
 export function parseDoInitAction(byteStream: ByteStream): tags.DoInitAction {
   const spriteId: Uint16 = byteStream.readUint16LE();
-  return {type: TagType.DoInitAction, spriteId, actions: parseActionsString(byteStream)};
+  return {type: TagType.DoInitAction, spriteId, actions: parseActionString(byteStream)};
 }
 
 export function parseExportAssets(byteStream: ByteStream): tags.ExportAssets {

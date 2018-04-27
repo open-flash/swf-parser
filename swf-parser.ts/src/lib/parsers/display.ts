@@ -14,7 +14,7 @@ import {
   StraightSRgba8,
 } from "swf-tree";
 import { ByteStream } from "../stream";
-import { parseActionsBlock } from "./avm1";
+import { parseActionBlock } from "./avm1";
 import { parseStraightSRgba8 } from "./basic-data-types";
 
 export function parseBlendMode(byteStream: ByteStream): BlendMode {
@@ -125,7 +125,7 @@ export function parseClipActions(byteStream: ByteStream, extendedEvents: boolean
     keyCode = byteStream.readUint8();
     actionsSize -= 1;
   }
-  const actions: avm1.Action[] = parseActionsBlock(byteStream.take(actionsSize));
+  const actions: avm1.Action[] = parseActionBlock(byteStream.take(actionsSize));
   return {events, keyCode, actions};
 }
 

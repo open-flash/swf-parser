@@ -10,7 +10,7 @@ import { Filter } from "swf-tree/filter";
 import { Matrix } from "swf-tree/matrix";
 import { createIncompleteStreamError } from "../errors/incomplete-stream";
 import { BitStream, ByteStream, Stream } from "../stream";
-import { parseActionsString } from "./avm1";
+import { parseActionString } from "./avm1";
 import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types";
 import { parseBlendMode, parseFilterList } from "./display";
 
@@ -93,7 +93,7 @@ export function parseButton2CondActionString(byteStream: ByteStream): ButtonCond
 
 export function parseButton2CondAction(byteStream: ByteStream): ButtonCondAction {
   const conditions: ButtonCond = parseButtonCond(byteStream);
-  const actions: Action[] = parseActionsString(byteStream);
+  const actions: Action[] = parseActionString(byteStream);
   return {conditions, actions};
 }
 
