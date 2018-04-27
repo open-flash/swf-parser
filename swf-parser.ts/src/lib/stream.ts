@@ -49,6 +49,8 @@ export interface ByteStream {
 
   takeBytes(length: UintSize): Uint8Array;
 
+  readString(byteLength: UintSize): string;
+
   readCString(): string;
 
   readUint8(): Uint8;
@@ -309,6 +311,18 @@ export class Stream implements BitStream, ByteStream {
         return result;
       }
     }
+    return result;
+  }
+
+  readString(byteLength: number): string {
+    const endOfString: number = this.bytePos + byteLength;
+    if (endOfString > this.bytes.length) {
+      throw createIncompleteStreamError();
+    }
+    // TODO(demurgos): Remove type cast
+    const strBuffer: Buffer = Buffer.from(this.bytes.subarray(this.bytePos, endOfString) as Buffer);
+    const result: string = strBuffer.toString("utf8");
+    this.bytePos = endOfString;
     return result;
   }
 

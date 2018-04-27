@@ -290,19 +290,20 @@ export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
   const isItalic = (flags & (1 << 1)) !== 0;
   const useWideCodes = (flags & (1 << 2)) !== 0;
   const useWideOffsets = (flags & (1 << 3)) !== 0;
-  const isSmall = (flags & (1 << 4)) !== 0;
-  const isAnsi = (flags & (1 << 5)) !== 0;
+  const isAnsi = (flags & (1 << 4)) !== 0;
+  const isSmall = (flags & (1 << 5)) !== 0;
   const isShiftJis = (flags & (1 << 6)) !== 0;
   const hasLayout = (flags & (1 << 7)) !== 0;
 
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
-  const fontName: string = byteStream.take(fontNameLength).readCString(); // TODO: Check if there is a null byte
+  const fontName: string = byteStream.readString(fontNameLength); // TODO: Check if there is a null byte
 
   const glyphCount: UintSize = byteStream.readUint16LE();
   if (glyphCount === 0) {
     // According to Shumway:
     // > The SWF format docs doesn't say that, but the DefineFont{2,3} tag ends here for device fonts.
+    // Counter-example: mt/hammerfest/game.swf, has still 2 bytes for Verdana
 
     // System font
     return {
