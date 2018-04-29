@@ -124,8 +124,8 @@ export function parseFontAlignmentZone(byteStream: ByteStream): text.FontAlignme
 }
 
 export function parseFontAlignmentZoneData(byteStream: ByteStream): text.FontAlignmentZoneData {
-  const origin: Float16 = byteStream.readFloat16BE();
-  const size: Float16 = byteStream.readFloat16BE();
+  const origin: Float16 = byteStream.readFloat16LE();
+  const size: Float16 = byteStream.readFloat16LE();
   return {origin, size};
 }
 

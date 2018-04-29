@@ -73,17 +73,22 @@ export interface ByteStream {
 
   readSint32LE(): Sint32;
 
+  /**
+   * You probably don't want to use this but Float16LE for SWF files.
+   */
   readFloat16BE(): Float16;
 
+  readFloat16LE(): Float16;
+
   /**
-   * You probably don't want to use this but Float32LE.
+   * You probably don't want to use this but Float32LEfor SWF files.
    */
   readFloat32BE(): Float32;
 
   readFloat32LE(): Float32;
 
   /**
-   * You probably don't want to use this but Float64LE.
+   * You probably don't want to use this but Float64LEfor SWF files.
    */
   readFloat64BE(): Float64;
 
@@ -209,16 +214,13 @@ export class Stream implements BitStream, ByteStream {
   readFloat16BE(): Float16 {
     const u16: Uint16 = this.view.getUint16(this.bytePos, false);
     this.bytePos += 2;
-    const sign: -1 | 1 = (u16 & (1 << 15)) !== 0 ? -1 : 1;
-    const exponent: Sint32 = (u16 & 0x7c00) >>> 10; // 0x7c00: bits 10 to 14 (inclusive)
-    const fraction: Float64 = u16 & 0x03ff; // 0x03ff: bits 0 to 9 (inclusive)
-    if (exponent === 0) {
-      return sign * Math.pow(2, -14) * (fraction / 1024);
-    } else if (exponent === 0x1f) { // 0x1f: bits 0 to 4 (inclusive)
-      return fraction === 0 ? sign * Infinity : NaN;
-    } else {
-      return sign * Math.pow(2, exponent - 15) * (1 + (fraction / 1024));
-    }
+    return reinterpretUint16AsFloat16(u16);
+  }
+
+  readFloat16LE(): Float16 {
+    const u16: Uint16 = this.view.getUint16(this.bytePos, true);
+    this.bytePos += 2;
+    return reinterpretUint16AsFloat16(u16);
   }
 
   readFloat32BE(): Float32 {
@@ -410,5 +412,18 @@ export class Stream implements BitStream, ByteStream {
       }
     }
     return true;
+  }
+}
+
+function reinterpretUint16AsFloat16(u16: Uint16): Float16 {
+  const sign: -1 | 1 = (u16 & (1 << 15)) !== 0 ? -1 : 1;
+  const exponent: Sint32 = (u16 & 0x7c00) >>> 10; // 0x7c00: bits 10 to 14 (inclusive)
+  const fraction: Float64 = u16 & 0x03ff; // 0x03ff: bits 0 to 9 (inclusive)
+  if (exponent === 0) {
+    return sign * Math.pow(2, -14) * (fraction / 1024);
+  } else if (exponent === 0x1f) { // 0x1f: bits 0 to 4 (inclusive)
+    return fraction === 0 ? sign * Infinity : NaN;
+  } else {
+    return sign * Math.pow(2, exponent - 15) * (1 + (fraction / 1024));
   }
 }
