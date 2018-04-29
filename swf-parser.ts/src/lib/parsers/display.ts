@@ -208,7 +208,7 @@ export function parseBlurFilter(byteStream: ByteStream): filters.Blur {
 export function parseColorMatrixFilter(byteStream: ByteStream): filters.ColorMatrix {
   const matrix: Float32[] = [];
   for (let i: number = 0; i < 20; i++) {
-    matrix.push(byteStream.readFloat32BE());
+    matrix.push(byteStream.readFloat32LE());
   }
   return {
     filter: FilterType.ColorMatrix,
@@ -219,11 +219,11 @@ export function parseColorMatrixFilter(byteStream: ByteStream): filters.ColorMat
 export function parseConvolutionFilter(byteStream: ByteStream): filters.Convolution {
   const matrixWidth: UintSize = byteStream.readUint8();
   const matrixHeight: UintSize = byteStream.readUint8();
-  const divisor: Float32 = byteStream.readFloat32BE();
-  const bias: Float32 = byteStream.readFloat32BE();
+  const divisor: Float32 = byteStream.readFloat32LE();
+  const bias: Float32 = byteStream.readFloat32LE();
   const matrix: Float32[] = [];
   for (let i: number = 0; i < matrixWidth * matrixHeight; i++) {
-    matrix.push(byteStream.readFloat32BE());
+    matrix.push(byteStream.readFloat32LE());
   }
   const defaultColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
   const flags: Uint8 = byteStream.readUint8();

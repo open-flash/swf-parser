@@ -75,10 +75,16 @@ export interface ByteStream {
 
   readFloat16BE(): Float16;
 
+  /**
+   * You probably don't want to use this but Float32LE.
+   */
   readFloat32BE(): Float32;
 
   readFloat32LE(): Float32;
 
+  /**
+   * You probably don't want to use this but Float64LE.
+   */
   readFloat64BE(): Float64;
 
   readFloat64LE(): Float64;

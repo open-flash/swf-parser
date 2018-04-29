@@ -18,7 +18,7 @@ import {
   Tag,
   tags,
   TagType,
-  text,
+  text, FilterType,
 } from "swf-tree";
 import { ButtonCondAction } from "swf-tree/buttons/button-cond-action";
 import { ButtonRecord } from "swf-tree/buttons/button-record";
@@ -62,6 +62,7 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
+import { ColorMatrix } from "swf-tree/filters";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -276,8 +277,8 @@ export function parseCsmTextSettings(byteStream: ByteStream): tags.CsmTextSettin
   const renderer: text.TextRenderer = parseTextRendererBits(bitStream);
   const fitting: text.GridFitting = parseGridFittingBits(bitStream);
   bitStream.align();
-  const thickness: Float32 = byteStream.readFloat32BE();
-  const sharpness: Float32 = byteStream.readFloat32BE();
+  const thickness: Float32 = byteStream.readFloat32LE();
+  const sharpness: Float32 = byteStream.readFloat32LE();
   byteStream.skip(1);
   return {type: TagType.CsmTextSettings, textId, renderer, fitting, thickness, sharpness};
 }
@@ -729,21 +730,21 @@ export function parsePlaceObject2(byteStream: ByteStream, swfVersion: UintSize):
 export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize): tags.PlaceObject {
   const flags: Uint16 = byteStream.readUint16LE();
   // Skip one bit (bit 15)
-  const hasBackgroundColor: boolean = (flags & (1 << 14)) !== 0;
-  const hasVisibility: boolean = (flags & (1 << 13)) !== 0;
-  const hasImage: boolean = (flags & (1 << 12)) !== 0;
-  const hasClassName: boolean = (flags & (1 << 11)) !== 0;
-  const hasCacheHint: boolean = (flags & (1 << 10)) !== 0;
-  const hasBlendMode: boolean = (flags & (1 << 9)) !== 0;
-  const hasFilters: boolean = (flags & (1 << 8)) !== 0;
-  const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
-  const hasClipDepth: boolean = (flags & (1 << 6)) !== 0;
-  const hasName: boolean = (flags & (1 << 5)) !== 0;
-  const hasRatio: boolean = (flags & (1 << 4)) !== 0;
-  const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
-  const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
-  const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
   const isMove: boolean = (flags & (1 << 0)) !== 0;
+  const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
+  const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
+  const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
+  const hasRatio: boolean = (flags & (1 << 4)) !== 0;
+  const hasName: boolean = (flags & (1 << 5)) !== 0;
+  const hasClipDepth: boolean = (flags & (1 << 6)) !== 0;
+  const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
+  const hasFilters: boolean = (flags & (1 << 8)) !== 0;
+  const hasBlendMode: boolean = (flags & (1 << 9)) !== 0;
+  const hasCacheHint: boolean = (flags & (1 << 10)) !== 0;
+  const hasClassName: boolean = (flags & (1 << 11)) !== 0;
+  const hasImage: boolean = (flags & (1 << 12)) !== 0;
+  const hasVisibility: boolean = (flags & (1 << 13)) !== 0;
+  const hasBackgroundColor: boolean = (flags & (1 << 14)) !== 0;
   const depth: Uint16 = byteStream.readUint16LE();
   const className: string | undefined = hasClassName || (hasImage && hasCharacterId) ?
     byteStream.readCString() :
@@ -768,6 +769,12 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
   const clipActions: ClipActions[] | undefined = hasClipActions ?
     parseClipActionsString(byteStream, swfVersion >= 6) :
     undefined;
+
+
+  if (filters.length > 0 && filters[0].filter === FilterType.ColorMatrix && isNaN((filters[0] as ColorMatrix).matrix[14])) {
+    console.log("Found the NaN");
+    debugger;
+  }
 
   return {
     type: TagType.PlaceObject,

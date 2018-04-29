@@ -3,7 +3,7 @@ import { assert } from "chai";
 import { parseRect } from "../../lib/parsers/basic-data-types";
 import { Stream } from "../../lib/stream";
 import { readTestJson } from "../_utils";
-import { readStreamJson, StreamJson } from "./_utils";
+import { readStreamJson } from "./_utils";
 import { $Any } from "kryo/builtins/any";
 import { $Rect, Rect } from "swf-tree/rect";
 import { JsonValueReader } from "kryo/readers/json-value";
@@ -25,10 +25,10 @@ describe("parseRect", function () {
           properties: {
             result: {type: $Rect},
             stream: {type: $Any},
-          }
-        })
+          },
+        }),
       },
-    }
+    },
   });
 
   const itemsJson: any[] = readTestJson("parsers/rect.json");
