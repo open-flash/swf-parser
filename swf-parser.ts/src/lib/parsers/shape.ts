@@ -62,8 +62,7 @@ export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion)
     shapeVersion,
   );
   return {
-    fillStyles: styles.fill,
-    lineStyles: styles.line,
+    initialStyles: {fill: styles.fill, line: styles.line},
     records,
   };
 }

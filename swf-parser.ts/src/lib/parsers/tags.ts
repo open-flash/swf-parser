@@ -1,5 +1,5 @@
 import { Incident } from "incident";
-import { Float32, Sint16, Uint16, Uint32, Uint8, UintSize } from "semantic-types";
+import { Float32, Sint16, Uint16, Uint2, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
 import {
   BlendMode,
   ClipActions,
@@ -62,6 +62,11 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
+import { SoundType } from "swf-tree/sound/sound-type";
+import { SoundSize } from "swf-tree/sound/sound-size";
+import { SoundRate } from "swf-tree/sound/sound-rate";
+import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
+import { getAudioCodingFormatFromCode, getSoundRateFromCode } from "./sound";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -146,6 +151,8 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parseDefineText(byteStream);
     case 12:
       return parseDoAction(byteStream);
+    case 14:
+      return parseDefineSound(byteStream);
     case 20:
       return parseDefineBitsLossless(byteStream);
     case 21: {
@@ -228,8 +235,21 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parseDefineBitsJpeg4(byteStream, swfVersion);
     }
     default:
+      console.warn(`UnknownTagType: Code ${tagCode}`);
       return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.tailBytes())};
   }
+}
+
+export function parseCsmTextSettings(byteStream: ByteStream): tags.CsmTextSettings {
+  const textId: Uint16 = byteStream.readUint16LE();
+  const bitStream: BitStream = byteStream.asBitStream();
+  const renderer: text.TextRenderer = parseTextRendererBits(bitStream);
+  const fitting: text.GridFitting = parseGridFittingBits(bitStream);
+  bitStream.align();
+  const thickness: Float32 = byteStream.readFloat32LE();
+  const sharpness: Float32 = byteStream.readFloat32LE();
+  byteStream.skip(1);
+  return {type: TagType.CsmTextSettings, textId, renderer, fitting, thickness, sharpness};
 }
 
 export function parseDefineBits(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
@@ -244,7 +264,7 @@ export function parseDefineBits(byteStream: ByteStream, swfVersion: Uint8): tags
     throw new Incident("UnknownBitmapType");
   }
 
-  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType: "image/x-tablesless-jpeg", data};
+  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType: "image/x-partial-jpeg", data};
 }
 
 export function parseDefineBitsJpeg2(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
@@ -365,25 +385,13 @@ function parseDefineBitsLosslessAny(
 }
 
 export function parseDefineButton2(byteStream: ByteStream): tags.DefineButton {
-  const buttonId: Uint16 = byteStream.readUint16LE();
+  const id: Uint16 = byteStream.readUint16LE();
   const flags: Uint8 = byteStream.readUint8();
   const trackAsMenu: boolean = (flags & (1 << 0)) !== 0;
   const actionOffset: Uint16 = byteStream.readUint16LE(); // TODO: Assert action offset matches
   const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button2);
   const actions: ButtonCondAction[] = actionOffset === 0 ? [] : parseButton2CondActionString(byteStream);
-  return {type: TagType.DefineButton, buttonId, trackAsMenu, characters, actions};
-}
-
-export function parseCsmTextSettings(byteStream: ByteStream): tags.CsmTextSettings {
-  const textId: Uint16 = byteStream.readUint16LE();
-  const bitStream: BitStream = byteStream.asBitStream();
-  const renderer: text.TextRenderer = parseTextRendererBits(bitStream);
-  const fitting: text.GridFitting = parseGridFittingBits(bitStream);
-  bitStream.align();
-  const thickness: Float32 = byteStream.readFloat32LE();
-  const sharpness: Float32 = byteStream.readFloat32LE();
-  byteStream.skip(1);
-  return {type: TagType.CsmTextSettings, textId, renderer, fitting, thickness, sharpness};
+  return {type: TagType.DefineButton, id, trackAsMenu, characters, actions};
 }
 
 export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
@@ -484,16 +492,16 @@ export function parseDefineMorphShapeAny(
   morphShapeVersion: MorphShapeVersion,
 ): tags.DefineMorphShape {
   const id: Uint16 = byteStream.readUint16LE();
-  const startBounds: Rect = parseRect(byteStream);
-  const endBounds: Rect = parseRect(byteStream);
+  const bounds: Rect = parseRect(byteStream);
+  const morphBounds: Rect = parseRect(byteStream);
 
-  let startEdgeBounds: Rect | undefined = undefined;
-  let endEdgeBounds: Rect | undefined = undefined;
+  let edgeBounds: Rect | undefined = undefined;
+  let morphEdgeBounds: Rect | undefined = undefined;
   let hasNonScalingStrokes: boolean = false;
   let hasScalingStrokes: boolean = false;
   if (morphShapeVersion === MorphShapeVersion.MorphShape2) {
-    startEdgeBounds = parseRect(byteStream);
-    endEdgeBounds = parseRect(byteStream);
+    edgeBounds = parseRect(byteStream);
+    morphEdgeBounds = parseRect(byteStream);
     const flags: Uint8 = byteStream.readUint8();
     // (Skip first 6 bits)
     hasNonScalingStrokes = (flags & (1 << 1)) !== 0;
@@ -505,10 +513,10 @@ export function parseDefineMorphShapeAny(
   return {
     type: TagType.DefineMorphShape,
     id,
-    startBounds,
-    endBounds,
-    startEdgeBounds,
-    endEdgeBounds,
+    bounds,
+    morphBounds,
+    edgeBounds,
+    morphEdgeBounds,
     hasNonScalingStrokes,
     hasScalingStrokes,
     shape,
@@ -649,6 +657,21 @@ export function parseDefineEditText(byteStream: ByteStream): tags.DefineDynamicT
   };
 }
 
+function parseDefineSound(byteStream: ByteStream): tags.DefineSound {
+  const id: Uint16 = byteStream.readUint16LE();
+
+  const flags: Uint8 = byteStream.readUint8();
+  const soundType: SoundType = (flags & (1 << 0)) !== 0 ? SoundType.Stereo : SoundType.Mono;
+  const soundSize: SoundSize = (flags & (1 << 1)) !== 0 ? 16 : 8;
+  const soundRate: SoundRate = getSoundRateFromCode(((flags >>> 2) & 0b11) as Uint2);
+  const format: AudioCodingFormat = getAudioCodingFormatFromCode(((flags >>> 4) & 0b1111) as Uint4);
+
+  const sampleCount: Uint32 = byteStream.readUint32LE();
+  const data: Uint8Array = byteStream.tailBytes();
+
+  return {type: TagType.DefineSound, id, format, soundRate, soundSize, soundType, sampleCount, data};
+}
+
 export function parseDefineSprite(byteStream: ByteStream, context: ParseContext): tags.DefineSprite {
   const id: Uint16 = byteStream.readUint16LE();
   const frameCount: UintSize = byteStream.readUint16LE();
@@ -669,16 +692,6 @@ export function parseDefineText(byteStream: ByteStream): tags.DefineText {
   const indexBits: UintSize = byteStream.readUint8();
   const advanceBits: UintSize = byteStream.readUint8();
   const records: text.TextRecord[] = parseTextRecordString(byteStream, false, indexBits, advanceBits);
-  return {type: TagType.DefineText, id, bounds, matrix, records};
-}
-
-export function parseDefineText2(byteStream: ByteStream): tags.DefineText {
-  const id: Uint16 = byteStream.readUint16LE();
-  const bounds: Rect = parseRect(byteStream);
-  const matrix: Matrix = parseMatrix(byteStream);
-  const indexBits: UintSize = byteStream.readUint8();
-  const advanceBits: UintSize = byteStream.readUint8();
-  const records: text.TextRecord[] = parseTextRecordString(byteStream, true, indexBits, advanceBits);
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 
@@ -706,8 +719,7 @@ export function parseExportAssets(byteStream: ByteStream): tags.ExportAssets {
 }
 
 export function parseFileAttributes(byteStream: ByteStream): tags.FileAttributes {
-  const flags: Uint8 = byteStream.readUint8();
-  byteStream.skip(3);
+  const flags: Uint8 = byteStream.readUint32LE();
 
   return {
     type: TagType.FileAttributes,
@@ -764,7 +776,7 @@ export function parseImportAssets2(byteStream: ByteStream): tags.ImportAssets {
   };
 }
 
-export function parseJpegTables(byteStream: ByteStream, swfVersion: Uint8): tags.JpegTables {
+export function parseJpegTables(byteStream: ByteStream, swfVersion: Uint8): tags.DefineJpegTables {
   const data: Uint8Array = byteStream.tailBytes();
   if (!(testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START)))) {
     throw new Incident("UnknownBitmapType");

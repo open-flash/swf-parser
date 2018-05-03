@@ -1624,7 +1624,7 @@ eslint-scope@^3.7.1:
     esrecurse "^4.1.0"
     estraverse "^4.1.1"
 
-esm@^3.0.22:
+esm@^3.0.22, esm@^3.0.28:
   version "3.0.28"
   resolved "https://registry.yarnpkg.com/esm/-/esm-3.0.28.tgz#1b912958328eb1c40538e7d24ce6bf3638bb83df"
 
@@ -4912,9 +4912,9 @@ sver-compat@^1.5.0:
     es6-iterator "^2.0.1"
     es6-symbol "^3.1.1"
 
-swf-tree@^0.0.16:
-  version "0.0.16"
-  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.0.16.tgz#900ff278dd5473918523209895d34b543233e9b8"
+swf-tree@^0.0.17:
+  version "0.0.17"
+  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.0.17.tgz#05af6840e9e49268af762115d066e00d7408512a"
   dependencies:
     incident "^3.1.1"
     kryo "^0.7.0"
@@ -5067,9 +5067,9 @@ trim-right@^1.0.1:
   dependencies:
     glob "^6.0.4"
 
-ts-node@^6.0.1:
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-6.0.1.tgz#e2dd65abcadae530d2b2109cfd19202ba9f90402"
+ts-node@^6.0.2:
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-6.0.2.tgz#e132d530e53173bc6a8c21ea65f64d8b47bc573e"
   dependencies:
     arrify "^1.0.0"
     chalk "^2.3.0"

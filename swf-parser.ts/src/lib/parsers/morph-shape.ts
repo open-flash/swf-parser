@@ -56,8 +56,7 @@ export function parseMorphShapeBits(bitStream: BitStream, morphShapeVersion: Mor
   );
 
   return {
-    fillStyles: styles.fill,
-    lineStyles: styles.line,
+    initialStyles: {fill: styles.fill, line: styles.line},
     records,
   };
 }
