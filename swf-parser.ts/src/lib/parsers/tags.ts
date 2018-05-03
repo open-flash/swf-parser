@@ -5,7 +5,6 @@ import {
   ClipActions,
   ColorTransformWithAlpha,
   Filter,
-  Sfixed8P8,
   Glyph,
   Label,
   LanguageCode,
@@ -13,12 +12,13 @@ import {
   NamedId,
   Rect,
   Scene,
+  Sfixed8P8,
   Shape,
   StraightSRgba8,
   Tag,
   tags,
   TagType,
-  text, FilterType, Ufixed8P8,
+  text,
 } from "swf-tree";
 import { ButtonCondAction } from "swf-tree/buttons/button-cond-action";
 import { ButtonRecord } from "swf-tree/buttons/button-record";
@@ -62,7 +62,6 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
-import { ColorMatrix } from "swf-tree/filters";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".

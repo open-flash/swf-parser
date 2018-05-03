@@ -620,6 +620,7 @@ export function parseDefineFunction2Action(byteStream: ByteStream): avm1.actions
     parameters.push({register, name});
   }
   const codeSize: UintSize = byteStream.readUint16LE();
+  // The action length stops here for parseDefineFunction2Action
   const body: avm1.Action[] = parseActionBlock(byteStream.take(codeSize));
 
   return {
@@ -679,6 +680,7 @@ export function parseTryAction(byteStream: ByteStream): avm1.actions.Try {
 
 export function parseWithAction(byteStream: ByteStream): avm1.actions.With {
   const withSize: Uint16 = byteStream.readUint16LE();
+  // The action length stops here for parseWithAction
   const withBody: avm1.Action[] = parseActionBlock(byteStream.take(withSize));
   return {
     action: avm1.ActionType.With,
@@ -772,6 +774,7 @@ export function parseDefineFunctionAction(byteStream: ByteStream): avm1.actions.
     parameters.push(byteStream.readCString());
   }
   const bodySize: UintSize = byteStream.readUint16LE();
+  // The action length stops here for parseDefineFunctionAction
   const body: avm1.Action[] = parseActionBlock(byteStream.take(bodySize));
 
   return {
