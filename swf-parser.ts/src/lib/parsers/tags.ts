@@ -18,7 +18,7 @@ import {
   Tag,
   tags,
   TagType,
-  text, FilterType,
+  text, FilterType, Ufixed8P8,
 } from "swf-tree";
 import { ButtonCondAction } from "swf-tree/buttons/button-cond-action";
 import { ButtonRecord } from "swf-tree/buttons/button-record";
@@ -127,6 +127,20 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parsePlaceObject(byteStream);
     case 5:
       return parseRemoveObject(byteStream);
+    case 6: {
+      const swfVersion: Uint8 | undefined = context.getVersion();
+      if (swfVersion === undefined) {
+        throw new Incident("Missing SWF version, unable to parse parseDefineBits");
+      }
+      return parseDefineBits(byteStream, swfVersion);
+    }
+    case 8: {
+      const swfVersion: Uint8 | undefined = context.getVersion();
+      if (swfVersion === undefined) {
+        throw new Incident("Missing SWF version, unable to parse parseJpegTables");
+      }
+      return parseJpegTables(byteStream, swfVersion);
+    }
     case 9:
       return parseSetBackgroundColor(byteStream);
     case 11:
@@ -135,6 +149,13 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parseDoAction(byteStream);
     case 20:
       return parseDefineBitsLossless(byteStream);
+    case 21: {
+      const swfVersion: Uint8 | undefined = context.getVersion();
+      if (swfVersion === undefined) {
+        throw new Incident("Missing SWF version, unable to parse defineBitsJpeg2");
+      }
+      return parseDefineBitsJpeg2(byteStream, swfVersion);
+    }
     case 22:
       return parseDefineShape2(byteStream);
     case 26: {
@@ -200,9 +221,54 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parseDefineSceneAndFrameLabelData(byteStream);
     case 88:
       return parseDefineFontName(byteStream);
+    case 90: {
+      const swfVersion: Uint8 | undefined = context.getVersion();
+      if (swfVersion === undefined) {
+        throw new Incident("Missing SWF version, unable to parse defineBitsJpeg4");
+      }
+      return parseDefineBitsJpeg4(byteStream, swfVersion);
+    }
     default:
       return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.tailBytes())};
   }
+}
+
+export function parseDefineBits(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
+  const id: Uint16 = byteStream.readUint16LE();
+  const data: Uint8Array = byteStream.tailBytes();
+
+  let imageDimensions: ImageDimensions;
+
+  if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
+    imageDimensions = getJpegImageDimensions(new Stream(data));
+  } else {
+    throw new Incident("UnknownBitmapType");
+  }
+
+  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType: "image/x-tablesless-jpeg", data};
+}
+
+export function parseDefineBitsJpeg2(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
+  const id: Uint16 = byteStream.readUint16LE();
+  const data: Uint8Array = byteStream.tailBytes();
+
+  let mediaType: ImageType;
+  let imageDimensions: ImageDimensions;
+
+  if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
+    mediaType = "image/jpeg";
+    imageDimensions = getJpegImageDimensions(new Stream(data));
+  } else if (testImageStart(data, PNG_START)) {
+    mediaType = "image/png";
+    imageDimensions = getPngImageDimensions(new Stream(data));
+  } else if (testImageStart(data, GIF_START)) {
+    mediaType = "image/gif";
+    imageDimensions = getGifImageDimensions(new Stream(data));
+  } else {
+    throw new Incident("UnknownBitmapType");
+  }
+
+  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
 }
 
 export function parseDefineBitsJpeg3(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
@@ -237,6 +303,44 @@ export function parseDefineBitsJpeg3(byteStream: ByteStream, swfVersion: Uint8):
   return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
 }
 
+// TODO: Merge defineBitsJpegX functions into defineBitsJpegAny
+export function parseDefineBitsJpeg4(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
+  throw new Incident("Unsupported DefineBitsJpeg4");
+
+  // const id: Uint16 = byteStream.readUint16LE();
+  //
+  // const bytePos: UintSize = byteStream.bytePos;
+  //
+  // const dataSize: Uint32 = byteStream.readUint32LE();
+  // const jpegDeclockingStrength: Ufixed8P8 = byteStream.readUfixed8P8LE();
+  //
+  //
+  // let data: Uint8Array = byteStream.takeBytes(dataSize);
+  //
+  // let mediaType: ImageType;
+  // let imageDimensions: ImageDimensions;
+  //
+  // if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
+  //   mediaType = "image/jpeg";
+  //   imageDimensions = getJpegImageDimensions(new Stream(data));
+  //   if (byteStream.available() > 0) {
+  //     mediaType = "image/x-ajpeg";
+  //     byteStream.bytePos = bytePos;
+  //     data = byteStream.tailBytes();
+  //   }
+  // } else if (testImageStart(data, PNG_START)) {
+  //   mediaType = "image/png";
+  //   imageDimensions = getPngImageDimensions(new Stream(data));
+  // } else if (testImageStart(data, GIF_START)) {
+  //   mediaType = "image/gif";
+  //   imageDimensions = getGifImageDimensions(new Stream(data));
+  // } else {
+  //   throw new Incident("UnknownBitmapType");
+  // }
+  //
+  // return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
+}
+
 export function parseDefineBitsLossless(byteStream: ByteStream): tags.DefineBitmap {
   return parseDefineBitsLosslessAny(byteStream, "image/x-swf-bmp");
 }
@@ -245,7 +349,7 @@ export function parseDefineBitsLossless2(byteStream: ByteStream): tags.DefineBit
   return parseDefineBitsLosslessAny(byteStream, "image/x-swf-abmp");
 }
 
-export function parseDefineBitsLosslessAny(
+function parseDefineBitsLosslessAny(
   byteStream: ByteStream,
   mediaType: "image/x-swf-abmp" | "image/x-swf-bmp",
 ): tags.DefineBitmap {
@@ -265,7 +369,7 @@ export function parseDefineButton2(byteStream: ByteStream): tags.DefineButton {
   const buttonId: Uint16 = byteStream.readUint16LE();
   const flags: Uint8 = byteStream.readUint8();
   const trackAsMenu: boolean = (flags & (1 << 0)) !== 0;
-  const actionOffset: Uint16 = byteStream.readUint16LE();
+  const actionOffset: Uint16 = byteStream.readUint16LE(); // TODO: Assert action offset matches
   const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button2);
   const actions: ButtonCondAction[] = actionOffset === 0 ? [] : parseButton2CondActionString(byteStream);
   return {type: TagType.DefineButton, buttonId, trackAsMenu, characters, actions};
@@ -484,27 +588,28 @@ export function parseDefineEditText(byteStream: ByteStream): tags.DefineDynamicT
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
 
-  const flags: Uint16 = byteStream.readUint16BE();
-  const hasText: boolean = (flags & (1 << 15)) !== 0;
-  const wordWrap: boolean = (flags & (1 << 14)) !== 0;
-  const multiline: boolean = (flags & (1 << 13)) !== 0;
-  const password: boolean = (flags & (1 << 12)) !== 0;
-  const readonly: boolean = (flags & (1 << 11)) !== 0;
-  const hasColor: boolean = (flags & (1 << 10)) !== 0;
-  const hasMaxLength: boolean = (flags & (1 << 9)) !== 0;
-  const hasFont: boolean = (flags & (1 << 8)) !== 0;
-  const hasFontClass: boolean = (flags & (1 << 7)) !== 0;
-  const autoSize: boolean = (flags & (1 << 6)) !== 0;
-  const hasLayout: boolean = (flags & (1 << 5)) !== 0;
-  const noSelect: boolean = (flags & (1 << 4)) !== 0;
-  const border: boolean = (flags & (1 << 3)) !== 0;
-  const wasStatic: boolean = (flags & (1 << 2)) !== 0;
-  const html: boolean = (flags & (1 << 1)) !== 0;
-  const useGlyphFont: boolean = (flags & (1 << 0)) !== 0;
+  const flags: Uint16 = byteStream.readUint16LE();
+  const hasFont: boolean = (flags & (1 << 0)) !== 0;
+  const hasMaxLength: boolean = (flags & (1 << 1)) !== 0;
+  const hasColor: boolean = (flags & (1 << 2)) !== 0;
+  const readonly: boolean = (flags & (1 << 3)) !== 0;
+  const password: boolean = (flags & (1 << 4)) !== 0;
+  const multiline: boolean = (flags & (1 << 5)) !== 0;
+  const wordWrap: boolean = (flags & (1 << 6)) !== 0;
+  const hasText: boolean = (flags & (1 << 7)) !== 0;
+  const useGlyphFont: boolean = (flags & (1 << 8)) !== 0;
+  const html: boolean = (flags & (1 << 9)) !== 0;
+  const wasStatic: boolean = (flags & (1 << 10)) !== 0;
+  const border: boolean = (flags & (1 << 11)) !== 0;
+  const noSelect: boolean = (flags & (1 << 12)) !== 0;
+  const hasLayout: boolean = (flags & (1 << 13)) !== 0;
+  const autoSize: boolean = (flags & (1 << 14)) !== 0;
+  const hasFontClass: boolean = (flags & (1 << 15)) !== 0;
+  // TODO: Assert that !(hasFont && hasFontClass) (mutual exclusion)
 
   const fontId: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
   const fontClass: string | undefined = hasFontClass ? byteStream.readCString() : undefined;
-  const fontSize: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
+  const fontSize: Uint16 | undefined = (hasFont || hasFontClass) ? byteStream.readUint16LE() : undefined;
   const color: StraightSRgba8 | undefined = hasColor ? parseStraightSRgba8(byteStream) : undefined;
   const maxLength: UintSize | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
   const align: text.TextAlignment | undefined = hasLayout ? parseTextAlignment(byteStream) : undefined;
@@ -660,6 +765,15 @@ export function parseImportAssets2(byteStream: ByteStream): tags.ImportAssets {
   };
 }
 
+export function parseJpegTables(byteStream: ByteStream, swfVersion: Uint8): tags.JpegTables {
+  const data: Uint8Array = byteStream.tailBytes();
+  if (!(testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START)))) {
+    throw new Incident("UnknownBitmapType");
+  }
+
+  return {type: TagType.JpegTables, data};
+}
+
 export function parseMetadata(byteStream: ByteStream): tags.Metadata {
   return {type: TagType.Metadata, metadata: byteStream.readCString()};
 }
@@ -769,12 +883,6 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
   const clipActions: ClipActions[] | undefined = hasClipActions ?
     parseClipActionsString(byteStream, swfVersion >= 6) :
     undefined;
-
-
-  if (filters.length > 0 && filters[0].filter === FilterType.ColorMatrix && isNaN((filters[0] as ColorMatrix).matrix[14])) {
-    console.log("Found the NaN");
-    debugger;
-  }
 
   return {
     type: TagType.PlaceObject,

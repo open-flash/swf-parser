@@ -218,7 +218,7 @@ export function parseFillStyleList(
   shapeVersion: ShapeVersion,
 ): FillStyle[] {
   const result: FillStyle[] = [];
-  const len: UintSize = parseListLength(byteStream, shapeVersion > ShapeVersion.Shape1);
+  const len: UintSize = parseListLength(byteStream, shapeVersion >= ShapeVersion.Shape2);
   for (let i: UintSize = 0; i < len; i++) {
     result.push(parseFillStyle(byteStream, shapeVersion >= ShapeVersion.Shape3));
   }
@@ -299,7 +299,7 @@ export function parseSolidFill(byteStream: ByteStream, withAlpha: boolean): fill
   if (withAlpha) {
     color = parseStraightSRgba8(byteStream);
   } else {
-    color = {...parseSRgb8(byteStream), a: 255};
+    color = {...parseSRgb8(byteStream), a: 0xff};
   }
   return {
     type: FillStyleType.Solid,
@@ -312,7 +312,7 @@ export function parseLineStyleList(
   shapeVersion: ShapeVersion,
 ): LineStyle[] {
   const result: LineStyle[] = [];
-  const len: UintSize = parseListLength(byteStream, shapeVersion > ShapeVersion.Shape1);
+  const len: UintSize = parseListLength(byteStream, shapeVersion >= ShapeVersion.Shape2);
   for (let i: UintSize = 0; i < len; i++) {
     if (shapeVersion < ShapeVersion.Shape4) {
       result.push(parseLineStyle(byteStream, shapeVersion >= ShapeVersion.Shape3));

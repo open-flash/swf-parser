@@ -187,7 +187,7 @@ function parseActionStream(
     if (indexedAction.action.action === avm1.ActionType.If || indexedAction.action.action === avm1.ActionType.Jump) {
       const targetBytes = bytes + indexedAction.byteSize + indexedAction.action.byteOffset;
       if (targetBytes === endBytePos) {
-        (<any> indexedAction.action as avm1.actions.If | avm1.actions.Jump).offset = result.length - (index + 1);
+        (<any> indexedAction.action as avm1.actions.If | avm1.actions.Jump).offset = result.length - (indexedAction.index + 1);
         continue;
       }
       const target: IndexedAction | undefined = bytesToIndexedAction.get(targetBytes);
@@ -793,8 +793,8 @@ export function parseIfAction(byteStream: ByteStream): RawIf {
 export function parseGotoFrame2Action(byteStream: ByteStream): avm1.actions.GotoFrame2 {
   const flags: Uint8 = byteStream.readUint8();
   // (Skip first 6 bits)
-  const hasSceneBias: boolean = (flags & (1 << 1)) !== 0;
   const play: boolean = (flags & (1 << 0)) !== 0;
+  const hasSceneBias: boolean = (flags & (1 << 1)) !== 0;
   const sceneBias: Uint16 = hasSceneBias ? byteStream.readUint16LE() : 0;
   return {
     action: avm1.ActionType.GotoFrame2,

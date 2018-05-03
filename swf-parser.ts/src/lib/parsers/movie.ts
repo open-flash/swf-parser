@@ -1,5 +1,5 @@
 import { Incident } from "incident";
-import { UintSize } from "semantic-types";
+import { Uint8, UintSize } from "semantic-types";
 import { CompressionMethod, Header, Movie, SwfSignature, Tag } from "swf-tree";
 import * as zlib from "zlib";
 import { concatBytes } from "../concat-bytes";
@@ -8,9 +8,9 @@ import { Stream } from "../stream";
 import { parseHeader, parseSwfSignature } from "./header";
 import { parseTag } from "./tags";
 
-export function parseDecompressedMovie(byteStream: Stream): Movie {
+export function parseDecompressedMovie(byteStream: Stream, swfVersion: Uint8): Movie {
   // TODO(demurgos): take parse context or version as an argument
-  const context: ParseContext = new DefaultParseContext(0);
+  const context: ParseContext = new DefaultParseContext(swfVersion);
 
   const header: Header = parseHeader(byteStream);
   const tags: Tag[] = [];
@@ -31,7 +31,7 @@ export function parseMovie(byteStream: Stream): Movie {
   switch (headerSignature.compressionMethod) {
     case CompressionMethod.None:
       byteStream.bytePos = startPos;
-      return parseDecompressedMovie(byteStream);
+      return parseDecompressedMovie(byteStream, headerSignature.swfVersion);
     case CompressionMethod.Deflate:
       const curPos: UintSize = byteStream.bytePos;
       byteStream.bytePos = startPos;
@@ -41,7 +41,7 @@ export function parseMovie(byteStream: Stream): Movie {
       // TODO: remove cast
       const deflated: Buffer = zlib.inflateSync(tailBuffer);
       const decompressed: Uint8Array = concatBytes([signature, deflated]);
-      return parseDecompressedMovie(new Stream(decompressed));
+      return parseDecompressedMovie(new Stream(decompressed), headerSignature.swfVersion);
     case CompressionMethod.Lzma:
       throw new Incident("NotImplemented", "Support for LZMA compression is not implemented yet");
     default:

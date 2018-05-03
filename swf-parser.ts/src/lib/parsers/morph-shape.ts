@@ -1,6 +1,6 @@
 import { Incident } from "incident";
 import { Sint32, Uint16, Uint2, UintSize } from "semantic-types";
-import { fillStyles } from "swf-tree";
+import { fillStyles, FillStyleType, Sfixed8P8 } from "swf-tree";
 import { CapStyle } from "swf-tree/cap-style";
 import { JoinStyle } from "swf-tree/join-style";
 import { JoinStyleType } from "swf-tree/join-styles/_type";
@@ -20,8 +20,6 @@ import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types";
 import { parseMorphGradient } from "./gradient";
 import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape";
 import { MorphCurvedEdge, MorphStraightEdge, MorphStyleChange } from "swf-tree/shape-records";
-import { FillStyleType, Sfixed8P8 } from "swf-tree";
-import { ShapeStyles } from "swf-tree/shape-style";
 import { MorphShapeStyles } from "swf-tree/morph-shape-style";
 
 export enum MorphShapeVersion {
@@ -30,7 +28,7 @@ export enum MorphShapeVersion {
 }
 
 export function parseMorphShape(byteStream: ByteStream, morphShapeVersion: MorphShapeVersion): MorphShape {
-  byteStream.skip(4); // Skip offset (uint32)
+  byteStream.skip(4); // Skip offset (uint32) (TODO: Read this and use it to assert the shape is OK)
   const bitStream: BitStream = byteStream.asBitStream();
   const result: MorphShape = parseMorphShapeBits(bitStream, morphShapeVersion);
   bitStream.align();

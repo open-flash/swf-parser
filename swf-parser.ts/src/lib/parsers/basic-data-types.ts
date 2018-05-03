@@ -57,8 +57,8 @@ export function parseMatrixBits(bitStream: BitStream): Matrix {
   let scaleY: Sfixed16P16;
   if (hasScale) {
     const scaleBits: UintSize = bitStream.readUint16Bits(5);
-    scaleX = bitStream.readFixed16P16Bits(scaleBits);
-    scaleY = bitStream.readFixed16P16Bits(scaleBits);
+    scaleX = bitStream.readSfixed16P16Bits(scaleBits);
+    scaleY = bitStream.readSfixed16P16Bits(scaleBits);
   } else {
     scaleX = Sfixed16P16.fromValue(1);
     scaleY = Sfixed16P16.fromValue(1);
@@ -68,8 +68,8 @@ export function parseMatrixBits(bitStream: BitStream): Matrix {
   let skew1: Sfixed16P16;
   if (hasSkew) {
     const skewBits: UintSize = bitStream.readUint16Bits(5);
-    skew0 = bitStream.readFixed16P16Bits(skewBits);
-    skew1 = bitStream.readFixed16P16Bits(skewBits);
+    skew0 = bitStream.readSfixed16P16Bits(skewBits);
+    skew1 = bitStream.readSfixed16P16Bits(skewBits);
   } else {
     skew0 = Sfixed16P16.fromValue(0);
     skew1 = Sfixed16P16.fromValue(0);

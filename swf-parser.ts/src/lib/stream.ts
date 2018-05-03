@@ -26,7 +26,7 @@ export interface BitStream {
 
   readUint32Bits(n: UintSize): Uint32;
 
-  readFixed16P16Bits(n: UintSize): Sfixed16P16;
+  readSfixed16P16Bits(n: UintSize): Sfixed16P16;
 }
 
 /**
@@ -184,9 +184,6 @@ export class Stream implements BitStream, ByteStream {
     return this.view.getUint8(this.bytePos);
   }
 
-  /**
-   * Convenience method, most of the time you need `readUint16LE` for SWF.
-   */
   readUint16BE(): Uint16 {
     const result: Uint16 = this.view.getUint16(this.bytePos, false);
     this.bytePos += 2;
@@ -297,7 +294,7 @@ export class Stream implements BitStream, ByteStream {
     return this.readUintBits(n);
   }
 
-  readFixed16P16Bits(n: number): Sfixed16P16 {
+  readSfixed16P16Bits(n: number): Sfixed16P16 {
     return Sfixed16P16.fromEpsilons(this.readIntBits(n));
   }
 
