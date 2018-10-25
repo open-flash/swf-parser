@@ -9,8 +9,7 @@ use parsers::basic_data_types::{
   parse_i32_bits,
   parse_u32_bits,
 };
-use parsers::shapes::parse_glyph;
-use ordered_float::OrderedFloat;
+use parsers::shape::parse_glyph;
 
 // TODO: Check with `nom`, it creates warnings: unused variable: `e`
 #[allow(unused_variables)]
@@ -69,10 +68,9 @@ pub fn parse_font_alignment_zone_data(input: &[u8]) -> IResult<&[u8], ast::text:
     input,
     origin: parse_be_f16 >>
     size: parse_be_f16 >>
-    // TODO(demurgos): What happens if we get a NaN?
     (ast::text::FontAlignmentZoneData {
-      origin: OrderedFloat::<f32>(origin),
-      size: OrderedFloat::<f32>(size),
+      origin,
+      size,
     })
   )
 }
@@ -84,18 +82,18 @@ pub fn parse_text_record_string(input: &[u8], has_alpha: bool, index_bits: usize
     // A null byte indicates the end of the string of actions
     if current_input[0] == 0 {
       current_input = &current_input[1..];
-      return IResult::Done(current_input, result);
+      return Ok((current_input, result));
     }
     match parse_text_record(current_input, has_alpha, index_bits, advance_bits) {
-      IResult::Done(next_input, text_record) => {
+      Ok((next_input, text_record)) => {
         current_input = next_input;
         result.push(text_record);
       }
-      IResult::Error(e) => return IResult::Error(e),
-      IResult::Incomplete(_) => return IResult::Incomplete(::nom::Needed::Unknown),
+      Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(::nom::Needed::Unknown)),
+      Err(e) => return Err(e),
     };
   }
-  IResult::Incomplete(::nom::Needed::Unknown)
+  Err(::nom::Err::Incomplete(::nom::Needed::Unknown))
 }
 
 // TODO: Check with `nom`, it creates warnings: unused variable: `e`
@@ -159,18 +157,16 @@ pub fn parse_offset_glyphs(input: &[u8], glyph_count: usize, use_wide_offsets: b
     )
   };
   let (offsets, end_offset) = match parsed_offsets {
-    IResult::Done(_, o) => o,
-    IResult::Error(e) => return IResult::Error(e),
-    IResult::Incomplete(n) => return IResult::Incomplete(n),
+    Ok((_, o)) => o,
+    Err(e) => return Err(e),
   };
   let mut glyphs: Vec<ast::Glyph> = Vec::with_capacity(glyph_count);
   for i in 0..glyph_count {
     let start_offset = offsets[i];
     let end_offset = if i + 1 < glyph_count { offsets[i + 1] } else { end_offset };
     match parse_glyph(&input[start_offset..end_offset]) {
-      IResult::Done(_, o) => glyphs.push(o),
-      IResult::Error(e) => return IResult::Error(e),
-      IResult::Incomplete(n) => return IResult::Incomplete(n),
+      Ok((_, o)) => glyphs.push(o),
+      Err(e) => return Err(e),
     };
   }
   value!(&input[end_offset..], glyphs)

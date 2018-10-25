@@ -1,8 +1,5 @@
-use swf_tree as ast;
 use nom::{IResult, Needed};
-use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, be_f32 as parse_be_f32};
-use ordered_float::OrderedFloat;
-use parsers::avm1::parse_actions_string;
+use nom::{be_f32 as parse_be_f32, be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use parsers::basic_data_types::{
   parse_bool_bits,
   parse_c_string,
@@ -14,13 +11,14 @@ use parsers::basic_data_types::{
   parse_rect,
   parse_s_rgb8,
   parse_straight_s_rgba8,
-  skip_bits
+  skip_bits,
 };
 use parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
-use parsers::shapes::{parse_shape, ShapeVersion};
 use parsers::movie::parse_tag_string;
+use parsers::shape::{parse_shape, ShapeVersion};
 use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use state::ParseState;
+use swf_tree as ast;
 
 pub struct SwfTagHeader {
   pub tag_code: u16,
@@ -29,32 +27,31 @@ pub struct SwfTagHeader {
 
 fn parse_swf_tag_header(input: &[u8]) -> IResult<&[u8], SwfTagHeader> {
   match parse_le_u16(input) {
-    IResult::Done(remaining_input, code_and_length) => {
+    Ok((remaining_input, code_and_length)) => {
       let code = code_and_length >> 6;
       let max_length = (1 << 6) - 1;
       let length = code_and_length & max_length;
       if length < max_length {
-        IResult::Done(remaining_input, SwfTagHeader { tag_code: code, length: length as usize })
+        Ok((remaining_input, SwfTagHeader { tag_code: code, length: length as usize }))
       } else {
         map!(remaining_input, parse_le_u32, |long_length| SwfTagHeader { tag_code: code, length: long_length as usize })
       }
     }
-    IResult::Error(e) => IResult::Error(e),
-    IResult::Incomplete(n) => IResult::Incomplete(n),
+    Err(e) => Err(e),
   }
 }
 
 pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::Tag> {
   match parse_swf_tag_header(input) {
-    IResult::Done(remaining_input, rh) => {
+    Ok((remaining_input, rh)) => {
       if remaining_input.len() < rh.length {
         let record_header_length = input.len() - remaining_input.len();
-        IResult::Incomplete(Needed::Size(record_header_length + rh.length))
+        Err(::nom::Err::Incomplete(Needed::Size(record_header_length + rh.length)))
       } else {
         let record_data: &[u8] = &remaining_input[..rh.length];
         let remaining_input: &[u8] = &remaining_input[rh.length..];
         let record_result = match rh.tag_code {
-          1 => IResult::Done(&record_data[rh.length..], ast::Tag::ShowFrame),
+          1 => Ok((&[][..], ast::Tag::ShowFrame)),
           2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
           4 => map!(record_data, parse_place_object, |t| ast::Tag::PlaceObject(t)),
           5 => map!(record_data, parse_remove_object, |t| ast::Tag::RemoveObject(t)),
@@ -83,11 +80,11 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           86 => map!(record_data, parse_define_scene_and_frame_label_data_tag, |t| ast::Tag::DefineSceneAndFrameLabelData(t)),
           88 => map!(record_data, parse_define_font_name, |t| ast::Tag::DefineFontName(t)),
           _ => {
-            IResult::Done(&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() }))
+            Ok((&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() })))
           }
         };
         match record_result {
-          IResult::Done(_, output_tag) => {
+          Ok((_, output_tag)) => {
             match output_tag {
               ast::Tag::DefineFont(ref tag) => {
                 match tag.glyphs {
@@ -97,15 +94,13 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
               }
               _ => (),
             };
-            IResult::Done(remaining_input, output_tag)
+            Ok((remaining_input, output_tag))
           }
-          IResult::Error(e) => IResult::Error(e),
-          IResult::Incomplete(n) => IResult::Incomplete(n),
+          Err(e) => Err(e),
         }
       }
     }
-    IResult::Error(e) => IResult::Error(e),
-    IResult::Incomplete(n) => IResult::Incomplete(n),
+    Err(e) => Err(e),
   }
 }
 
@@ -119,8 +114,8 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
       // Implicitly skip 3 bits to align
       ((renderer, fitting))
     ))  >>
-    thickness: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
-    sharpness: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
+    thickness: parse_be_f32 >>
+    sharpness: parse_be_f32 >>
     (ast::tags::CsmTextSettings {
       text_id: text_id,
       renderer: renderer_and_fitting.0,
@@ -386,23 +381,16 @@ pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> 
 }
 
 pub fn parse_do_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoAction> {
-  map!(
-    input,
-    parse_actions_string,
-    |actions| ast::tags::DoAction {actions: actions}
-  )
+  Ok((&[][..], ast::tags::DoAction { actions: input.to_vec() }))
 }
 
 pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAction> {
-  do_parse!(
-    input,
-    sprite_id: parse_le_u16 >>
-    actions: parse_actions_string >>
-    (ast::tags::DoInitAction {
-      sprite_id: sprite_id,
-      actions: actions,
-    })
-  )
+  let (input, sprite_id) = parse_le_u16(input)?;
+  let tag = ast::tags::DoInitAction {
+    sprite_id: sprite_id,
+    actions: input.to_vec(),
+  };
+  Ok((&[][..], tag))
 }
 
 pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAssets> {
@@ -480,7 +468,7 @@ pub fn parse_metadata(input: &[u8]) -> IResult<&[u8], ast::tags::Metadata> {
 
 pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject> {
   fn has_available_input(input: &[u8]) -> IResult<&[u8], bool> {
-    return IResult::Done(input, input.len() > 0);
+    return Ok((input, input.len() > 0));
   }
 
   do_parse!(
@@ -497,7 +485,7 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
           red_mult: color_transform.red_mult,
           green_mult: color_transform.green_mult,
           blue_mult: color_transform.blue_mult,
-          alpha_mult: ast::fixed_point::Fixed8P8::from_epsilons(1 << 8),
+          alpha_mult: ::swf_fixed::Sfixed8P8::from_epsilons(1 << 8),
           red_add: color_transform.red_add,
           green_add: color_transform.green_add,
           blue_add: color_transform.blue_add,

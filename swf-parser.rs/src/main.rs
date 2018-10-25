@@ -32,14 +32,11 @@ fn main() {
   let swf_file_parse_result: nom::IResult<&[u8], ast::Movie> = parsers::movie::parse_movie(&data[..]);
 
   match swf_file_parse_result {
-    nom::IResult::Done(_, parsed) => {
+    Ok((_, parsed)) => {
       println!("{}", serde_json::to_string_pretty(&parsed).unwrap());
     },
-    nom::IResult::Error(error) => {
+    Err(error) => {
       println!("Error:\n{:?}", error);
-    },
-    nom::IResult::Incomplete(needed) => {
-      println!("Needed:\n{:?}", needed);
     },
   }
 }

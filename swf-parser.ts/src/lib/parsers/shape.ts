@@ -67,6 +67,7 @@ export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion)
   };
 }
 
+// TODO: Rename to InternalShapeStyles or ParserShapeStyles
 export interface _ShapeStyles {
   fill: FillStyle[];
   line: LineStyle[];
@@ -198,14 +199,14 @@ export function parseStyleChangeBits(
  * Parse a fill style list length or line style list length.
  *
  * @param byteStream Stream to use to parse this list length. Will mutate its state.
- * @param supportExtended Allow extended size (`> 255`). Here are the recommended values:
+ * @param allowExtended Allow extended size (`> 255`). Here are the recommended values:
  *                      - `true` for `DefineShape2`, `DefineShape3`, `DefineShape4`
  *                      - `false` for `DefineShape`
  * @returns List length
  */
-export function parseListLength(byteStream: ByteStream, supportExtended: boolean): UintSize {
+export function parseListLength(byteStream: ByteStream, allowExtended: boolean): UintSize {
   const len: UintSize = byteStream.readUint8();
-  if (len === 0xff && supportExtended) {
+  if (len === 0xff && allowExtended) {
     return byteStream.readUint16LE();
   } else {
     return len;

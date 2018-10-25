@@ -1,8 +1,6 @@
 use swf_tree as ast;
 use nom::IResult;
 use nom::{be_f32 as parse_be_f32, be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u8 as parse_u8, le_u32 as parse_le_u32};
-use ordered_float::OrderedFloat;
-use parsers::avm1::parse_actions_block;
 use parsers::basic_data_types::{parse_le_fixed8_p8, parse_le_fixed16_p16, parse_straight_s_rgba8};
 
 #[allow(unused_variables)]
@@ -39,27 +37,25 @@ pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> IResult
     };
 
     match head {
-      IResult::Done(next_input, event_flags) => {
+      Ok((next_input, event_flags)) => {
         if event_flags == 0 {
           current_input = next_input;
           break;
         }
       }
-      IResult::Error(e) => return IResult::Error(e),
-      IResult::Incomplete(n) => return IResult::Incomplete(n),
+      Err(e) => return Err(e),
     };
 
     match parse_clip_actions(current_input, extended_events) {
-      IResult::Done(next_input, clip_actions) => {
+      Ok((next_input, clip_actions)) => {
         result.push(clip_actions);
         current_input = next_input;
       }
-      IResult::Error(e) => return IResult::Error(e),
-      IResult::Incomplete(n) => return IResult::Incomplete(n),
+      Err(e) => return Err(e),
     };
   }
 
-  IResult::Done(current_input, result)
+  Ok((current_input, result))
 }
 
 #[allow(unused_variables)]
@@ -100,11 +96,11 @@ pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> IResult<&[u8],
     events: apply!(parse_clip_event_flags, extended_events) >>
     actions_size: map!(parse_le_u32, |x| if events.key_press && x > 0 { x - 1 } else { x } as usize) >>
     key_code: cond!(events.key_press, parse_u8) >>
-    actions: apply!(parse_actions_block, actions_size) >>
+    actions: take!(actions_size) >>
     (ast::ClipAction {
       events: events,
       key_code: key_code,
-      actions: actions,
+      actions: actions.to_vec(),
     })
   )
 }
@@ -179,7 +175,7 @@ pub fn parse_blur_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Blur> {
 pub fn parse_color_matrix_filter(input: &[u8]) -> IResult<&[u8], ast::filters::ColorMatrix> {
   do_parse!(
     input,
-    matrix: length_count!(value!(20), map!(parse_be_f32, |x| OrderedFloat::<f32>(x))) >>
+    matrix: length_count!(value!(20), map!(parse_be_f32, |x| x)) >>
     (ast::filters::ColorMatrix {
       matrix: matrix,
     })
@@ -191,9 +187,9 @@ pub fn parse_convolution_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Co
     input,
     matrix_width: map!(parse_u8, |x| x as usize) >>
     matrix_height: map!(parse_u8, |x| x as usize) >>
-    divisor: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
-    bias: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
-    matrix: length_count!(value!(matrix_width * matrix_height), map!(parse_be_f32, |x| OrderedFloat::<f32>(x))) >>
+    divisor: parse_be_f32 >>
+    bias: parse_be_f32 >>
+    matrix: length_count!(value!(matrix_width * matrix_height), parse_be_f32) >>
     default_color: parse_straight_s_rgba8 >>
     flags: parse_u8 >>
     clamp: value!((flags & (1 << 1)) != 0) >>
@@ -271,25 +267,23 @@ fn parse_filter_gradient(input: &[u8], color_count: usize) -> IResult<&[u8], Vec
 
   for _ in 0..color_count {
     match parse_straight_s_rgba8(current_input) {
-      IResult::Done(next_input, color) => {
+      Ok((next_input, color)) => {
         result.push(ast::ColorStop { ratio: 0, color: color });
         current_input = next_input;
       }
-      IResult::Error(e) => return IResult::Error(e),
-      IResult::Incomplete(n) => return IResult::Incomplete(n),
+      Err(e) => return Err(e),
     };
   }
   for mut color_stop in &mut result {
     match parse_u8(current_input) {
-      IResult::Done(next_input, ratio) => {
+      Ok((next_input, ratio)) => {
         color_stop.ratio = ratio;
         current_input = next_input;
       }
-      IResult::Error(e) => return IResult::Error(e),
-      IResult::Incomplete(n) => return IResult::Incomplete(n),
+      Err(e) => return Err(e),
     };
   }
-  IResult::Done(current_input, result)
+  Ok((current_input, result))
 }
 
 pub fn parse_gradient_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters::GradientBevel> {

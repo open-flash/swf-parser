@@ -1,6 +1,6 @@
 use std::f32;
 use swf_tree as ast;
-use swf_tree::fixed_point::{Fixed16P16, Fixed8P8, Ufixed8P8};
+use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
 use nom::{IResult, Needed};
 use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16};
 use num_traits::Float;
@@ -19,13 +19,13 @@ pub fn parse_straight_s_argb8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8], usize), bool> {
   if input_slice.len() < 1 {
-    IResult::Incomplete(Needed::Size(1))
+    Err(::nom::Err::Incomplete(Needed::Size(1)))
   } else {
     let res: bool = input_slice[0] & (1 << (7 - bit_pos)) > 0;
     if bit_pos == 7 {
-      IResult::Done((&input_slice[1..], 0), res)
+      Ok(((&input_slice[1..], 0), res))
     } else {
-      IResult::Done((input_slice, bit_pos + 1), res)
+      Ok(((input_slice, bit_pos + 1), res))
     }
   }
 }
@@ -42,36 +42,35 @@ pub fn parse_encoded_le_u32(input: &[u8]) -> IResult<&[u8], u32> {
   let mut current_input: &[u8] = input;
   for i in 0..5 {
     match parse_u8(current_input) {
-      IResult::Done(next_input, next_byte) => {
+      Ok((next_input, next_byte)) => {
         result |= ((next_byte as u32) & 0x7f) << (7 * i);
         if next_byte & (1 << 7) == 0 {
-          return IResult::Done(next_input, result);
+          return Ok((next_input, result));
         } else {
           current_input = next_input;
         }
       }
-      IResult::Error(e) => return IResult::Error(e),
-      IResult::Incomplete(_) => return IResult::Incomplete(Needed::Size(i + 1)),
+      Err(e) => return Err(e),
     }
   }
-  IResult::Done(current_input, result)
+  Ok((current_input, result))
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 16.16-bit number
-pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Fixed16P16> {
+pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed16P16> {
   map!(
     input,
     apply!(parse_i32_bits, n),
-    |x| Fixed16P16::from_epsilons(x)
+    |x| Sfixed16P16::from_epsilons(x)
   )
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 8.8-bit number
-pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Fixed8P8> {
+pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed8P8> {
   map!(
     input,
     apply!(parse_i16_bits, n),
-    |x| Fixed8P8::from_epsilons(x)
+    |x| Sfixed8P8::from_epsilons(x)
   )
 }
 
@@ -125,13 +124,13 @@ pub fn parse_le_ufixed8_p8(input: &[u8]) -> IResult<&[u8], Ufixed8P8> {
 }
 
 /// Parse the little-endian representation of a signed fixed-point 8.8-bit number
-pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Fixed8P8> {
-  map!(input, parse_le_i16, |x| Fixed8P8::from_epsilons(x))
+pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Sfixed8P8> {
+  map!(input, parse_le_i16, |x| Sfixed8P8::from_epsilons(x))
 }
 
 /// Parse the little-endian representation of a signed fixed-point 16.16-bit number
-pub fn parse_le_fixed16_p16(input: &[u8]) -> IResult<&[u8], Fixed16P16> {
-  map!(input, parse_le_i32, |x| Fixed16P16::from_epsilons(x))
+pub fn parse_le_fixed16_p16(input: &[u8]) -> IResult<&[u8], Sfixed16P16> {
+  map!(input, parse_le_i32, |x| Sfixed16P16::from_epsilons(x))
 }
 
 pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
@@ -179,9 +178,9 @@ pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> IResult<(&
   let final_bit_pos = (bit_pos + n) % 8;
   if available_bits < n {
     let needed_bytes = skipped_full_bytes + if final_bit_pos > 0 { 1 } else { 0 };
-    IResult::Incomplete(Needed::Size(needed_bytes))
+    Err(::nom::Err::Incomplete(Needed::Size(needed_bytes)))
   } else {
-    IResult::Done((&input_slice[skipped_full_bytes..], final_bit_pos), ())
+    Ok(((&input_slice[skipped_full_bytes..], final_bit_pos), ()))
   }
 }
 
@@ -220,7 +219,7 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::
       )),
       |scale| match scale {
         Some((scale_x, scale_y)) => (scale_x, scale_y),
-        None => (Fixed16P16::from_epsilons(1 << 16), Fixed16P16::from_epsilons(1 << 16)),
+        None => (Sfixed16P16::from_epsilons(1 << 16), Sfixed16P16::from_epsilons(1 << 16)),
       }
     ) >>
     has_rotate: call!(parse_bool_bits) >>
@@ -233,7 +232,7 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::
       )),
       |skew| match skew {
         Some((skew0, skew1)) => (skew0, skew1),
-        None => (Fixed16P16::from_epsilons(0), Fixed16P16::from_epsilons(0)),
+        None => (Sfixed16P16::from_epsilons(0), Sfixed16P16::from_epsilons(0)),
       }
     ) >>
     translate_bits: apply!(parse_u16_bits, 5) >>
@@ -282,7 +281,7 @@ pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usiz
       )),
       |mult| match mult {
         Some((r, g, b)) => (r, g, b),
-        None => (Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8)),
+        None => (Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8)),
       }
     ) >>
     add: map!(
@@ -329,7 +328,7 @@ pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(
       )),
       |mult| match mult {
         Some((r, g, b, a)) => (r, g, b, a),
-        None => (Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8)),
+        None => (Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8)),
       }
     ) >>
     add: map!(
@@ -360,63 +359,63 @@ pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(
 
 #[cfg(test)]
 mod tests {
-  use nom::{IResult, Needed};
+  use nom::Needed;
   use super::*;
 
   #[test]
   fn test_parse_encoded_le_u32() {
     {
-      assert_eq!(parse_encoded_le_u32(&[][..]), IResult::Incomplete(Needed::Size(1)));
+      assert_eq!(parse_encoded_le_u32(&[][..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
     }
     {
       let input = vec![0x00];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[1..], 0));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 0)));
     }
     {
       let input = vec![0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[1..], 1));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 1)));
     }
     {
       let input = vec![0x10];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[1..], 16));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 16)));
     }
     {
       let input = vec![0x7f];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[1..], 127));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 127)));
     }
     {
       let input = vec![0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Incomplete(Needed::Size(2)));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(2))));
     }
     {
       let input = vec![0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[2..], 1 << 7));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[2..], 1 << 7)));
     }
     {
       let input = vec![0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[3..], 1 << 14));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[3..], 1 << 14)));
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[4..], 1 << 21));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[4..], 1 << 21)));
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Incomplete(Needed::Size(5)));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(5))));
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[5..], 1 << 28));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[5..], 1 << 28)));
     }
     {
       // Do not extend past 5 bytes
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[5..], 0));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[5..], 0)));
     }
     {
       // Do not extend past 5 bytes
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), IResult::Done(&input[5..], 0));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[5..], 0)));
     }
   }
 
@@ -424,76 +423,76 @@ mod tests {
   fn test_parse_i16_bits() {
     {
       let input = vec![0b00000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 0), IResult::Done((&input[0..], 0), 0));
+      assert_eq!(parse_i16_bits((&input[..], 0), 0), Ok(((&input[0..], 0), 0)));
     }
     {
       let input = vec![0b00000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 1), IResult::Done((&input[0..], 1), 0));
+      assert_eq!(parse_i16_bits((&input[..], 0), 1), Ok(((&input[0..], 1), 0)));
     }
     {
       let input = vec![0b10000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 1), IResult::Done((&input[0..], 1), -1));
+      assert_eq!(parse_i16_bits((&input[..], 0), 1), Ok(((&input[0..], 1), -1)));
     }
     {
       let input = vec![0b00000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 2), IResult::Done((&input[0..], 2), 0));
+      assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), 0)));
     }
     {
       let input = vec![0b01000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 2), IResult::Done((&input[0..], 2), 1));
+      assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), 1)));
     }
     {
       let input = vec![0b10000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 2), IResult::Done((&input[0..], 2), -2));
+      assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), -2)));
     }
     {
       let input = vec![0b11000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 2), IResult::Done((&input[0..], 2), -1));
+      assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), -1)));
     }
     {
       let input = vec![0b00000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 15), IResult::Done((&input[1..], 7), 0));
+      assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), 0)));
     }
     {
       let input = vec![0b01111111, 0b11111110];
-      assert_eq!(parse_i16_bits((&input[..], 0), 15), IResult::Done((&input[1..], 7), 16383));
+      assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), 16383)));
     }
     {
       let input = vec![0b10000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 15), IResult::Done((&input[1..], 7), -16384));
+      assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), -16384)));
     }
     {
       let input = vec![0b11111111, 0b11111110];
-      assert_eq!(parse_i16_bits((&input[..], 0), 15), IResult::Done((&input[1..], 7), -1));
+      assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), -1)));
     }
     {
       let input = vec![0b00000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 16), IResult::Done((&input[2..], 0), 0));
+      assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), 0)));
     }
     {
       let input = vec![0b01111111, 0b11111111];
-      assert_eq!(parse_i16_bits((&input[..], 0), 16), IResult::Done((&input[2..], 0), 32767));
+      assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), 32767)));
     }
     {
       let input = vec![0b10000000, 0b00000000];
-      assert_eq!(parse_i16_bits((&input[..], 0), 16), IResult::Done((&input[2..], 0), -32768));
+      assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), -32768)));
     }
     {
       let input = vec![0b11111111, 0b11111111];
-      assert_eq!(parse_i16_bits((&input[..], 0), 16), IResult::Done((&input[2..], 0), -1));
+      assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), -1)));
     }
   }
 
   #[test]
   fn test_parse_u16_bits() {
     let input = vec![0b10101010, 0b11110000, 0b00110011];
-    assert_eq!(parse_u16_bits((&input[..], 0), 5), IResult::Done((&input[0..], 5), 21));
+    assert_eq!(parse_u16_bits((&input[..], 0), 5), Ok(((&input[0..], 5), 21)));
   }
 
   #[test]
   fn test_parse_fixed16_p16_bits() {
     let input = vec![0b00000000, 0b00000000, 0b00000000, 0b00000000];
-    assert_eq!(parse_fixed16_p16_bits((&input[..], 0), 32), IResult::Done((&input[4..], 0), Fixed16P16::from_epsilons(0)));
+    assert_eq!(parse_fixed16_p16_bits((&input[..], 0), 32), Ok(((&input[4..], 0), Sfixed16P16::from_epsilons(0))));
   }
 
   #[test]
@@ -504,35 +503,35 @@ mod tests {
       // 01011 00001111111 00100000100 00000001111 01000000010
       // nBits xMin        xMax        yMin        yMax
       let input = vec![0b01011000, 0b01111111, 0b00100000, 0b10000000, 0b00111101, 0b00000001, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 127, x_max: 260, y_min: 15, y_max: 514 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 127, x_max: 260, y_min: 15, y_max: 514 })));
     }
     {
       let input = vec![0b00000000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 })));
     }
     {
       let input = vec![0b00001000, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 })));
     }
     {
       let input = vec![0b00010000, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 })));
     }
     {
       let input = vec![0b00010010, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 1, x_max: 0, y_min: 0, y_max: 0 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 1, x_max: 0, y_min: 0, y_max: 0 })));
     }
     {
       let input = vec![0b00010000, 0b10000000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 0, x_max: 1, y_min: 0, y_max: 0 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 1, y_min: 0, y_max: 0 })));
     }
     {
       let input = vec![0b00010000, 0b00100000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 1, y_max: 0 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 1, y_max: 0 })));
     }
     {
       let input = vec![0b00010000, 0b00001000];
-      assert_eq!(parse_rect(&input[..]), IResult::Done((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 1 }));
+      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 1 })));
     }
   }
 }
