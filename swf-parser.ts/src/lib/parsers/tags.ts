@@ -324,39 +324,6 @@ export function parseDefineBitsJpeg3(byteStream: ByteStream, swfVersion: Uint8):
 // TODO: Merge defineBitsJpegX functions into defineBitsJpegAny
 export function parseDefineBitsJpeg4(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
   throw new Incident("Unsupported DefineBitsJpeg4");
-
-  // const id: Uint16 = byteStream.readUint16LE();
-  //
-  // const bytePos: UintSize = byteStream.bytePos;
-  //
-  // const dataSize: Uint32 = byteStream.readUint32LE();
-  // const jpegDeclockingStrength: Ufixed8P8 = byteStream.readUfixed8P8LE();
-  //
-  //
-  // let data: Uint8Array = byteStream.takeBytes(dataSize);
-  //
-  // let mediaType: ImageType;
-  // let imageDimensions: ImageDimensions;
-  //
-  // if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
-  //   mediaType = "image/jpeg";
-  //   imageDimensions = getJpegImageDimensions(new Stream(data));
-  //   if (byteStream.available() > 0) {
-  //     mediaType = "image/x-ajpeg";
-  //     byteStream.bytePos = bytePos;
-  //     data = byteStream.tailBytes();
-  //   }
-  // } else if (testImageStart(data, PNG_START)) {
-  //   mediaType = "image/png";
-  //   imageDimensions = getPngImageDimensions(new Stream(data));
-  // } else if (testImageStart(data, GIF_START)) {
-  //   mediaType = "image/gif";
-  //   imageDimensions = getGifImageDimensions(new Stream(data));
-  // } else {
-  //   throw new Incident("UnknownBitmapType");
-  // }
-  //
-  // return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
 }
 
 export function parseDefineBitsLossless(byteStream: ByteStream): tags.DefineBitmap {

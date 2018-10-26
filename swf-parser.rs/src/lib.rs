@@ -12,9 +12,10 @@ pub mod parsers {
   pub mod basic_data_types;
   pub mod display;
   pub mod gradient;
-  pub mod shape;
-  pub mod movie;
   pub mod header;
+  pub mod image;
+  pub mod movie;
+  pub mod shape;
   pub mod tags;
   pub mod text;
 }

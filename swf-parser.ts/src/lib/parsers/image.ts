@@ -34,45 +34,6 @@ export function getPngImageDimensions(byteStream: ByteStream): ImageDimensions {
   return {width, height};
 }
 
-/**
- * Returns the JPEG chunks: assumes all the chunks are complete.
- */
-export function* readJpegChunks(byteStream: ByteStream): Iterable<Uint8Array> {
-  const bytes: Uint8Array = byteStream.takeBytes(byteStream.available());
-  let i: UintSize = 0;
-  const byteCount: UintSize = bytes.length;
-
-  function getNextChunkIndex(search: UintSize): number | undefined {
-    // A chunk marker starts with `0xff` followed by any byte except `0x00` (ff 00 is escaped ff)
-    // or `0xff` (padding)
-    while ((search + 1) < byteCount) {
-      if (bytes[search] === 0xff && (bytes[search + 1] !== 0x00 && bytes[search + 1] !== 0xff)) {
-        return search;
-      } else {
-        search++;
-      }
-    }
-    return undefined;
-  }
-
-  let chunkStart: number | undefined = getNextChunkIndex(i);
-  while (chunkStart !== undefined) {
-    const code: Uint8 = bytes[chunkStart + 1];
-    i += 2;
-    if (
-      (code >= 0xc0 && code <= 0xc7)
-      || (code >= 0xc9 && code <= 0xcf)
-      || (code >= 0xda && code <= 0xef)
-      || code === 0xfe
-    ) {
-      i += (bytes[i] << 8) + bytes[i + 1]; // Advance by `size` if present (Uint16LE)
-    }
-    const nextChunkStart: number | undefined = getNextChunkIndex(i);
-    yield bytes.subarray(chunkStart, nextChunkStart);
-    chunkStart = nextChunkStart;
-  }
-}
-
 // export function readJpeg(byteStream: ByteStream, fixJpeg: boolean): [Uint8Array, ImageProperties] {
 //   let height: Uint16 | undefined = undefined;
 //   let width: Uint16 | undefined = undefined;
@@ -122,7 +83,8 @@ export function getJpegImageDimensions(byteStream: ByteStream): ImageDimensions 
 
   for (const chunk of readJpegChunks(byteStream)) {
     const code: Uint8 = chunk[1];
-    if ((code & 0xfc) === 0xc0 && chunk.length >= 9) { // SOF: 0b110000xx
+    // SOF: 0b110000xx
+    if ((code & 0xfc) === 0xc0 && chunk.length >= 9) {
       // TODO: Check why TSLint is confused here
       // tslint:disable-next-line:restrict-plus-operands
       const frameHeight: Uint16 = (chunk[5] << 8) + chunk[6];
@@ -140,6 +102,48 @@ export function getJpegImageDimensions(byteStream: ByteStream): ImageDimensions 
     throw new Incident("InvalidJpeg", "Frame dimensions not found");
   }
   return {width, height};
+}
+
+/**
+ * Returns the JPEG chunks: assumes all the chunks are complete.
+ */
+function* readJpegChunks(byteStream: ByteStream): Iterable<Uint8Array> {
+  const bytes: Uint8Array = byteStream.takeBytes(byteStream.available());
+  let i: UintSize = 0;
+  const byteCount: UintSize = bytes.length;
+
+  function getNextChunkIndex(search: UintSize): UintSize | undefined {
+    // A chunk marker starts with `0xff` followed by any byte except:
+    // - `0x00` (ff 00 is escaped ff)
+    // - `0xff` (padding)
+    while ((search + 1) < byteCount) {
+      if (bytes[search] === 0xff && (bytes[search + 1] !== 0x00 && bytes[search + 1] !== 0xff)) {
+        return search;
+      } else {
+        search++;
+      }
+    }
+    return undefined;
+  }
+
+  let chunkStart: number | undefined = getNextChunkIndex(i);
+  while (chunkStart !== undefined) {
+    const code: Uint8 = bytes[chunkStart + 1];
+    i += 2;
+    // Check if this chunk has a `size` field
+    if (
+      (code >= 0xc0 && code <= 0xc7)
+      || (code >= 0xc9 && code <= 0xcf)
+      || (code >= 0xda && code <= 0xef)
+      || code === 0xfe
+    ) {
+      // Advance by `size` (stored as an Uint16LE)
+      i += (bytes[chunkStart + 2] << 8) + bytes[chunkStart + 3];
+    }
+    const nextChunkStart: number | undefined = getNextChunkIndex(i);
+    yield bytes.subarray(chunkStart, nextChunkStart);
+    chunkStart = nextChunkStart;
+  }
 }
 
 export function getGifImageDimensions(byteStream: ByteStream): ImageDimensions {

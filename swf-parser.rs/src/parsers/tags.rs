@@ -19,6 +19,10 @@ use parsers::shape::{parse_shape, ShapeVersion};
 use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use state::ParseState;
 use swf_tree as ast;
+use parsers::image::test_image_start;
+use parsers::image::JPEG_START;
+use parsers::image::ERRONEOUS_JPEG_START;
+use parsers::image::get_jpeg_image_dimensions;
 
 pub struct SwfTagHeader {
   pub tag_code: u16,
@@ -55,6 +59,8 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
           4 => map!(record_data, parse_place_object, |t| ast::Tag::PlaceObject(t)),
           5 => map!(record_data, parse_remove_object, |t| ast::Tag::RemoveObject(t)),
+          // TODO(demurgos): Throw error if the version is unknown
+          6 => map!(record_data, apply!(parse_define_bits, state.get_swf_version().unwrap()), |t| ast::Tag::DefineBitmap(t)),
           9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           // TODO: Ignore DoAction if version >= 9 && use_as3
@@ -124,6 +130,25 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
       sharpness: sharpness,
     })
   )
+}
+
+pub fn parse_define_bits(input: &[u8], swf_version: usize) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  let (input, id) = parse_le_u16(input)?;
+  let data: Vec<u8> = input.to_vec();
+  let input: &[u8] = &[][..];
+
+  if test_image_start(&data, &JPEG_START) || (swf_version < 8 && test_image_start(&data, &ERRONEOUS_JPEG_START)) {
+    let image_dimensions = get_jpeg_image_dimensions(&data).unwrap();
+    // TODO: avoid conversions
+    Ok((input, ast::tags::DefineBitmap {
+      id,
+      width: image_dimensions.width as u16,
+      height: image_dimensions.height as u16,
+      data,
+    }))
+  } else {
+    panic!("UnknownBitmapType");
+  }
 }
 
 pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineDynamicText> {
