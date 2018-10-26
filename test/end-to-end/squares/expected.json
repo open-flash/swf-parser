@@ -1,15 +1,13 @@
 {
   "header": {
-    "compression_method": "deflate",
     "swf_version": 8,
-    "uncompressed_file_length": 1452,
     "frame_size": {
       "x_min": 0,
       "x_max": 11000,
       "y_min": 0,
       "y_max": 8000
     },
-    "frame_rate": "+0x18.00",
+    "frame_rate": 6144,
     "frame_count": 1
   },
   "tags": [
@@ -48,45 +46,47 @@
       "has_non_scaling_strokes": false,
       "has_scaling_strokes": false,
       "shape": {
-        "fill_styles": [
-          {
-            "type": "solid",
-            "color": {
-              "r": 255,
-              "g": 0,
-              "b": 0,
-              "a": 255
+        "initial_styles": {
+          "fill": [
+            {
+              "type": "solid",
+              "color": {
+                "r": 255,
+                "g": 0,
+                "b": 0,
+                "a": 255
+              }
+            },
+            {
+              "type": "solid",
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 255,
+                "a": 255
+              }
+            },
+            {
+              "type": "solid",
+              "color": {
+                "r": 0,
+                "g": 255,
+                "b": 0,
+                "a": 255
+              }
+            },
+            {
+              "type": "solid",
+              "color": {
+                "r": 255,
+                "g": 255,
+                "b": 0,
+                "a": 255
+              }
             }
-          },
-          {
-            "type": "solid",
-            "color": {
-              "r": 0,
-              "g": 0,
-              "b": 255,
-              "a": 255
-            }
-          },
-          {
-            "type": "solid",
-            "color": {
-              "r": 0,
-              "g": 255,
-              "b": 0,
-              "a": 255
-            }
-          },
-          {
-            "type": "solid",
-            "color": {
-              "r": 255,
-              "g": 255,
-              "b": 0,
-              "a": 255
-            }
-          }
-        ],
-        "line_styles": [],
+          ],
+          "line": []
+        },
         "records": [
           {
             "type": "style-change",
@@ -98,28 +98,28 @@
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 1240,
               "y": 0
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": 2750
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": -2750,
               "y": 0
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": -1380
             }
@@ -130,28 +130,28 @@
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": -1590,
               "y": 0
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": -2520
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 3100,
               "y": 0
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": 1150
             }
@@ -162,7 +162,7 @@
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": -830,
               "y": 0
             }
@@ -173,14 +173,14 @@
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": 800
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": -680,
               "y": 0
             }
@@ -191,7 +191,7 @@
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": 570
             }
@@ -207,28 +207,28 @@
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": -650,
               "y": 0
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": -1330
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 1330,
               "y": 0
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": 530
             }
@@ -244,28 +244,28 @@
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": 370
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": -370,
               "y": 0
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 0,
               "y": -370
             }
           },
           {
             "type": "straight-edge",
-            "end_delta": {
+            "delta": {
               "x": 370,
               "y": 0
             }
@@ -275,18 +275,17 @@
     },
     {
       "type": "place-object",
+      "is_move": false,
       "depth": 1,
       "character_id": 1,
       "matrix": {
-        "scale_x": "+0x0001.0000",
-        "scale_y": "+0x0001.0000",
-        "rotate_skew0": "+0x0000.0000",
-        "rotate_skew1": "+0x0000.0000",
+        "scale_x": 65536,
+        "scale_y": 65536,
+        "rotate_skew0": 0,
+        "rotate_skew1": 0,
         "translate_x": 0,
         "translate_y": 0
-      },
-      "filters": [],
-      "clip_actions": []
+      }
     },
     {
       "type": "show-frame"

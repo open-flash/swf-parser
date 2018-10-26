@@ -1,0 +1,738 @@
+{
+  "header": {
+    "swf_version": 6,
+    "frame_size": {
+      "x_min": 0,
+      "x_max": 11000,
+      "y_min": 0,
+      "y_max": 8000
+    },
+    "frame_rate": 7936,
+    "frame_count": 52
+  },
+  "tags": [
+    {
+      "type": "set-background-color",
+      "color": {
+        "r": 204,
+        "g": 204,
+        "b": 204
+      }
+    },
+    {
+      "type": "do-action",
+      "actions": "880e0001006f6e4d6f757365446f776e0096020008009b05000000000100061d00"
+    },
+    {
+      "type": "define-morph-shape",
+      "id": 1,
+      "bounds": {
+        "x_min": -1440,
+        "x_max": 1440,
+        "y_min": -1440,
+        "y_max": 1440
+      },
+      "morph_bounds": {
+        "x_min": -2034,
+        "x_max": 2026,
+        "y_min": -2040,
+        "y_max": 2020
+      },
+      "has_non_scaling_strokes": false,
+      "has_scaling_strokes": false,
+      "shape": {
+        "initial_styles": {
+          "fill": [
+            {
+              "type": "solid",
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 102,
+                "a": 255
+              },
+              "morph_color": {
+                "r": 102,
+                "g": 0,
+                "b": 0,
+                "a": 255
+              }
+            }
+          ],
+          "line": [
+            {
+              "width": 80,
+              "start_cap": "round",
+              "end_cap": "round",
+              "join": {
+                "type": "round"
+              },
+              "no_h_scale": false,
+              "no_v_scale": false,
+              "no_close": false,
+              "pixel_hinting": false,
+              "fill": {
+                "type": "solid",
+                "color": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "morph_color": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                }
+              },
+              "morph_width": 80
+            }
+          ]
+        },
+        "records": [
+          {
+            "type": "style-change",
+            "move_to": {
+              "x": -1000,
+              "y": -1000
+            },
+            "left_fill": 1,
+            "line_style": 1,
+            "morph_move_to": {
+              "x": 0,
+              "y": -2000
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": 500,
+              "y": -200
+            },
+            "anchor_delta": {
+              "x": 500,
+              "y": -200
+            },
+            "morph_control_delta": {
+              "x": 820,
+              "y": 0
+            },
+            "morph_anchor_delta": {
+              "x": 580,
+              "y": 580
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": 500,
+              "y": 200
+            },
+            "anchor_delta": {
+              "x": 500,
+              "y": 200
+            },
+            "morph_control_delta": {
+              "x": 586,
+              "y": 594
+            },
+            "morph_anchor_delta": {
+              "x": 0,
+              "y": 820
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": 200,
+              "y": 500
+            },
+            "anchor_delta": {
+              "x": 200,
+              "y": 500
+            },
+            "morph_control_delta": {
+              "x": 0,
+              "y": 820
+            },
+            "morph_anchor_delta": {
+              "x": -580,
+              "y": 580
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": -200,
+              "y": 500
+            },
+            "anchor_delta": {
+              "x": -200,
+              "y": 500
+            },
+            "morph_control_delta": {
+              "x": -594,
+              "y": 586
+            },
+            "morph_anchor_delta": {
+              "x": -820,
+              "y": 0
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": -500,
+              "y": 200
+            },
+            "anchor_delta": {
+              "x": -500,
+              "y": 200
+            },
+            "morph_control_delta": {
+              "x": -820,
+              "y": 0
+            },
+            "morph_anchor_delta": {
+              "x": -580,
+              "y": -580
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": -500,
+              "y": -200
+            },
+            "anchor_delta": {
+              "x": -500,
+              "y": -200
+            },
+            "morph_control_delta": {
+              "x": -586,
+              "y": -594
+            },
+            "morph_anchor_delta": {
+              "x": 0,
+              "y": -820
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": -200,
+              "y": -500
+            },
+            "anchor_delta": {
+              "x": -200,
+              "y": -500
+            },
+            "morph_control_delta": {
+              "x": 0,
+              "y": -820
+            },
+            "morph_anchor_delta": {
+              "x": 580,
+              "y": -580
+            }
+          },
+          {
+            "type": "curved-edge",
+            "control_delta": {
+              "x": 200,
+              "y": -500
+            },
+            "anchor_delta": {
+              "x": 200,
+              "y": -500
+            },
+            "morph_control_delta": {
+              "x": 594,
+              "y": -586
+            },
+            "morph_anchor_delta": {
+              "x": 820,
+              "y": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "place-object",
+      "is_move": false,
+      "depth": 1,
+      "character_id": 1,
+      "matrix": {
+        "scale_x": 65536,
+        "scale_y": 65536,
+        "rotate_skew0": 0,
+        "rotate_skew1": 0,
+        "translate_x": 5500,
+        "translate_y": 4000
+      },
+      "ratio": 0
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 1311
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 2621
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 3932
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 5243
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 6554
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 7864
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 9175
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 10486
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 11796
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 13107
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 14418
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 15728
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 17039
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 18350
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 19661
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 20971
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 22282
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 23593
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 24903
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 26214
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 27525
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 28835
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 30146
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 31457
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 32768
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 34078
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 35389
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 36700
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 38010
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 39321
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 40632
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 41942
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 43253
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 44564
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 45874
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 47185
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 48496
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 49807
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 51117
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 52428
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 53739
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 55049
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 56360
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 57671
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 58981
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 60292
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 61603
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 62914
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 64224
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_move": true,
+      "depth": 1,
+      "ratio": 65535
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "do-action",
+      "actions": "0700"
+    },
+    {
+      "type": "show-frame"
+    }
+  ]
+}
