@@ -27,7 +27,6 @@ import { MorphShape } from "swf-tree/morph-shape";
 import { SpriteTag } from "swf-tree/sprite-tag";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import { BitStream, ByteStream, Stream } from "../stream";
-import { parseActionString } from "./avm1";
 import {
   parseColorTransform,
   parseColorTransformWithAlpha,
@@ -143,7 +142,7 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       if (swfVersion === undefined) {
         throw new Incident("Missing SWF version, unable to parse parseJpegTables");
       }
-      return parseJpegTables(byteStream, swfVersion);
+      return parseDefineJpegTables(byteStream, swfVersion);
     }
     case 9:
       return parseSetBackgroundColor(byteStream);
@@ -479,6 +478,15 @@ export function parseDefineFontName(byteStream: ByteStream): tags.DefineFontName
   return {type: TagType.DefineFontName, fontId, name, copyright};
 }
 
+export function parseDefineJpegTables(byteStream: ByteStream, swfVersion: Uint8): tags.DefineJpegTables {
+  const data: Uint8Array = byteStream.tailBytes();
+  if (!(testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START)))) {
+    throw new Incident("UnknownBitmapType");
+  }
+
+  return {type: TagType.DefineJpegTables, data};
+}
+
 export function parseDefineMorphShape(byteStream: ByteStream): tags.DefineMorphShape {
   return parseDefineMorphShapeAny(byteStream, MorphShapeVersion.MorphShape1);
 }
@@ -696,12 +704,14 @@ export function parseDefineText(byteStream: ByteStream): tags.DefineText {
 }
 
 export function parseDoAction(byteStream: ByteStream): tags.DoAction {
-  return {type: TagType.DoAction, actions: parseActionString(byteStream)};
+  const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
+  return {type: TagType.DoAction, actions};
 }
 
 export function parseDoInitAction(byteStream: ByteStream): tags.DoInitAction {
   const spriteId: Uint16 = byteStream.readUint16LE();
-  return {type: TagType.DoInitAction, spriteId, actions: parseActionString(byteStream)};
+  const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
+  return {type: TagType.DoInitAction, spriteId, actions};
 }
 
 export function parseExportAssets(byteStream: ByteStream): tags.ExportAssets {
@@ -774,15 +784,6 @@ export function parseImportAssets2(byteStream: ByteStream): tags.ImportAssets {
     url,
     assets,
   };
-}
-
-export function parseJpegTables(byteStream: ByteStream, swfVersion: Uint8): tags.DefineJpegTables {
-  const data: Uint8Array = byteStream.tailBytes();
-  if (!(testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START)))) {
-    throw new Incident("UnknownBitmapType");
-  }
-
-  return {type: TagType.JpegTables, data};
 }
 
 export function parseMetadata(byteStream: ByteStream): tags.Metadata {

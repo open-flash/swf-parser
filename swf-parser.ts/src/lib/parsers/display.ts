@@ -1,7 +1,6 @@
 import { Incident } from "incident";
 import { Float32, Uint16, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
 import {
-  avm1,
   BlendMode,
   ClipActions,
   ClipEventFlags,
@@ -14,7 +13,6 @@ import {
   StraightSRgba8,
 } from "swf-tree";
 import { ByteStream } from "../stream";
-import { parseActionBlock } from "./avm1";
 import { parseStraightSRgba8 } from "./basic-data-types";
 
 export function parseBlendMode(byteStream: ByteStream): BlendMode {
@@ -125,7 +123,7 @@ export function parseClipActions(byteStream: ByteStream, extendedEvents: boolean
     keyCode = byteStream.readUint8();
     actionsSize -= 1;
   }
-  const actions: avm1.Action[] = parseActionBlock(byteStream.take(actionsSize));
+  const actions: Uint8Array = Uint8Array.from(byteStream.takeBytes(actionsSize));
   return {events, keyCode, actions};
 }
 

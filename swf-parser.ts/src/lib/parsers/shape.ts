@@ -22,7 +22,7 @@ import { JoinStyle } from "swf-tree/join-style";
 import { BitStream, ByteStream } from "../stream";
 import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGradient } from "./gradient";
-import { ShapeStyles } from "swf-tree/shape-style";
+import { ShapeStyles } from "swf-tree/shape-styles";
 
 export enum ShapeVersion {
   Shape1 = 1,

@@ -20,7 +20,7 @@ import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types";
 import { parseMorphGradient } from "./gradient";
 import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape";
 import { MorphCurvedEdge, MorphStraightEdge, MorphStyleChange } from "swf-tree/shape-records";
-import { MorphShapeStyles } from "swf-tree/morph-shape-style";
+import { MorphShapeStyles } from "swf-tree/morph-shape-styles";
 
 export enum MorphShapeVersion {
   MorphShape1 = 1,

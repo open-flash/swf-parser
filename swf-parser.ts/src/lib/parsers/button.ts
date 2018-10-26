@@ -1,6 +1,5 @@
 import { Incident } from "incident";
 import { Uint16, Uint32, Uint7, Uint8 } from "semantic-types";
-import { Action } from "swf-tree/avm1/action";
 import { BlendMode } from "swf-tree/blend-mode";
 import { ButtonCond } from "swf-tree/buttons/button-cond";
 import { ButtonCondAction } from "swf-tree/buttons/button-cond-action";
@@ -10,7 +9,6 @@ import { Filter } from "swf-tree/filter";
 import { Matrix } from "swf-tree/matrix";
 import { createIncompleteStreamError } from "../errors/incomplete-stream";
 import { BitStream, ByteStream, Stream } from "../stream";
-import { parseActionString } from "./avm1";
 import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types";
 import { parseBlendMode, parseFilterList } from "./display";
 
@@ -93,7 +91,7 @@ export function parseButton2CondActionString(byteStream: ByteStream): ButtonCond
 
 export function parseButton2CondAction(byteStream: ByteStream): ButtonCondAction {
   const conditions: ButtonCond = parseButtonCond(byteStream);
-  const actions: Action[] = parseActionString(byteStream);
+  const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
   return {conditions, actions};
 }
 
