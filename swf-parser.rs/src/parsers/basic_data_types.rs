@@ -104,18 +104,24 @@ pub fn parse_u32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize)
 }
 
 pub fn parse_be_f16(input: &[u8]) -> IResult<&[u8], f32> {
-  map!(input, parse_be_u16, |base: u16| -> f32 {
-    let sign: f32 = if (base & (1 << 15)) != 0 {-1.0} else {1.0};
-    let exponent: i32 = ((base & 0x7c00) >> 10) as i32; // 0x7c00: bits 10 to 14 (inclusive)
-    let fraction: f32 = (base & 0x03ff) as f32; // 0x03ff: bits 0 to 9 (inclusive)
-    if exponent == 0 {
-      sign * (2.0).powi(-14) * (fraction / 1024.0)
-    } else if exponent == 0x1f { // 0x1f: bits 0 to 4 (inclusive)
-      if fraction == 0.0 {sign * f32::INFINITY} else {f32::NAN}
-    } else {
-      sign * (2.0).powi(exponent - 15) * (1.0 + (fraction / 1024.0))
-    }
-  })
+  map!(input, parse_be_u16, transmute_u16_to_f16)
+}
+
+pub fn parse_le_f16(input: &[u8]) -> IResult<&[u8], f32> {
+  map!(input, parse_le_u16, transmute_u16_to_f16)
+}
+
+fn transmute_u16_to_f16(base: u16) -> f32 {
+  let sign: f32 = if (base & (1 << 15)) != 0 {-1.0} else {1.0};
+  let exponent: i32 = ((base & 0x7c00) >> 10) as i32; // 0x7c00: bits 10 to 14 (inclusive)
+  let fraction: f32 = (base & 0x03ff) as f32; // 0x03ff: bits 0 to 9 (inclusive)
+  if exponent == 0 {
+    sign * (2.0).powi(-14) * (fraction / 1024.0)
+  } else if exponent == 0x1f { // 0x1f: bits 0 to 4 (inclusive)
+    if fraction == 0.0 {sign * f32::INFINITY} else {f32::NAN}
+  } else {
+    sign * (2.0).powi(exponent - 15) * (1.0 + (fraction / 1024.0))
+  }
 }
 
 /// Parse the little-endian representation of an unsigned fixed-point 8.8-bit number

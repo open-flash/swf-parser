@@ -3,7 +3,7 @@ use nom::IResult;
 use nom::{le_i16 as parse_le_i16, le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
 use parsers::basic_data_types::{
   parse_rect,
-  parse_be_f16,
+  parse_le_f16,
   parse_s_rgb8,
   parse_straight_s_rgba8,
   parse_i32_bits,
@@ -11,8 +11,6 @@ use parsers::basic_data_types::{
 };
 use parsers::shape::parse_glyph;
 
-// TODO: Check with `nom`, it creates warnings: unused variable: `e`
-#[allow(unused_variables)]
 pub fn parse_grid_fitting_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::GridFitting> {
   switch!(
     input,
@@ -24,9 +22,6 @@ pub fn parse_grid_fitting_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize),
   )
 }
 
-
-// TODO(demurgos): Fill an issue with `nom` to solve the `unused variable e` warning
-#[allow(unused_variables)]
 pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::CsmTableHint> {
   switch!(
     input,
@@ -38,8 +33,6 @@ pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize
   )
 }
 
-// TODO: Check with `nom`, it creates warnings: unused variable: `e`
-#[allow(unused_variables)]
 pub fn parse_text_renderer_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::TextRenderer> {
   switch!(
     input,
@@ -66,8 +59,8 @@ pub fn parse_font_alignment_zone(input: &[u8]) -> IResult<&[u8], ast::text::Font
 pub fn parse_font_alignment_zone_data(input: &[u8]) -> IResult<&[u8], ast::text::FontAlignmentZoneData> {
   do_parse!(
     input,
-    origin: parse_be_f16 >>
-    size: parse_be_f16 >>
+    origin: parse_le_f16 >>
+    size: parse_le_f16 >>
     (ast::text::FontAlignmentZoneData {
       origin,
       size,
@@ -96,8 +89,6 @@ pub fn parse_text_record_string(input: &[u8], has_alpha: bool, index_bits: usize
   Err(::nom::Err::Incomplete(::nom::Needed::Unknown))
 }
 
-// TODO: Check with `nom`, it creates warnings: unused variable: `e`
-#[allow(unused_variables)]
 pub fn parse_text_record(input: &[u8], has_alpha: bool, index_bits: usize, advance_bits: usize) -> IResult<&[u8], ast::text::TextRecord> {
   do_parse!(
     input,
@@ -205,7 +196,6 @@ pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> IResult<&[u8], ast
   )
 }
 
-#[allow(unused_variables)]
 pub fn parse_text_alignment(input: &[u8]) -> IResult<&[u8], ast::text::TextAlignment> {
   switch!(
     input,

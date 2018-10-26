@@ -118,8 +118,8 @@ export function parseFontAlignmentZone(byteStream: ByteStream): text.FontAlignme
     data.push(parseFontAlignmentZoneData(byteStream));
   }
   const flags: Uint8 = byteStream.readUint8();
-  const hasY: boolean = (flags & (1 << 1)) !== 0;
   const hasX: boolean = (flags & (1 << 0)) !== 0;
+  const hasY: boolean = (flags & (1 << 1)) !== 0;
   return {data, hasX, hasY};
 }
 
