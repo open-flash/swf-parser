@@ -46,3 +46,46 @@ pub fn parse_gradient(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::Gra
     })
   )
 }
+
+#[allow(unused_variables)]
+pub fn parse_morph_color_stop(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::MorphColorStop> {
+  do_parse!(
+    input,
+    start: apply!(parse_color_stop, with_alpha) >>
+    end: apply!(parse_color_stop, with_alpha) >>
+    (ast::MorphColorStop {
+      ratio: start.ratio,
+      color: start.color,
+      morph_ratio: end.ratio,
+      morph_color: end.color,
+    })
+  )
+}
+
+#[allow(unused_variables)]
+pub fn parse_morph_gradient(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::MorphGradient> {
+  do_parse!(
+    input,
+    flags: parse_u8 >>
+    spread_id: value!(flags >> 6) >>
+    color_space_id: value!((flags & ((1 << 6) - 1)) >> 4) >>
+    color_count: value!(flags & ((1 << 4) - 1)) >>
+    spread: switch!(value!(spread_id),
+      0 => value!(ast::GradientSpread::Pad) |
+      1 => value!(ast::GradientSpread::Reflect) |
+      2 => value!(ast::GradientSpread::Repeat)
+      // TODO: Default to error
+    ) >>
+    color_space: switch!(value!(color_space_id),
+      0 => value!(ast::ColorSpace::SRgb) |
+      1 => value!(ast::ColorSpace::LinearRgb)
+      // TODO: Default to error
+    ) >>
+    colors: length_count!(value!(color_count), apply!(parse_morph_color_stop, with_alpha)) >>
+    (ast::MorphGradient {
+      spread: spread,
+      color_space: color_space,
+      colors: colors,
+    })
+  )
+}

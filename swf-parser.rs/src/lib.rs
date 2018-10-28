@@ -14,6 +14,7 @@ pub mod parsers {
   pub mod gradient;
   pub mod header;
   pub mod image;
+  pub mod morph_shape;
   pub mod movie;
   pub mod shape;
   pub mod tags;

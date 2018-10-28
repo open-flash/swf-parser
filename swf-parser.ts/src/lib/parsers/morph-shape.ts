@@ -168,6 +168,7 @@ export function parseMorphShapeEndRecordStringBits(
   for (const startRecord of startRecords) {
     if (startRecord.type === ShapeRecordType.StyleChange && startRecord.moveTo === undefined) {
       // The end shape contains only edge (straight or curved) or moveTo records, it matches the start records
+      result.push(startRecord);
       continue;
     }
 

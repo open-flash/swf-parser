@@ -1,9 +1,9 @@
 import { Incident } from "incident";
 import { Uint16, Uint32, Uint7, Uint8 } from "semantic-types";
 import { BlendMode } from "swf-tree/blend-mode";
-import { ButtonCond } from "swf-tree/buttons/button-cond";
-import { ButtonCondAction } from "swf-tree/buttons/button-cond-action";
-import { ButtonRecord } from "swf-tree/buttons/button-record";
+import { ButtonCond } from "swf-tree/button/button-cond";
+import { ButtonCondAction } from "swf-tree/button/button-cond-action";
+import { ButtonRecord } from "swf-tree/button/button-record";
 import { ColorTransformWithAlpha } from "swf-tree/color-transform-with-alpha";
 import { Filter } from "swf-tree/filter";
 import { Matrix } from "swf-tree/matrix";
@@ -49,7 +49,7 @@ export function parseButtonRecord(byteStream: ByteStream, buttonVersion: ButtonV
   const depth: Uint16 = byteStream.readUint16LE();
   const matrix: Matrix = parseMatrix(byteStream);
   let colorTransform: ColorTransformWithAlpha | undefined = undefined;
-  let filters: Filter[] | undefined = undefined;
+  let filters: Filter[] = [];
   let blendMode: BlendMode = BlendMode.Normal;
   if (buttonVersion >= ButtonVersion.Button1) {
     colorTransform = parseColorTransformWithAlpha(byteStream);

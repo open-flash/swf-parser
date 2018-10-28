@@ -62,6 +62,7 @@
           "line": [
             {
               "width": 80,
+              "morph_width": 80,
               "start_cap": "round",
               "end_cap": "round",
               "join": {
@@ -85,8 +86,7 @@
                   "b": 0,
                   "a": 255
                 }
-              },
-              "morph_width": 80
+              }
             }
           ]
         },
@@ -97,20 +97,16 @@
               "x": -1000,
               "y": -1000
             },
-            "left_fill": 1,
-            "line_style": 1,
             "morph_move_to": {
               "x": 0,
               "y": -2000
-            }
+            },
+            "left_fill": 1,
+            "line_style": 1
           },
           {
             "type": "curved-edge",
             "control_delta": {
-              "x": 500,
-              "y": -200
-            },
-            "anchor_delta": {
               "x": 500,
               "y": -200
             },
@@ -118,6 +114,10 @@
               "x": 820,
               "y": 0
             },
+            "anchor_delta": {
+              "x": 500,
+              "y": -200
+            },
             "morph_anchor_delta": {
               "x": 580,
               "y": 580
@@ -126,10 +126,6 @@
           {
             "type": "curved-edge",
             "control_delta": {
-              "x": 500,
-              "y": 200
-            },
-            "anchor_delta": {
               "x": 500,
               "y": 200
             },
@@ -137,6 +133,10 @@
               "x": 586,
               "y": 594
             },
+            "anchor_delta": {
+              "x": 500,
+              "y": 200
+            },
             "morph_anchor_delta": {
               "x": 0,
               "y": 820
@@ -148,13 +148,13 @@
               "x": 200,
               "y": 500
             },
-            "anchor_delta": {
-              "x": 200,
-              "y": 500
-            },
             "morph_control_delta": {
               "x": 0,
               "y": 820
+            },
+            "anchor_delta": {
+              "x": 200,
+              "y": 500
             },
             "morph_anchor_delta": {
               "x": -580,
@@ -167,13 +167,13 @@
               "x": -200,
               "y": 500
             },
-            "anchor_delta": {
-              "x": -200,
-              "y": 500
-            },
             "morph_control_delta": {
               "x": -594,
               "y": 586
+            },
+            "anchor_delta": {
+              "x": -200,
+              "y": 500
             },
             "morph_anchor_delta": {
               "x": -820,
@@ -186,13 +186,13 @@
               "x": -500,
               "y": 200
             },
-            "anchor_delta": {
-              "x": -500,
-              "y": 200
-            },
             "morph_control_delta": {
               "x": -820,
               "y": 0
+            },
+            "anchor_delta": {
+              "x": -500,
+              "y": 200
             },
             "morph_anchor_delta": {
               "x": -580,
@@ -205,13 +205,13 @@
               "x": -500,
               "y": -200
             },
-            "anchor_delta": {
-              "x": -500,
-              "y": -200
-            },
             "morph_control_delta": {
               "x": -586,
               "y": -594
+            },
+            "anchor_delta": {
+              "x": -500,
+              "y": -200
             },
             "morph_anchor_delta": {
               "x": 0,
@@ -224,13 +224,13 @@
               "x": -200,
               "y": -500
             },
-            "anchor_delta": {
-              "x": -200,
-              "y": -500
-            },
             "morph_control_delta": {
               "x": 0,
               "y": -820
+            },
+            "anchor_delta": {
+              "x": -200,
+              "y": -500
             },
             "morph_anchor_delta": {
               "x": 580,
@@ -243,13 +243,13 @@
               "x": 200,
               "y": -500
             },
-            "anchor_delta": {
-              "x": 200,
-              "y": -500
-            },
             "morph_control_delta": {
               "x": 594,
               "y": -586
+            },
+            "anchor_delta": {
+              "x": 200,
+              "y": -500
             },
             "morph_anchor_delta": {
               "x": 820,

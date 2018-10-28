@@ -14,15 +14,13 @@ use parsers::basic_data_types::{
   skip_bits,
 };
 use parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
+use parsers::image::{ERRONEOUS_JPEG_START, get_jpeg_image_dimensions, JPEG_START, test_image_start};
+use parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
 use parsers::movie::parse_tag_string;
 use parsers::shape::{parse_shape, ShapeVersion};
 use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use state::ParseState;
 use swf_tree as ast;
-use parsers::image::test_image_start;
-use parsers::image::JPEG_START;
-use parsers::image::ERRONEOUS_JPEG_START;
-use parsers::image::get_jpeg_image_dimensions;
 
 pub struct SwfTagHeader {
   pub tag_code: u16,
@@ -61,6 +59,7 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           5 => map!(record_data, parse_remove_object, |t| ast::Tag::RemoveObject(t)),
           // TODO(demurgos): Throw error if the version is unknown
           6 => map!(record_data, apply!(parse_define_bits, state.get_swf_version().unwrap()), |t| ast::Tag::DefineBitmap(t)),
+          8 => map!(record_data, apply!(parse_define_jpeg_tables, state.get_swf_version().unwrap()), |t| ast::Tag::DefineJpegTables(t)),
           9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           // TODO: Ignore DoAction if version >= 9 && use_as3
@@ -72,6 +71,7 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           32 => map!(record_data, parse_define_shape3, |t| ast::Tag::DefineShape(t)),
           37 => map!(record_data, parse_define_edit_text, |t| ast::Tag::DefineDynamicText(t)),
           39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
+          46 => map!(record_data, parse_define_morph_shape, |t| ast::Tag::DefineMorphShape(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           57 => map!(record_data, parse_import_assets, |t| ast::Tag::ImportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
@@ -144,6 +144,7 @@ pub fn parse_define_bits(input: &[u8], swf_version: usize) -> IResult<&[u8], ast
       id,
       width: image_dimensions.width as u16,
       height: image_dimensions.height as u16,
+      media_type: ast::ImageType::PartialJpeg,
       data,
     }))
   } else {
@@ -310,6 +311,46 @@ pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
     })
   )
 }
+
+pub fn parse_define_jpeg_tables(input: &[u8], swf_version: usize) -> IResult<&[u8], ast::tags::DefineJpegTables> {
+  let data: Vec<u8> = input.to_vec();
+  let input: &[u8] = &[][..];
+
+  if !(test_image_start(&data, &JPEG_START) || (swf_version < 8 && test_image_start(&data, &ERRONEOUS_JPEG_START))) {
+    panic!("UnknownBitmapType");
+  }
+  Ok((input, ast::tags::DefineJpegTables { data }))
+}
+
+
+pub fn parse_define_morph_shape(input: &[u8]) -> IResult<&[u8], ast::tags::DefineMorphShape> {
+  parse_define_morph_shape_any(input, MorphShapeVersion::MorphShape1)
+}
+
+pub fn parse_define_morph_shape2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineMorphShape> {
+  parse_define_morph_shape_any(input, MorphShapeVersion::MorphShape2)
+}
+
+fn parse_define_morph_shape_any(input: &[u8], version: MorphShapeVersion) -> IResult<&[u8], ast::tags::DefineMorphShape> {
+  do_parse!(
+    input,
+    id: parse_le_u16 >>
+    bounds: parse_rect >>
+    morph_bounds: parse_rect >>
+    shape: apply!(parse_morph_shape, version) >>
+    (ast::tags::DefineMorphShape {
+      id: id,
+      bounds: bounds,
+      morph_bounds: morph_bounds,
+      edge_bounds: Option::None,
+      morph_edge_bounds: Option::None,
+      has_non_scaling_strokes: false,
+      has_scaling_strokes: false,
+      shape: shape,
+    })
+  )
+}
+
 
 pub fn parse_define_scene_and_frame_label_data_tag(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSceneAndFrameLabelData> {
   do_parse!(

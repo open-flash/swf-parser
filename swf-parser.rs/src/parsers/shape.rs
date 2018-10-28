@@ -219,7 +219,6 @@ pub fn parse_fill_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&
   length_count!(input, apply!(parse_list_length, version != ShapeVersion::Shape1), apply!(parse_fill_style, version == ShapeVersion::Shape3))
 }
 
-#[allow(unused_variables)]
 pub fn parse_fill_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::FillStyle> {
   switch!(input, parse_u8,
     0x00 => map!(apply!(parse_solid_fill, with_alpha), |fill| ast::FillStyle::Solid(fill)) |
@@ -286,7 +285,6 @@ pub fn parse_radial_gradient_fill(input: &[u8], with_alpha: bool) -> NomResult<&
   )
 }
 
-#[allow(unused_variables)]
 pub fn parse_solid_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::fill_styles::Solid> {
   do_parse!(
     input,

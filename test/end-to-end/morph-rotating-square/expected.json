@@ -58,6 +58,7 @@
           "line": [
             {
               "width": 0,
+              "morph_width": 1200,
               "start_cap": "round",
               "end_cap": "round",
               "join": {
@@ -81,8 +82,7 @@
                   "b": 0,
                   "a": 255
                 }
-              },
-              "morph_width": 1200
+              }
             }
           ]
         },
@@ -93,12 +93,12 @@
               "x": -1000,
               "y": -1000
             },
-            "left_fill": 1,
-            "line_style": 1,
             "morph_move_to": {
               "x": 0,
               "y": -1000
-            }
+            },
+            "left_fill": 1,
+            "line_style": 1
           },
           {
             "type": "straight-edge",

@@ -20,8 +20,8 @@ import {
   TagType,
   text,
 } from "swf-tree";
-import { ButtonCondAction } from "swf-tree/buttons/button-cond-action";
-import { ButtonRecord } from "swf-tree/buttons/button-record";
+import { ButtonCondAction } from "swf-tree/button/button-cond-action";
+import { ButtonRecord } from "swf-tree/button/button-record";
 import { ImageType } from "swf-tree/image-type";
 import { MorphShape } from "swf-tree/morph-shape";
 import { SpriteTag } from "swf-tree/sprite-tag";
@@ -360,6 +360,72 @@ export function parseDefineButton2(byteStream: ByteStream): tags.DefineButton {
   return {type: TagType.DefineButton, id, trackAsMenu, characters, actions};
 }
 
+export function parseDefineEditText(byteStream: ByteStream): tags.DefineDynamicText {
+  const id: Uint16 = byteStream.readUint16LE();
+  const bounds: Rect = parseRect(byteStream);
+
+  const flags: Uint16 = byteStream.readUint16LE();
+  const hasFont: boolean = (flags & (1 << 0)) !== 0;
+  const hasMaxLength: boolean = (flags & (1 << 1)) !== 0;
+  const hasColor: boolean = (flags & (1 << 2)) !== 0;
+  const readonly: boolean = (flags & (1 << 3)) !== 0;
+  const password: boolean = (flags & (1 << 4)) !== 0;
+  const multiline: boolean = (flags & (1 << 5)) !== 0;
+  const wordWrap: boolean = (flags & (1 << 6)) !== 0;
+  const hasText: boolean = (flags & (1 << 7)) !== 0;
+  const useGlyphFont: boolean = (flags & (1 << 8)) !== 0;
+  const html: boolean = (flags & (1 << 9)) !== 0;
+  const wasStatic: boolean = (flags & (1 << 10)) !== 0;
+  const border: boolean = (flags & (1 << 11)) !== 0;
+  const noSelect: boolean = (flags & (1 << 12)) !== 0;
+  const hasLayout: boolean = (flags & (1 << 13)) !== 0;
+  const autoSize: boolean = (flags & (1 << 14)) !== 0;
+  const hasFontClass: boolean = (flags & (1 << 15)) !== 0;
+  // TODO: Assert that !(hasFont && hasFontClass) (mutual exclusion)
+
+  const fontId: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
+  const fontClass: string | undefined = hasFontClass ? byteStream.readCString() : undefined;
+  const fontSize: Uint16 | undefined = (hasFont || hasFontClass) ? byteStream.readUint16LE() : undefined;
+  const color: StraightSRgba8 | undefined = hasColor ? parseStraightSRgba8(byteStream) : undefined;
+  const maxLength: UintSize | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
+  const align: text.TextAlignment | undefined = hasLayout ? parseTextAlignment(byteStream) : undefined;
+  const marginLeft: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
+  const marginRight: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
+  const indent: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
+  const leading: Sint16 = hasLayout ? byteStream.readSint16LE() : 0;
+  const rawVariableName: string = byteStream.readCString();
+  const variableName: string | undefined = rawVariableName.length > 0 ? rawVariableName : undefined;
+  const text: string | undefined = hasText ? byteStream.readCString() : undefined;
+
+  return {
+    type: TagType.DefineDynamicText,
+    id,
+    bounds,
+    wordWrap,
+    multiline,
+    password,
+    readonly,
+    autoSize,
+    noSelect,
+    border,
+    wasStatic,
+    html,
+    useGlyphFont,
+    fontId,
+    fontClass,
+    fontSize,
+    color,
+    maxLength,
+    align,
+    marginLeft,
+    marginRight,
+    indent,
+    leading,
+    variableName,
+    text,
+  };
+}
+
 export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
   const id: Uint16 = byteStream.readUint16LE();
 
@@ -563,72 +629,6 @@ function parseDefineShapeAny(byteStream: ByteStream, shapeVersion: ShapeVersion)
     hasNonScalingStrokes,
     hasScalingStrokes,
     shape,
-  };
-}
-
-export function parseDefineEditText(byteStream: ByteStream): tags.DefineDynamicText {
-  const id: Uint16 = byteStream.readUint16LE();
-  const bounds: Rect = parseRect(byteStream);
-
-  const flags: Uint16 = byteStream.readUint16LE();
-  const hasFont: boolean = (flags & (1 << 0)) !== 0;
-  const hasMaxLength: boolean = (flags & (1 << 1)) !== 0;
-  const hasColor: boolean = (flags & (1 << 2)) !== 0;
-  const readonly: boolean = (flags & (1 << 3)) !== 0;
-  const password: boolean = (flags & (1 << 4)) !== 0;
-  const multiline: boolean = (flags & (1 << 5)) !== 0;
-  const wordWrap: boolean = (flags & (1 << 6)) !== 0;
-  const hasText: boolean = (flags & (1 << 7)) !== 0;
-  const useGlyphFont: boolean = (flags & (1 << 8)) !== 0;
-  const html: boolean = (flags & (1 << 9)) !== 0;
-  const wasStatic: boolean = (flags & (1 << 10)) !== 0;
-  const border: boolean = (flags & (1 << 11)) !== 0;
-  const noSelect: boolean = (flags & (1 << 12)) !== 0;
-  const hasLayout: boolean = (flags & (1 << 13)) !== 0;
-  const autoSize: boolean = (flags & (1 << 14)) !== 0;
-  const hasFontClass: boolean = (flags & (1 << 15)) !== 0;
-  // TODO: Assert that !(hasFont && hasFontClass) (mutual exclusion)
-
-  const fontId: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
-  const fontClass: string | undefined = hasFontClass ? byteStream.readCString() : undefined;
-  const fontSize: Uint16 | undefined = (hasFont || hasFontClass) ? byteStream.readUint16LE() : undefined;
-  const color: StraightSRgba8 | undefined = hasColor ? parseStraightSRgba8(byteStream) : undefined;
-  const maxLength: UintSize | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
-  const align: text.TextAlignment | undefined = hasLayout ? parseTextAlignment(byteStream) : undefined;
-  const marginLeft: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
-  const marginRight: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
-  const indent: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
-  const leading: Sint16 = hasLayout ? byteStream.readSint16LE() : 0;
-  const rawVariableName: string = byteStream.readCString();
-  const variableName: string | undefined = rawVariableName.length > 0 ? rawVariableName : undefined;
-  const text: string | undefined = hasText ? byteStream.readCString() : undefined;
-
-  return {
-    type: TagType.DefineDynamicText,
-    id,
-    bounds,
-    wordWrap,
-    multiline,
-    password,
-    readonly,
-    autoSize,
-    noSelect,
-    border,
-    wasStatic,
-    html,
-    useGlyphFont,
-    fontId,
-    fontClass,
-    fontSize,
-    color,
-    maxLength,
-    align,
-    marginLeft,
-    marginRight,
-    indent,
-    leading,
-    variableName,
-    text,
   };
 }
 
