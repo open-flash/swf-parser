@@ -228,9 +228,9 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::
         None => (Sfixed16P16::from_epsilons(1 << 16), Sfixed16P16::from_epsilons(1 << 16)),
       }
     ) >>
-    has_rotate: call!(parse_bool_bits) >>
+    has_skew: call!(parse_bool_bits) >>
     skew: map!(
-      cond!(has_rotate, do_parse!(
+      cond!(has_skew, do_parse!(
         skew_bits: apply!(parse_u16_bits, 5) >>
         skew0: apply!(parse_fixed16_p16_bits, skew_bits as usize) >>
         skew1: apply!(parse_fixed16_p16_bits, skew_bits as usize) >>
@@ -291,7 +291,7 @@ pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usiz
       }
     ) >>
     add: map!(
-      cond!(has_mult, do_parse!(
+      cond!(has_add, do_parse!(
         r: apply!(parse_i16_bits, n_bits as usize) >>
         g: apply!(parse_i16_bits, n_bits as usize) >>
         b: apply!(parse_i16_bits, n_bits as usize) >>
@@ -321,8 +321,8 @@ pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::Col
 pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
   do_parse!(
     input,
-    has_add: call!(parse_bool_bits) >>
-    has_mult: call!(parse_bool_bits) >>
+    has_add: parse_bool_bits >>
+    has_mult: parse_bool_bits >>
     n_bits: apply!(parse_u16_bits, 4) >>
     mult: map!(
       cond!(has_mult, do_parse!(
@@ -338,7 +338,7 @@ pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(
       }
     ) >>
     add: map!(
-      cond!(has_mult, do_parse!(
+      cond!(has_add, do_parse!(
         r: apply!(parse_i16_bits, n_bits as usize) >>
         g: apply!(parse_i16_bits, n_bits as usize) >>
         b: apply!(parse_i16_bits, n_bits as usize) >>

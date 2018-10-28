@@ -13,7 +13,7 @@ use parsers::gradient::parse_morph_gradient;
 use super::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits};
 use swf_tree as ast;
 
-#[derive(Copy, Clone)]
+#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum MorphShapeVersion {
   MorphShape1,
   MorphShape2,
@@ -395,13 +395,10 @@ pub fn parse_morph_solid_fill(input: &[u8]) -> NomResult<&[u8], ast::fill_styles
 }
 
 pub fn parse_morph_line_style_list(input: &[u8], version: MorphShapeVersion) -> NomResult<&[u8], Vec<ast::MorphLineStyle>> {
-  match version {
-    MorphShapeVersion::MorphShape1 => {
-      length_count!(input, apply!(parse_list_length, true), parse_morph_line_style1)
-    }
-    MorphShapeVersion::MorphShape2 => {
-      length_count!(input, apply!(parse_list_length, true), parse_morph_line_style2)
-    }
+  if version >= MorphShapeVersion::MorphShape2 {
+    length_count!(input, apply!(parse_list_length, true), parse_morph_line_style2)
+  } else {
+    length_count!(input, apply!(parse_list_length, true), parse_morph_line_style1)
   }
 }
 
@@ -431,26 +428,58 @@ pub fn parse_morph_line_style1(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
 }
 
 pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineStyle> {
+  fn cap_style_from_id(cap_style_id: u16) -> ast::CapStyle {
+    match cap_style_id {
+      0 => ast::CapStyle::Round,
+      1 => ast::CapStyle::None,
+      2 => ast::CapStyle::Square,
+      _ => panic!("Unexpected cap style id"),
+    }
+  }
+
   do_parse!(
     input,
     width: parse_le_u16 >>
     morph_width: parse_le_u16 >>
-    color: parse_straight_s_rgba8 >>
-    morph_color: parse_straight_s_rgba8 >>
+    flags: parse_le_u16 >>
+    pixel_hinting: value!((flags & (1 << 0)) != 0) >>
+    no_v_scale: value!((flags & (1 << 1)) != 0) >>
+    no_h_scale: value!((flags & (1 << 2)) != 0) >>
+    has_fill: value!((flags & (1 << 3)) != 0) >>
+    join_style_id: value!((flags >> 4) & 0b11) >>
+    start_cap_style_id: value!((flags >> 6) & 0b11) >>
+    end_cap_style_id: value!((flags >> 8) & 0b11) >>
+    no_close: value!((flags & (1 << 10)) != 0) >>
+    // (Skip bits [11, 15])
+    start_cap: map!(value!(start_cap_style_id), cap_style_from_id) >>
+    end_cap: map!(value!(end_cap_style_id), cap_style_from_id) >>
+    join: switch!(value!(join_style_id),
+      0 => value!(ast::JoinStyle::Round) |
+      1 => value!(ast::JoinStyle::Bevel) |
+      2 => do_parse!(
+        limit: parse_le_u16 >>
+        (ast::JoinStyle::Miter(ast::join_styles::Miter{limit}))
+      )
+    ) >>
+    fill: switch!(value!(has_fill),
+      true => call!(parse_morph_fill_style) |
+      false => do_parse!(
+        color: parse_straight_s_rgba8 >>
+        morph_color: parse_straight_s_rgba8 >>
+        (ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid { color, morph_color }))
+      )
+    ) >>
     (ast::MorphLineStyle {
-      width: width,
-      morph_width: morph_width,
-      start_cap: ast::CapStyle::Round,
-      end_cap: ast::CapStyle::Round,
-      join: ast::JoinStyle::Round,
-      no_h_scale: false,
-      no_v_scale: false,
-      no_close: false,
-      pixel_hinting: false,
-      fill: ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid {
-        color,
-        morph_color,
-      }),
+      width,
+      morph_width,
+      fill,
+      pixel_hinting,
+      no_v_scale,
+      no_h_scale,
+      no_close,
+      join,
+      start_cap,
+      end_cap,
     })
   )
 }

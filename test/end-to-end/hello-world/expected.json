@@ -47,11 +47,11 @@
       "type": "define-font",
       "id": 1,
       "font_name": "Times New Roman",
+      "is_bold": false,
+      "is_italic": false,
+      "is_ansi": false,
       "is_small": false,
       "is_shift_jis": false,
-      "is_ansi": false,
-      "is_italic": false,
-      "is_bold": false,
       "language": "latin",
       "glyphs": [
         {
@@ -2817,7 +2817,11 @@
         "rotate_skew1": 0,
         "translate_x": 2019,
         "translate_y": 3245
-      }
+      },
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"

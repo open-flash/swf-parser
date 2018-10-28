@@ -6,22 +6,23 @@ import { concatBytes } from "../concat-bytes";
 import { DefaultParseContext, ParseContext } from "../parse-context";
 import { Stream } from "../stream";
 import { parseHeader, parseSwfSignature } from "./header";
-import { parseTag } from "./tags";
+import { parseTagBlockString } from "./tags";
 
 export function parseDecompressedMovie(byteStream: Stream, swfVersion: Uint8): Movie {
-  // TODO(demurgos): take parse context or version as an argument
   const context: ParseContext = new DefaultParseContext(swfVersion);
 
   const header: Header = parseHeader(byteStream);
-  const tags: Tag[] = [];
-  while (byteStream.available() > 0) {
-    // A null byte indicates the end-of-tags
-    if (byteStream.peekUint8() === 0) {
-      byteStream.skip(1);
-      break;
-    }
-    tags.push(parseTag(byteStream, context));
-  }
+  const tags: Tag[] = parseTagBlockString(byteStream, context);
+
+  // const tags: Tag[] = [];
+  // while (byteStream.available() > 0) {
+  // A null byte indicates the end-of-tags
+  // if (byteStream.peekUint8() === 0) {
+  //   byteStream.skip(1);
+  //   break;
+  // }
+  // tags.push(parseTag(byteStream, context));
+  // }
   return {header, tags};
 }
 

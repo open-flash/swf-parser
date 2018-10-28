@@ -1,6 +1,6 @@
 use swf_tree as ast;
 use nom::IResult;
-use nom::{be_f32 as parse_be_f32, be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u8 as parse_u8, le_u32 as parse_le_u32};
+use nom::{le_f32 as parse_le_f32, be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u8 as parse_u8, le_u32 as parse_le_u32};
 use parsers::basic_data_types::{parse_le_fixed8_p8, parse_le_fixed16_p16, parse_straight_s_rgba8};
 
 #[allow(unused_variables)]
@@ -29,6 +29,7 @@ pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> IResult
   let mut result: Vec<ast::ClipAction> = Vec::new();
   let mut current_input = input;
 
+  // TODO: Use `parse_le_u32` and `parse_le_u16`
   loop {
     let head = if extended_events {
       parse_be_u32(current_input)
@@ -135,11 +136,11 @@ pub fn parse_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Bevel> {
     distance: parse_le_fixed16_p16 >>
     strength: parse_le_fixed8_p8 >>
     flags: parse_u8 >>
-    inner: value!((flags & (1 << 7)) != 0) >>
-    knockout: value!((flags & (1 << 6)) != 0) >>
-    composite_source: value!((flags & (1 << 5)) != 0) >>
+    passes: value!(flags & 0b1111) >>
     on_top: value!((flags & (1 << 4)) != 0) >>
-    passes: value!(flags & ((1 << 4) - 1)) >>
+    composite_source: value!((flags & (1 << 5)) != 0) >>
+    knockout: value!((flags & (1 << 6)) != 0) >>
+    inner: value!((flags & (1 << 7)) != 0) >>
     (ast::filters::Bevel {
       shadow_color: shadow_color,
       highlight_color: highlight_color,
@@ -163,6 +164,7 @@ pub fn parse_blur_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Blur> {
     blur_x: parse_le_fixed16_p16 >>
     blur_y: parse_le_fixed16_p16 >>
     flags: parse_u8 >>
+    // Skip bits [0, 2]
     passes: value!(flags >> 3) >>
     (ast::filters::Blur {
       blur_x: blur_x,
@@ -175,7 +177,7 @@ pub fn parse_blur_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Blur> {
 pub fn parse_color_matrix_filter(input: &[u8]) -> IResult<&[u8], ast::filters::ColorMatrix> {
   do_parse!(
     input,
-    matrix: length_count!(value!(20), map!(parse_be_f32, |x| x)) >>
+    matrix: length_count!(value!(20), map!(parse_le_f32, |x| x)) >>
     (ast::filters::ColorMatrix {
       matrix: matrix,
     })
@@ -187,13 +189,14 @@ pub fn parse_convolution_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Co
     input,
     matrix_width: map!(parse_u8, |x| x as usize) >>
     matrix_height: map!(parse_u8, |x| x as usize) >>
-    divisor: parse_be_f32 >>
-    bias: parse_be_f32 >>
-    matrix: length_count!(value!(matrix_width * matrix_height), parse_be_f32) >>
+    divisor: parse_le_f32 >>
+    bias: parse_le_f32 >>
+    matrix: length_count!(value!(matrix_width * matrix_height), parse_le_f32) >>
     default_color: parse_straight_s_rgba8 >>
     flags: parse_u8 >>
-    clamp: value!((flags & (1 << 1)) != 0) >>
     preserve_alpha: value!((flags & (1 << 0)) != 0) >>
+    clamp: value!((flags & (1 << 1)) != 0) >>
+    // Skip bits [2, 7]
     (ast::filters::Convolution {
       matrix_width: matrix_width,
       matrix_height: matrix_height,
@@ -217,10 +220,10 @@ pub fn parse_drop_shadow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Dr
     distance: parse_le_fixed16_p16 >>
     strength: parse_le_fixed8_p8 >>
     flags: parse_u8 >>
-    inner: value!((flags & (1 << 7)) != 0) >>
-    knockout: value!((flags & (1 << 6)) != 0) >>
-    composite_source: value!((flags & (1 << 5)) != 0) >>
     passes: value!(flags & ((1 << 5) - 1)) >>
+    composite_source: value!((flags & (1 << 5)) != 0) >>
+    knockout: value!((flags & (1 << 6)) != 0) >>
+    inner: value!((flags & (1 << 7)) != 0) >>
     (ast::filters::DropShadow {
       color: color,
       blur_x: blur_x,
@@ -244,10 +247,10 @@ pub fn parse_glow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Glow> {
     blur_y: parse_le_fixed16_p16 >>
     strength: parse_le_fixed8_p8 >>
     flags: parse_u8 >>
-    inner: value!((flags & (1 << 7)) != 0) >>
-    knockout: value!((flags & (1 << 6)) != 0) >>
-    composite_source: value!((flags & (1 << 5)) != 0) >>
     passes: value!(flags & ((1 << 5) - 1)) >>
+    composite_source: value!((flags & (1 << 5)) != 0) >>
+    knockout: value!((flags & (1 << 6)) != 0) >>
+    inner: value!((flags & (1 << 7)) != 0) >>
     (ast::filters::Glow {
       color: color,
       blur_x: blur_x,
@@ -297,11 +300,11 @@ pub fn parse_gradient_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters:
     distance: parse_le_fixed16_p16 >>
     strength: parse_le_fixed8_p8 >>
     flags: parse_u8 >>
-    inner: value!((flags & (1 << 7)) != 0) >>
-    knockout: value!((flags & (1 << 6)) != 0) >>
-    composite_source: value!((flags & (1 << 5)) != 0) >>
-    on_top: value!((flags & (1 << 4)) != 0) >>
     passes: value!(flags & ((1 << 4) - 1)) >>
+    on_top: value!((flags & (1 << 4)) != 0) >>
+    composite_source: value!((flags & (1 << 5)) != 0) >>
+    knockout: value!((flags & (1 << 6)) != 0) >>
+    inner: value!((flags & (1 << 7)) != 0) >>
     (ast::filters::GradientBevel {
       gradient: gradient,
       blur_x: blur_x,
@@ -329,11 +332,11 @@ pub fn parse_gradient_glow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::
     distance: parse_le_fixed16_p16 >>
     strength: parse_le_fixed8_p8 >>
     flags: parse_u8 >>
-    inner: value!((flags & (1 << 7)) != 0) >>
-    knockout: value!((flags & (1 << 6)) != 0) >>
-    composite_source: value!((flags & (1 << 5)) != 0) >>
-    on_top: value!((flags & (1 << 4)) != 0) >>
     passes: value!(flags & ((1 << 4) - 1)) >>
+    on_top: value!((flags & (1 << 4)) != 0) >>
+    composite_source: value!((flags & (1 << 5)) != 0) >>
+    knockout: value!((flags & (1 << 6)) != 0) >>
+    inner: value!((flags & (1 << 7)) != 0) >>
     (ast::filters::GradientGlow {
       gradient: gradient,
       blur_x: blur_x,

@@ -168,11 +168,11 @@ export function parseBevelFilter(byteStream: ByteStream): filters.Bevel {
   const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
   const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
-  const inner: boolean = (flags & (1 << 7)) !== 0;
-  const knockout: boolean = (flags & (1 << 6)) !== 0;
-  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
+  const passes: Uint4 = <Uint4> (flags & 0b1111);
   const onTop: boolean = (flags & (1 << 4)) !== 0;
-  const passes: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
+  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
+  const knockout: boolean = (flags & (1 << 6)) !== 0;
+  const inner: boolean = (flags & (1 << 7)) !== 0;
   return {
     filter: FilterType.Bevel,
     shadowColor,
@@ -194,7 +194,8 @@ export function parseBlurFilter(byteStream: ByteStream): filters.Blur {
   const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
   const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
   const flags: Uint8 = byteStream.readUint8();
-  const passes: Uint5 = <Uint5> ((flags >> 3) & 0x1f);
+  // Skip bits [0, 2]
+  const passes: Uint5 = <Uint5> ((flags >>> 3) & 0x1f);
   return {
     filter: FilterType.Blur,
     blurX,
@@ -225,8 +226,9 @@ export function parseConvolutionFilter(byteStream: ByteStream): filters.Convolut
   }
   const defaultColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
   const flags: Uint8 = byteStream.readUint8();
-  const clamp: boolean = (flags & (1 << 1)) !== 0;
   const preserveAlpha: boolean = (flags & (1 << 0)) !== 0;
+  const clamp: boolean = (flags & (1 << 1)) !== 0;
+  // Skip bits [2, 7]
   return {
     filter: FilterType.Convolution,
     matrixWidth,
@@ -248,10 +250,10 @@ export function parseDropShadowFilter(byteStream: ByteStream): filters.DropShado
   const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
   const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
-  const inner: boolean = (flags & (1 << 7)) !== 0;
-  const knockout: boolean = (flags & (1 << 6)) !== 0;
-  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
   const passes: Uint5 = flags & ((1 << 5) - 1);
+  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
+  const knockout: boolean = (flags & (1 << 6)) !== 0;
+  const inner: boolean = (flags & (1 << 7)) !== 0;
   return {
     filter: FilterType.DropShadow,
     color,
@@ -273,10 +275,10 @@ export function parseGlowFilter(byteStream: ByteStream): filters.Glow {
   const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
   const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
-  const inner: boolean = (flags & (1 << 7)) !== 0;
-  const knockout: boolean = (flags & (1 << 6)) !== 0;
-  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
   const passes: Uint5 = flags & ((1 << 5) - 1);
+  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
+  const knockout: boolean = (flags & (1 << 6)) !== 0;
+  const inner: boolean = (flags & (1 << 7)) !== 0;
   return {
     filter: FilterType.Glow,
     color,
@@ -305,11 +307,11 @@ export function parseGradientBevelFilter(byteStream: ByteStream): filters.Gradie
   const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
   const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
-  const inner: boolean = (flags & (1 << 7)) !== 0;
-  const knockout: boolean = (flags & (1 << 6)) !== 0;
-  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
-  const onTop: boolean = (flags & (1 << 4)) !== 0;
   const passes: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
+  const onTop: boolean = (flags & (1 << 4)) !== 0;
+  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
+  const knockout: boolean = (flags & (1 << 6)) !== 0;
+  const inner: boolean = (flags & (1 << 7)) !== 0;
   return {
     filter: FilterType.GradientBevel,
     gradient,
@@ -341,11 +343,11 @@ export function parseGradientGlowFilter(byteStream: ByteStream): filters.Gradien
   const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
   const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
   const flags: Uint8 = byteStream.readUint8();
-  const inner: boolean = (flags & (1 << 7)) !== 0;
-  const knockout: boolean = (flags & (1 << 6)) !== 0;
-  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
-  const onTop: boolean = (flags & (1 << 4)) !== 0;
   const passes: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
+  const onTop: boolean = (flags & (1 << 4)) !== 0;
+  const compositeSource: boolean = (flags & (1 << 5)) !== 0;
+  const knockout: boolean = (flags & (1 << 6)) !== 0;
+  const inner: boolean = (flags & (1 << 7)) !== 0;
   return {
     filter: FilterType.GradientGlow,
     gradient,

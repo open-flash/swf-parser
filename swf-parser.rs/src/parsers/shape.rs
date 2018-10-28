@@ -13,7 +13,7 @@ use parsers::basic_data_types::{
 use parsers::gradient::parse_gradient;
 use swf_tree as ast;
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum ShapeVersion {
   Shape1,
   Shape2,
@@ -216,7 +216,7 @@ pub fn parse_list_length(input: &[u8], allow_extended: bool) -> NomResult<&[u8],
 }
 
 pub fn parse_fill_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<ast::FillStyle>> {
-  length_count!(input, apply!(parse_list_length, version != ShapeVersion::Shape1), apply!(parse_fill_style, version == ShapeVersion::Shape3))
+  length_count!(input, apply!(parse_list_length, version >= ShapeVersion::Shape2), apply!(parse_fill_style, version >= ShapeVersion::Shape3))
 }
 
 pub fn parse_fill_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::FillStyle> {
@@ -297,16 +297,25 @@ pub fn parse_solid_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast:
 }
 
 pub fn parse_line_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<ast::LineStyle>> {
-  length_count!(input, apply!(parse_list_length, version != ShapeVersion::Shape1), parse_line_style)
+  length_count!(
+    input,
+    apply!(parse_list_length, version >= ShapeVersion::Shape2),
+    switch!(value!(version >= ShapeVersion::Shape4),
+      true => call!(parse_line_style2) |
+      false => apply!(parse_line_style, version >= ShapeVersion::Shape3)
+    )
+  )
 }
 
-pub fn parse_line_style(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
+pub fn parse_line_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::LineStyle> {
   do_parse!(
     input,
     width: parse_le_u16 >>
-    color: parse_s_rgb8 >>
-    (
-      ast::LineStyle {
+    color: switch!(value!(with_alpha),
+      true => call!(parse_straight_s_rgba8) |
+      false => map!(parse_s_rgb8, |c| ast::StraightSRgba8 {r: c.r, g: c.g, b: c.b, a: 255})
+    ) >>
+    (ast::LineStyle {
       width: width,
       start_cap: ast::CapStyle::Round,
       end_cap: ast::CapStyle::Round,
@@ -315,16 +324,58 @@ pub fn parse_line_style(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
       no_v_scale: false,
       no_close: false,
       pixel_hinting: false,
-      fill: ast::FillStyle::Solid(
-        ast::fill_styles::Solid {
-          color: ast::StraightSRgba8 {
-            r: color.r,
-            g: color.g,
-            b: color.b,
-            a: 255
-          }
-        }
-      ),
+      fill: ast::FillStyle::Solid(ast::fill_styles::Solid { color }),
+    })
+  )
+}
+
+pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
+  fn cap_style_from_id(cap_style_id: u16) -> ast::CapStyle {
+    match cap_style_id {
+      0 => ast::CapStyle::Round,
+      1 => ast::CapStyle::None,
+      2 => ast::CapStyle::Square,
+      _ => panic!("Unexpected cap style id"),
+    }
+  }
+
+  do_parse!(
+    input,
+    width: parse_le_u16 >>
+    flags: parse_le_u16 >>
+    pixel_hinting: value!((flags & (1 << 0)) != 0) >>
+    no_v_scale: value!((flags & (1 << 1)) != 0) >>
+    no_h_scale: value!((flags & (1 << 2)) != 0) >>
+    has_fill: value!((flags & (1 << 3)) != 0) >>
+    join_style_id: value!((flags >> 4) & 0b11) >>
+    start_cap_style_id: value!((flags >> 6) & 0b11) >>
+    end_cap_style_id: value!((flags >> 8) & 0b11) >>
+    no_close: value!((flags & (1 << 10)) != 0) >>
+    // (Skip bits [11, 15])
+    start_cap: map!(value!(start_cap_style_id), cap_style_from_id) >>
+    end_cap: map!(value!(end_cap_style_id), cap_style_from_id) >>
+    join: switch!(value!(join_style_id),
+      0 => value!(ast::JoinStyle::Round) |
+      1 => value!(ast::JoinStyle::Bevel) |
+      2 => do_parse!(
+        limit: parse_le_u16 >>
+        (ast::JoinStyle::Miter(ast::join_styles::Miter{limit}))
+      )
+    ) >>
+    fill: switch!(value!(has_fill),
+      true => apply!(parse_fill_style, true) |
+      false => map!(parse_straight_s_rgba8, |color| ast::FillStyle::Solid(ast::fill_styles::Solid { color }))
+    ) >>
+    (ast::LineStyle {
+      width: width,
+      fill,
+      pixel_hinting,
+      no_v_scale,
+      no_h_scale,
+      no_close,
+      join,
+      start_cap,
+      end_cap,
     })
   )
 }

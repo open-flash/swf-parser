@@ -1,5 +1,5 @@
 use nom::{IResult, Needed};
-use nom::{be_f32 as parse_be_f32, be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
+use nom::{be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use parsers::basic_data_types::{
   parse_bool_bits,
   parse_c_string,
@@ -13,11 +13,17 @@ use parsers::basic_data_types::{
   parse_straight_s_rgba8,
   skip_bits,
 };
+use parsers::button::{ButtonVersion, parse_button2_cond_action_string, parse_button_record_string};
 use parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
 use parsers::image::{ERRONEOUS_JPEG_START, get_jpeg_image_dimensions, JPEG_START, test_image_start};
+use parsers::image::get_gif_image_dimensions;
+use parsers::image::get_png_image_dimensions;
+use parsers::image::GIF_START;
+use parsers::image::PNG_START;
 use parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
-use parsers::movie::parse_tag_string;
+use parsers::movie::parse_tag_block_string;
 use parsers::shape::{parse_shape, ShapeVersion};
+use parsers::sound::{audio_coding_format_from_id, sound_rate_from_id};
 use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use state::ParseState;
 use swf_tree as ast;
@@ -57,32 +63,38 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
           4 => map!(record_data, parse_place_object, |t| ast::Tag::PlaceObject(t)),
           5 => map!(record_data, parse_remove_object, |t| ast::Tag::RemoveObject(t)),
-          // TODO(demurgos): Throw error if the version is unknown
-          6 => map!(record_data, apply!(parse_define_bits, state.get_swf_version().unwrap()), |t| ast::Tag::DefineBitmap(t)),
-          8 => map!(record_data, apply!(parse_define_jpeg_tables, state.get_swf_version().unwrap()), |t| ast::Tag::DefineJpegTables(t)),
+          6 => map!(record_data, apply!(parse_define_bits, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
+          8 => map!(record_data, apply!(parse_define_jpeg_tables, state.get_swf_version()), |t| ast::Tag::DefineJpegTables(t)),
           9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           // TODO: Ignore DoAction if version >= 9 && use_as3
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
+          14 => map!(record_data, parse_define_sound, |t| ast::Tag::DefineSound(t)),
+          20 => map!(record_data, parse_define_bits_lossless, |t| ast::Tag::DefineBitmap(t)),
+          21 => map!(record_data, apply!(parse_define_bits_jpeg2, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
           22 => map!(record_data, parse_define_shape2, |t| ast::Tag::DefineShape(t)),
-          // TODO(demurgos): Throw error if the version is unknown
-          26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
+          26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version() >= 6), |t| ast::Tag::PlaceObject(t)),
           28 => map!(record_data, parse_remove_object2, |t| ast::Tag::RemoveObject(t)),
           32 => map!(record_data, parse_define_shape3, |t| ast::Tag::DefineShape(t)),
+          34 => map!(record_data, parse_define_button2, |t| ast::Tag::DefineButton(t)),
+          35 => map!(record_data, apply!(parse_define_bits_jpeg3, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
+          36 => map!(record_data, parse_define_bits_lossless2, |t| ast::Tag::DefineBitmap(t)),
           37 => map!(record_data, parse_define_edit_text, |t| ast::Tag::DefineDynamicText(t)),
-          39 => map!(record_data, parse_define_sprite, |t| ast::Tag::DefineSprite(t)),
+          39 => map!(record_data, apply!(parse_define_sprite, state), |t| ast::Tag::DefineSprite(t)),
+          43 => map!(record_data, parse_frame_label, |t| ast::Tag::FrameLabel(t)),
           46 => map!(record_data, parse_define_morph_shape, |t| ast::Tag::DefineMorphShape(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           57 => map!(record_data, parse_import_assets, |t| ast::Tag::ImportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
-          // TODO(demurgos): Throw error if the version is unknown
-          70 => map!(record_data, apply!(parse_place_object3, state.get_swf_version().unwrap_or_default() >= 6), |t| ast::Tag::PlaceObject(t)),
+          70 => map!(record_data, apply!(parse_place_object3, state.get_swf_version() >= 6), |t| ast::Tag::PlaceObject(t)),
           71 => map!(record_data, parse_import_assets2, |t| ast::Tag::ImportAssets(t)),
           73 => map!(record_data, apply!(parse_define_font_align_zones, |font_id| state.get_glyph_count(font_id)), |t| ast::Tag::DefineFontAlignZones(t)),
           74 => map!(record_data, parse_csm_text_settings, |t| ast::Tag::CsmTextSettings(t)),
           75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont(t)),
           77 => map!(record_data, parse_metadata, |t| ast::Tag::Metadata(t)),
+          83 => map!(record_data, parse_define_shape4, |t| ast::Tag::DefineShape(t)),
+          84 => map!(record_data, parse_define_morph_shape2, |t| ast::Tag::DefineMorphShape(t)),
           86 => map!(record_data, parse_define_scene_and_frame_label_data_tag, |t| ast::Tag::DefineSceneAndFrameLabelData(t)),
           88 => map!(record_data, parse_define_font_name, |t| ast::Tag::DefineFontName(t)),
           _ => {
@@ -120,8 +132,9 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
       // Implicitly skip 3 bits to align
       ((renderer, fitting))
     ))  >>
-    thickness: parse_be_f32 >>
-    sharpness: parse_be_f32 >>
+    thickness: parse_le_f32 >>
+    sharpness: parse_le_f32 >>
+    // TODO: Skip 1 byte / assert 1 byte is available
     (ast::tags::CsmTextSettings {
       text_id: text_id,
       renderer: renderer_and_fitting.0,
@@ -132,7 +145,7 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
   )
 }
 
-pub fn parse_define_bits(input: &[u8], swf_version: usize) -> IResult<&[u8], ast::tags::DefineBitmap> {
+pub fn parse_define_bits(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
   let (input, id) = parse_le_u16(input)?;
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
@@ -150,6 +163,110 @@ pub fn parse_define_bits(input: &[u8], swf_version: usize) -> IResult<&[u8], ast
   } else {
     panic!("UnknownBitmapType");
   }
+}
+
+pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
+  do_parse!(
+    input,
+    id: parse_le_u16 >>
+    flags: parse_u8 >>
+    track_as_menu: value!((flags & (1 << 0)) != 0) >>
+    // Skip bits [1, 7]
+    // TODO: Assert action offset matches
+    action_offset: map!(parse_le_u16, |x| x as usize) >>
+    characters: apply!(parse_button_record_string, ButtonVersion::Button2) >>
+    actions: switch!(value!(action_offset != 0),
+      true => call!(parse_button2_cond_action_string) |
+      false => value!(Vec::new())
+    )  >>
+    (ast::tags::DefineButton {
+      id,
+      track_as_menu,
+      characters,
+      actions,
+    })
+  )
+}
+
+pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  let (input, id) = parse_le_u16(input)?;
+  let data: Vec<u8> = input.to_vec();
+  let input: &[u8] = &[][..];
+
+  let (media_type, dimensions) = if test_image_start(&data, &JPEG_START) || (swf_version < 8 && test_image_start(&data, &ERRONEOUS_JPEG_START)) {
+    (ast::ImageType::Jpeg, get_jpeg_image_dimensions(&data).unwrap())
+  } else if test_image_start(&data, &PNG_START) {
+    (ast::ImageType::Png, get_png_image_dimensions(&data).unwrap())
+  } else if test_image_start(&data, &GIF_START) {
+    (ast::ImageType::Gif, get_gif_image_dimensions(&data).unwrap())
+  } else {
+    panic!("UnknownBitmapType");
+  };
+
+  Ok((input, ast::tags::DefineBitmap {
+    id,
+    width: dimensions.width as u16,
+    height: dimensions.height as u16,
+    media_type,
+    data,
+  }))
+}
+
+pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  let (input, id) = parse_le_u16(input)?;
+  let (input, data_len) = parse_le_u32(input)
+    .map(|(i, dl)| (i, dl as usize))?;
+  let data_slice = &input[..data_len];
+
+  let (media_type, dimensions, data) = if test_image_start(data_slice, &JPEG_START) || (swf_version < 8 && test_image_start(data_slice, &ERRONEOUS_JPEG_START)) {
+    let dimensions = get_jpeg_image_dimensions(&input[..data_len]).unwrap();
+    if input.len() > data_len {
+      (ast::ImageType::Ajpeg, dimensions, input.to_vec())
+    } else {
+      (ast::ImageType::Jpeg, dimensions, data_slice.to_vec())
+    }
+  } else if test_image_start(data_slice, &PNG_START) {
+    (ast::ImageType::Png, get_png_image_dimensions(data_slice).unwrap(), data_slice.to_vec())
+  } else if test_image_start(data_slice, &GIF_START) {
+    (ast::ImageType::Gif, get_gif_image_dimensions(data_slice).unwrap(), data_slice.to_vec())
+  } else {
+    panic!("UnknownBitmapType");
+  };
+
+  let input: &[u8] = &[][..];
+
+  Ok((input, ast::tags::DefineBitmap {
+    id,
+    width: dimensions.width as u16,
+    height: dimensions.height as u16,
+    media_type,
+    data,
+  }))
+}
+
+pub fn parse_define_bits_lossless(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  parse_define_bits_lossless_any(input, ast::ImageType::SwfBmp)
+}
+
+pub fn parse_define_bits_lossless2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  parse_define_bits_lossless_any(input, ast::ImageType::SwfAbmp)
+}
+
+fn parse_define_bits_lossless_any(input: &[u8], media_type: ast::ImageType) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  let (input, id) = parse_le_u16(input)?;
+  let data: Vec<u8> = input.to_vec();
+  let input = &input[1..]; // BitmapFormat
+  let (input, width) = parse_le_u16(input)?;
+  let (_, height) = parse_le_u16(input)?;
+  let input: &[u8] = &[][..];
+
+  Ok((input, ast::tags::DefineBitmap {
+    id,
+    width,
+    height,
+    media_type,
+    data,
+  }))
 }
 
 pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineDynamicText> {
@@ -219,65 +336,54 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
-#[allow(unused_variables)]
 pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
-  struct DefineFont3Flags {
-    has_layout: bool,
-    is_shift_jis: bool,
-    is_ansi: bool,
-    is_small: bool,
-    use_wide_offsets: bool,
-    use_wide_codes: bool,
-    is_italic: bool,
-    is_bold: bool,
-  }
-
   do_parse!(
     input,
     id: parse_le_u16 >>
-    flags: bits!(do_parse!(
-      has_layout: call!(parse_bool_bits) >>
-      is_shift_jis: call!(parse_bool_bits) >>
-      is_ansi: call!(parse_bool_bits) >>
-      is_small: call!(parse_bool_bits) >>
-      use_wide_offsets: call!(parse_bool_bits) >>
-      use_wide_codes: call!(parse_bool_bits) >>
-      is_italic: call!(parse_bool_bits) >>
-      is_bold: call!(parse_bool_bits) >>
-      (DefineFont3Flags {
-        has_layout: has_layout,
-        is_shift_jis: is_shift_jis,
-        is_ansi: is_ansi,
-        is_small: is_small,
-        use_wide_offsets: use_wide_offsets,
-        use_wide_codes: use_wide_codes,
-        is_italic: is_italic,
-        is_bold: is_bold,
-      })
-    )) >>
+    flags: parse_u8 >>
+    is_bold: value!((flags & (1 << 0)) != 0) >>
+    is_italic: value!((flags & (1 << 1)) != 0) >>
+    use_wide_codes: value!((flags & (1 << 2)) != 0) >>
+    use_wide_offsets: value!((flags & (1 << 3)) != 0) >>
+    is_ansi: value!((flags & (1 << 4)) != 0) >>
+    is_small: value!((flags & (1 << 5)) != 0) >>
+    is_shift_jis: value!((flags & (1 << 6)) != 0) >>
+    has_layout: value!((flags & (1 << 7)) != 0) >>
     language: parse_language_code >>
     font_name: length_value!(parse_u8, parse_c_string) >>
-    glyph_count: parse_le_u16 >>
-    // TODO: if glyphCount == 0, the remaining should be Option::None
-    glyphs: apply!(parse_offset_glyphs, glyph_count as usize, flags.use_wide_offsets) >>
-    code_units: switch!(value!(flags.use_wide_codes),
-      true => length_count!(value!(glyph_count), parse_le_u16) |
-      false => length_count!(value!(glyph_count), map!(parse_u8, |x| x as u16))
+    glyph_count: map!(parse_le_u16, |x| x as usize) >>
+    // According to Shumway:
+    // > The SWF format docs doesn't say that, but the DefineFont{2,3} tag ends here for device fonts.
+    result: switch!(value!(glyph_count == 0),
+      true => value!(ast::tags::DefineFont {
+        id, font_name,
+        is_bold, is_italic, is_ansi, is_small, is_shift_jis,
+        language,
+        glyphs: Option::None,
+        code_units: Option::None,
+        layout: Option::None,
+      }) |
+      false => do_parse!(
+        glyphs: apply!(parse_offset_glyphs, glyph_count, use_wide_offsets) >>
+        code_units: length_count!(
+          value!(glyph_count),
+          switch!(value!(use_wide_codes),
+            true => call!(parse_le_u16) |
+            false => map!(parse_u8, |x| x as u16)
+          )
+        )  >>
+        layout: cond!(has_layout, apply!(parse_font_layout, glyph_count)) >>
+        (ast::tags::DefineFont {
+          id, font_name,
+          is_bold, is_italic, is_ansi, is_small, is_shift_jis,
+          language,
+          glyphs: Option::Some(glyphs),
+          code_units: Option::Some(code_units),
+          layout,
+        })
+      )
     )  >>
-    layout: cond!(flags.has_layout, apply!(parse_font_layout, glyph_count as usize)) >>
-    (ast::tags::DefineFont {
-      id: id,
-      font_name: font_name,
-      is_small: flags.is_small,
-      is_shift_jis: flags.is_shift_jis,
-      is_ansi: flags.is_ansi,
-      is_italic: flags.is_italic,
-      is_bold: flags.is_bold,
-      language: language,
-      glyphs: Option::Some(glyphs),
-      code_units: Option::Some(code_units),
-      layout: layout,
-    })
+    (result)
   )
 }
 
@@ -312,7 +418,7 @@ pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
   )
 }
 
-pub fn parse_define_jpeg_tables(input: &[u8], swf_version: usize) -> IResult<&[u8], ast::tags::DefineJpegTables> {
+pub fn parse_define_jpeg_tables(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineJpegTables> {
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
 
@@ -337,16 +443,24 @@ fn parse_define_morph_shape_any(input: &[u8], version: MorphShapeVersion) -> IRe
     id: parse_le_u16 >>
     bounds: parse_rect >>
     morph_bounds: parse_rect >>
+    edge_bounds: cond!(version >= MorphShapeVersion::MorphShape2, parse_rect) >>
+    morph_edge_bounds: cond!(version >= MorphShapeVersion::MorphShape2, parse_rect) >>
+    flags: switch!(value!(version >= MorphShapeVersion::MorphShape2),
+      true => call!(parse_u8) |
+      false => value!(0u8)
+    )  >>
+    has_scaling_strokes: value!((flags & (1 << 0)) != 0) >>
+    has_non_scaling_strokes: value!((flags & (1 << 1)) != 0) >>
     shape: apply!(parse_morph_shape, version) >>
     (ast::tags::DefineMorphShape {
-      id: id,
-      bounds: bounds,
-      morph_bounds: morph_bounds,
-      edge_bounds: Option::None,
-      morph_edge_bounds: Option::None,
-      has_non_scaling_strokes: false,
-      has_scaling_strokes: false,
-      shape: shape,
+      id,
+      bounds,
+      morph_bounds,
+      edge_bounds,
+      morph_edge_bounds,
+      has_scaling_strokes,
+      has_non_scaling_strokes,
+      shape,
     })
   )
 }
@@ -396,30 +510,77 @@ pub fn parse_define_shape3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShap
   parse_define_shape_any(input, ShapeVersion::Shape3)
 }
 
+pub fn parse_define_shape4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+  parse_define_shape_any(input, ShapeVersion::Shape4)
+}
+
 fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> IResult<&[u8], ast::tags::DefineShape> {
   do_parse!(
     input,
     id: parse_le_u16 >>
     bounds: parse_rect >>
+    edge_bounds: cond!(version >= ShapeVersion::Shape4, parse_rect) >>
+    flags: switch!(value!(version >= ShapeVersion::Shape4),
+      true => call!(parse_u8) |
+      false => value!(0u8)
+    )  >>
+    has_scaling_strokes: value!((flags & (1 << 0)) != 0) >>
+    has_non_scaling_strokes: value!((flags & (1 << 1)) != 0) >>
+    has_fill_winding: value!((flags & (1 << 2)) != 0) >>
+    // (Skip bits [3, 7])
     shape: apply!(parse_shape, version) >>
     (ast::tags::DefineShape {
-      id: id,
-      bounds: bounds,
-      edge_bounds: Option::None,
-      has_fill_winding: false,
-      has_non_scaling_strokes: false,
-      has_scaling_strokes: false,
-      shape: shape,
+      id,
+      bounds,
+      edge_bounds,
+      has_scaling_strokes,
+      has_non_scaling_strokes,
+      has_fill_winding,
+      shape,
     })
   )
 }
 
-pub fn parse_define_sprite(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSprite> {
+fn parse_bytes(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+  Ok((&[][..], input.to_vec()))
+}
+
+fn parse_define_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSound> {
+  do_parse!(
+    input,
+    id: parse_le_u16 >>
+    flags: parse_u8  >>
+    sound_type: switch!(value!((flags & (1 << 0)) != 0),
+      true => value!(ast::SoundType::Stereo) |
+      false => value!(ast::SoundType::Mono)
+    )  >>
+    sound_size: switch!(value!((flags & (1 << 1)) != 0),
+      true => value!(ast::SoundSize::SoundSize16) |
+      false => value!(ast::SoundSize::SoundSize8)
+    )  >>
+    sound_rate: map!(value!((flags >> 2) & 0b11), sound_rate_from_id) >>
+    format: map!(value!((flags >> 4) & 0b1111), audio_coding_format_from_id) >>
+    sample_count: parse_le_u32 >>
+    data: parse_bytes >>
+    (ast::tags::DefineSound {
+      id,
+      format,
+      sound_type,
+      sound_size,
+      sound_rate,
+      sample_count,
+      data,
+    })
+  )
+}
+
+// TODO: Readonly `state`?
+pub fn parse_define_sprite<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::tags::DefineSprite> {
   do_parse!(
     input,
     id: parse_le_u16 >>
     frame_count: parse_le_u16 >>
-    tags: parse_tag_string >>
+    tags: apply!(parse_tag_block_string, state) >>
     (ast::tags::DefineSprite {
       id: id,
       frame_count: frame_count as usize,
@@ -493,6 +654,19 @@ pub fn parse_file_attributes_tag(input: &[u8]) -> IResult<&[u8], ast::tags::File
       })
     )
   )
+}
+
+pub fn parse_frame_label(input: &[u8]) -> IResult<&[u8], ast::tags::FrameLabel> {
+  // TODO: Use nom macros/atEof
+  let (input, name) = parse_c_string(input)?;
+  let (input, is_anchor) = if input.len() > 0 {
+    let (input, anchor_flag) = parse_u8(input)?;
+    (input, anchor_flag != 0)
+  } else {
+    (input, false)
+  };
+
+  Ok((input, ast::tags::FrameLabel { name, is_anchor }))
 }
 
 pub fn parse_import_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ImportAssets> {
@@ -569,12 +743,12 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
       name: Option::None,
       class_name: Option::None,
       clip_depth: Option::None,
-      filters: Option::None,
-      blend_mode: Option::None,
+      filters: Vec::new(),
+      blend_mode: ast::BlendMode::Normal,
       bitmap_cache: Option::None,
-      visible: Option::None,
+      visible: true,
       background_color: Option::None,
-      clip_actions: Option::None,
+      clip_actions: Vec::new(),
     })
   )
 }
@@ -583,14 +757,14 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8]
   do_parse!(
     input,
     flags: parse_u8 >>
-    has_clip_actions: value!((flags & (1 << 7)) != 0) >>
-    has_clip_depth: value!((flags & (1 << 6)) != 0) >>
-    has_name: value!((flags & (1 << 5)) != 0) >>
-    has_ratio: value!((flags & (1 << 4)) != 0) >>
-    has_color_transform: value!((flags & (1 << 3)) != 0) >>
-    has_matrix: value!((flags & (1 << 2)) != 0) >>
-    has_character_id: value!((flags & (1 << 1)) != 0) >>
     is_move: value!((flags & (1 << 0)) != 0) >>
+    has_character_id: value!((flags & (1 << 1)) != 0) >>
+    has_matrix: value!((flags & (1 << 2)) != 0) >>
+    has_color_transform: value!((flags & (1 << 3)) != 0) >>
+    has_ratio: value!((flags & (1 << 4)) != 0) >>
+    has_name: value!((flags & (1 << 5)) != 0) >>
+    has_clip_depth: value!((flags & (1 << 6)) != 0) >>
+    has_clip_actions: value!((flags & (1 << 7)) != 0) >>
     depth: parse_le_u16 >>
     character_id: cond!(has_character_id, parse_le_u16) >>
     matrix: cond!(has_matrix, parse_matrix) >>
@@ -598,7 +772,10 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8]
     ratio: cond!(has_ratio, parse_le_u16) >>
     name: cond!(has_name, parse_c_string) >>
     clip_depth: cond!(has_clip_depth, parse_le_u16) >>
-    clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events)) >>
+    clip_actions: switch!(value!(has_clip_actions),
+      true => apply!(parse_clip_actions_string, extended_events) |
+      false => value!(Vec::new())
+    )  >>
     (ast::tags::PlaceObject {
       is_move: is_move,
       depth: depth,
@@ -609,10 +786,10 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8]
       name: name,
       class_name: Option::None,
       clip_depth: clip_depth,
-      filters: Option::None,
-      blend_mode: Option::None,
+      filters: Vec::new(),
+      blend_mode: ast::BlendMode::Normal,
       bitmap_cache: Option::None,
-      visible: Option::None,
+      visible: true,
       background_color: Option::None,
       clip_actions: clip_actions,
     })
@@ -622,22 +799,23 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8]
 pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
   do_parse!(
     input,
-    flags: parse_be_u16 >>
-    has_clip_actions: value!((flags & (1 << 15)) != 0) >>
-    has_clip_depth: value!((flags & (1 << 14)) != 0) >>
-    has_name: value!((flags & (1 << 13)) != 0) >>
-    has_ratio: value!((flags & (1 << 12)) != 0) >>
-    has_color_transform: value!((flags & (1 << 11)) != 0) >>
-    has_matrix: value!((flags & (1 << 10)) != 0) >>
-    has_character_id: value!((flags & (1 << 9)) != 0) >>
-    is_move: value!((flags & (1 << 8)) != 0) >>
-    has_background_color: value!((flags & (1 << 6)) != 0) >>
-    has_visibility: value!((flags & (1 << 5)) != 0) >>
-    has_image: value!((flags & (1 << 4)) != 0) >>
-    has_class_name: value!((flags & (1 << 3)) != 0) >>
-    has_cache_hint: value!((flags & (1 << 2)) != 0) >>
-    has_blend_mode: value!((flags & (1 << 1)) != 0) >>
-    has_filters: value!((flags & (1 << 0)) != 0) >>
+    flags: parse_le_u16 >>
+    is_move: value!((flags & (1 << 0)) != 0) >>
+    has_character_id: value!((flags & (1 << 1)) != 0) >>
+    has_matrix: value!((flags & (1 << 2)) != 0) >>
+    has_color_transform: value!((flags & (1 << 3)) != 0) >>
+    has_ratio: value!((flags & (1 << 4)) != 0) >>
+    has_name: value!((flags & (1 << 5)) != 0) >>
+    has_clip_depth: value!((flags & (1 << 6)) != 0) >>
+    has_clip_actions: value!((flags & (1 << 7)) != 0) >>
+    has_filters: value!((flags & (1 << 8)) != 0) >>
+    has_blend_mode: value!((flags & (1 << 9)) != 0) >>
+    has_cache_hint: value!((flags & (1 << 10)) != 0) >>
+    has_class_name: value!((flags & (1 << 11)) != 0) >>
+    has_image: value!((flags & (1 << 12)) != 0) >>
+    has_visibility: value!((flags & (1 << 13)) != 0) >>
+    has_background_color: value!((flags & (1 << 14)) != 0) >>
+    // Skip bit 15
     depth: parse_le_u16 >>
     class_name: cond!(has_class_name || (has_image && has_character_id), parse_c_string) >>
     character_id: cond!(has_character_id, parse_le_u16) >>
@@ -646,13 +824,25 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
     ratio: cond!(has_ratio, parse_le_u16) >>
     name: cond!(has_name, parse_c_string) >>
     clip_depth: cond!(has_clip_depth, parse_le_u16) >>
-    filters: cond!(has_filters, parse_filter_list) >>
-    blend_mode: cond!(has_blend_mode, parse_blend_mode) >>
+    filters: switch!(value!(has_filters),
+      true => call!(parse_filter_list) |
+      false => value!(Vec::new())
+    )  >>
+    blend_mode: switch!(value!(has_blend_mode),
+      true => call!(parse_blend_mode) |
+      false => value!(ast::BlendMode::Normal)
+    )  >>
     use_bitmap_cache: cond!(has_cache_hint, map!(parse_u8, |x| x != 0)) >>
-    is_visible: cond!(has_visibility, map!(parse_u8, |x| x != 0)) >>
+    is_visible: switch!(value!(has_visibility),
+      true => map!(parse_u8, |x| x != 0) |
+      false => value!(true)
+    )  >>
     // TODO(demurgos): Check if it is RGBA or ARGB
     background_color: cond!(has_background_color, parse_straight_s_rgba8) >>
-    clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events)) >>
+    clip_actions: switch!(value!(has_clip_actions),
+      true => apply!(parse_clip_actions_string, extended_events) |
+      false => value!(Vec::new())
+    )  >>
     (ast::tags::PlaceObject {
       is_move: is_move,
       depth: depth,

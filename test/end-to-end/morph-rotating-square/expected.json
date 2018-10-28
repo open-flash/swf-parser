@@ -160,7 +160,11 @@
         "translate_x": 5000,
         "translate_y": 4000
       },
-      "ratio": 0
+      "ratio": 0,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -169,7 +173,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 1311
+      "ratio": 1311,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -178,7 +186,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 2621
+      "ratio": 2621,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -187,7 +199,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 3932
+      "ratio": 3932,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -196,7 +212,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 5243
+      "ratio": 5243,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -205,7 +225,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 6554
+      "ratio": 6554,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -214,7 +238,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 7864
+      "ratio": 7864,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -223,7 +251,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 9175
+      "ratio": 9175,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -232,7 +264,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 10486
+      "ratio": 10486,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -241,7 +277,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 11796
+      "ratio": 11796,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -250,7 +290,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 13107
+      "ratio": 13107,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -259,7 +303,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 14418
+      "ratio": 14418,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -268,7 +316,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 15728
+      "ratio": 15728,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -277,7 +329,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 17039
+      "ratio": 17039,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -286,7 +342,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 18350
+      "ratio": 18350,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -295,7 +355,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 19661
+      "ratio": 19661,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -304,7 +368,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 20971
+      "ratio": 20971,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -313,7 +381,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 22282
+      "ratio": 22282,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -322,7 +394,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 23593
+      "ratio": 23593,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -331,7 +407,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 24903
+      "ratio": 24903,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -340,7 +420,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 26214
+      "ratio": 26214,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -349,7 +433,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 27525
+      "ratio": 27525,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -358,7 +446,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 28835
+      "ratio": 28835,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -367,7 +459,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 30146
+      "ratio": 30146,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -376,7 +472,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 31457
+      "ratio": 31457,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -385,7 +485,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 32768
+      "ratio": 32768,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -394,7 +498,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 34078
+      "ratio": 34078,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -403,7 +511,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 35389
+      "ratio": 35389,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -412,7 +524,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 36700
+      "ratio": 36700,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -421,7 +537,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 38010
+      "ratio": 38010,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -430,7 +550,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 39321
+      "ratio": 39321,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -439,7 +563,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 40632
+      "ratio": 40632,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -448,7 +576,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 41942
+      "ratio": 41942,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -457,7 +589,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 43253
+      "ratio": 43253,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -466,7 +602,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 44564
+      "ratio": 44564,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -475,7 +615,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 45874
+      "ratio": 45874,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -484,7 +628,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 47185
+      "ratio": 47185,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -493,7 +641,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 48496
+      "ratio": 48496,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -502,7 +654,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 49807
+      "ratio": 49807,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -511,7 +667,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 51117
+      "ratio": 51117,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -520,7 +680,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 52428
+      "ratio": 52428,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -529,7 +693,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 53739
+      "ratio": 53739,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -538,7 +706,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 55049
+      "ratio": 55049,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -547,7 +719,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 56360
+      "ratio": 56360,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -556,7 +732,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 57671
+      "ratio": 57671,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -565,7 +745,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 58981
+      "ratio": 58981,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -574,7 +758,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 60292
+      "ratio": 60292,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -583,7 +771,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 61603
+      "ratio": 61603,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -592,7 +784,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 62914
+      "ratio": 62914,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"
@@ -601,7 +797,11 @@
       "type": "place-object",
       "is_move": true,
       "depth": 1,
-      "ratio": 64224
+      "ratio": 64224,
+      "filters": [],
+      "blend_mode": "normal",
+      "visible": true,
+      "clip_actions": []
     },
     {
       "type": "show-frame"

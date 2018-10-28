@@ -2,14 +2,14 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct ParseState {
-  swf_version: Option<usize>,
+  swf_version: u8,
   glyph_counts: HashMap<usize, usize>
 }
 
 impl ParseState {
-  pub fn new() -> ParseState {
+  pub fn new(swf_version: u8) -> ParseState {
     ParseState {
-      swf_version: Option::None,
+      swf_version,
       glyph_counts: HashMap::new(),
     }
   }
@@ -23,7 +23,7 @@ impl ParseState {
     self.glyph_counts.insert(font_id, glyph_count);
   }
 
-  pub fn get_swf_version(&self) -> Option<usize> {
+  pub fn get_swf_version(&self) -> u8 {
     self.swf_version
   }
 }

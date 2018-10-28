@@ -130,59 +130,35 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parsePlaceObject(byteStream);
     case 5:
       return parseRemoveObject(byteStream);
-    case 6: {
-      const swfVersion: Uint8 | undefined = context.getVersion();
-      if (swfVersion === undefined) {
-        throw new Incident("Missing SWF version, unable to parse parseDefineBits");
-      }
-      return parseDefineBits(byteStream, swfVersion);
-    }
-    case 8: {
-      const swfVersion: Uint8 | undefined = context.getVersion();
-      if (swfVersion === undefined) {
-        throw new Incident("Missing SWF version, unable to parse parseJpegTables");
-      }
-      return parseDefineJpegTables(byteStream, swfVersion);
-    }
+    case 6:
+      return parseDefineBits(byteStream, context.getVersion());
+    case 8:
+      return parseDefineJpegTables(byteStream, context.getVersion());
     case 9:
       return parseSetBackgroundColor(byteStream);
     case 11:
       return parseDefineText(byteStream);
     case 12:
+      // TODO: Ignore DoAction if version >= 9 && use_as3
       return parseDoAction(byteStream);
     case 14:
       return parseDefineSound(byteStream);
     case 20:
       return parseDefineBitsLossless(byteStream);
-    case 21: {
-      const swfVersion: Uint8 | undefined = context.getVersion();
-      if (swfVersion === undefined) {
-        throw new Incident("Missing SWF version, unable to parse defineBitsJpeg2");
-      }
-      return parseDefineBitsJpeg2(byteStream, swfVersion);
-    }
+    case 21:
+      return parseDefineBitsJpeg2(byteStream, context.getVersion());
     case 22:
       return parseDefineShape2(byteStream);
-    case 26: {
-      const swfVersion: Uint8 | undefined = context.getVersion();
-      if (swfVersion === undefined) {
-        throw new Incident("Missing SWF version, unable to parse placeObject2");
-      }
-      return parsePlaceObject2(byteStream, swfVersion);
-    }
+    case 26:
+      return parsePlaceObject2(byteStream, context.getVersion());
     case 28:
       return parseRemoveObject2(byteStream);
     case 32:
       return parseDefineShape3(byteStream);
     case 34:
       return parseDefineButton2(byteStream);
-    case 35: {
-      const swfVersion: Uint8 | undefined = context.getVersion();
-      if (swfVersion === undefined) {
-        throw new Incident("Missing SWF version, unable to parse defineBitsJpeg3");
-      }
-      return parseDefineBitsJpeg3(byteStream, swfVersion);
-    }
+    case 35:
+      return parseDefineBitsJpeg3(byteStream, context.getVersion());
     case 36:
       return parseDefineBitsLossless2(byteStream);
     case 37:
@@ -201,13 +177,8 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parseDoInitAction(byteStream);
     case 69:
       return parseFileAttributes(byteStream);
-    case 70: {
-      const swfVersion: UintSize | undefined = context.getVersion();
-      if (swfVersion === undefined) {
-        throw new Incident("Missing SWF version, unable to parse placeObject3");
-      }
-      return parsePlaceObject3(byteStream, swfVersion);
-    }
+    case 70:
+      return parsePlaceObject3(byteStream, context.getVersion());
     case 71:
       return parseImportAssets2(byteStream);
     case 73:
@@ -226,13 +197,8 @@ function parseTagBody(byteStream: ByteStream, tagCode: Uint8, context: ParseCont
       return parseDefineSceneAndFrameLabelData(byteStream);
     case 88:
       return parseDefineFontName(byteStream);
-    case 90: {
-      const swfVersion: Uint8 | undefined = context.getVersion();
-      if (swfVersion === undefined) {
-        throw new Incident("Missing SWF version, unable to parse defineBitsJpeg4");
-      }
-      return parseDefineBitsJpeg4(byteStream, swfVersion);
-    }
+    case 90:
+      return parseDefineBitsJpeg4(byteStream, context.getVersion());
     default:
       console.warn(`UnknownTagType: Code ${tagCode}`);
       return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.tailBytes())};
@@ -291,11 +257,10 @@ export function parseDefineBitsJpeg2(byteStream: ByteStream, swfVersion: Uint8):
 
 export function parseDefineBitsJpeg3(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
   const id: Uint16 = byteStream.readUint16LE();
+  const dataLen: Uint32 = byteStream.readUint32LE();
 
   const bytePos: UintSize = byteStream.bytePos;
-
-  const dataSize: Uint32 = byteStream.readUint32LE();
-  let data: Uint8Array = byteStream.takeBytes(dataSize);
+  let data: Uint8Array = byteStream.takeBytes(dataLen);
 
   let mediaType: ImageType;
   let imageDimensions: ImageDimensions;
@@ -354,7 +319,9 @@ export function parseDefineButton2(byteStream: ByteStream): tags.DefineButton {
   const id: Uint16 = byteStream.readUint16LE();
   const flags: Uint8 = byteStream.readUint8();
   const trackAsMenu: boolean = (flags & (1 << 0)) !== 0;
-  const actionOffset: Uint16 = byteStream.readUint16LE(); // TODO: Assert action offset matches
+  // Skip bits [1, 7]
+  // TODO: Assert action offset matches
+  const actionOffset: Uint16 = byteStream.readUint16LE();
   const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button2);
   const actions: ButtonCondAction[] = actionOffset === 0 ? [] : parseButton2CondActionString(byteStream);
   return {type: TagType.DefineButton, id, trackAsMenu, characters, actions};
@@ -426,6 +393,7 @@ export function parseDefineEditText(byteStream: ByteStream): tags.DefineDynamicT
   };
 }
 
+// https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
 export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
   const id: Uint16 = byteStream.readUint16LE();
 
@@ -441,7 +409,7 @@ export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
 
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
-  const fontName: string = byteStream.readString(fontNameLength); // TODO: Check if there is a null byte
+  const fontName: string = byteStream.take(fontNameLength).readCString();
 
   const glyphCount: UintSize = byteStream.readUint16LE();
   if (glyphCount === 0) {
@@ -454,11 +422,11 @@ export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
       type: TagType.DefineFont,
       id,
       fontName,
+      isBold,
+      isItalic,
+      isAnsi,
       isSmall,
       isShiftJis,
-      isAnsi,
-      isItalic,
-      isBold,
       language,
     };
   }
@@ -473,11 +441,11 @@ export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
     type: TagType.DefineFont,
     id,
     fontName,
+    isBold,
+    isItalic,
+    isAnsi,
     isSmall,
     isShiftJis,
-    isAnsi,
-    isItalic,
-    isBold,
     language,
     glyphs,
     codeUnits,
@@ -536,21 +504,15 @@ export function parseDefineMorphShapeAny(
   const bounds: Rect = parseRect(byteStream);
   const morphBounds: Rect = parseRect(byteStream);
 
-  let edgeBounds: Rect | undefined = undefined;
-  let morphEdgeBounds: Rect | undefined = undefined;
-  let hasNonScalingStrokes: boolean = false;
-  let hasScalingStrokes: boolean = false;
-  if (morphShapeVersion === MorphShapeVersion.MorphShape2) {
-    edgeBounds = parseRect(byteStream);
-    morphEdgeBounds = parseRect(byteStream);
-    const flags: Uint8 = byteStream.readUint8();
-    // (Skip first 6 bits)
-    hasNonScalingStrokes = (flags & (1 << 1)) !== 0;
-    hasScalingStrokes = (flags & (1 << 0)) !== 0;
-  }
+  const edgeBounds: Rect | undefined = morphShapeVersion >= MorphShapeVersion.MorphShape2 ? parseRect(byteStream) : undefined;
+  const morphEdgeBounds: Rect | undefined = morphShapeVersion >= MorphShapeVersion.MorphShape2 ? parseRect(byteStream) : undefined;
+  const flags: Uint8 = morphShapeVersion >= MorphShapeVersion.MorphShape2 ? byteStream.readUint8() : 0;
+  const hasScalingStrokes: boolean = (flags & (1 << 0)) !== 0;
+  const hasNonScalingStrokes: boolean = (flags & (1 << 1)) !== 0;
 
   const shape: MorphShape = parseMorphShape(byteStream, morphShapeVersion);
 
+  // TODO: Use this property order in swf-tree
   return {
     type: TagType.DefineMorphShape,
     id,
@@ -558,8 +520,8 @@ export function parseDefineMorphShapeAny(
     morphBounds,
     edgeBounds,
     morphEdgeBounds,
-    hasNonScalingStrokes,
     hasScalingStrokes,
+    hasNonScalingStrokes,
     shape,
   };
 }
@@ -606,28 +568,23 @@ export function parseDefineShape4(byteStream: ByteStream): tags.DefineShape {
 function parseDefineShapeAny(byteStream: ByteStream, shapeVersion: ShapeVersion): tags.DefineShape {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
-  let edgeBounds: Rect | undefined = undefined;
-  let hasFillWinding: boolean = false;
-  let hasNonScalingStrokes: boolean = false;
-  let hasScalingStrokes: boolean = false;
-  if (shapeVersion === ShapeVersion.Shape4) {
-    edgeBounds = parseRect(byteStream);
-    const flags: Uint8 = byteStream.readUint8();
-    // (Skip first 5 bits)
-    hasFillWinding = (flags & (1 << 2)) !== 0;
-    hasNonScalingStrokes = (flags & (1 << 1)) !== 0;
-    hasScalingStrokes = (flags & (1 << 0)) !== 0;
-  }
+  let edgeBounds: Rect | undefined = shapeVersion >= ShapeVersion.Shape4 ? parseRect(byteStream) : undefined;
+  const flags: Uint8 = shapeVersion >= ShapeVersion.Shape4 ? byteStream.readUint8() : 0;
+  const hasScalingStrokes = (flags & (1 << 0)) !== 0;
+  const hasNonScalingStrokes = (flags & (1 << 1)) !== 0;
+  const hasFillWinding = (flags & (1 << 2)) !== 0;
+  // (Skip bits [3, 7])
   const shape: Shape = parseShape(byteStream, shapeVersion);
 
+  // TODO: Update swf-tree to use this order for the properties
   return {
     type: TagType.DefineShape,
     id,
     bounds,
     edgeBounds,
-    hasFillWinding,
-    hasNonScalingStrokes,
     hasScalingStrokes,
+    hasNonScalingStrokes,
+    hasFillWinding,
     shape,
   };
 }
@@ -644,7 +601,8 @@ function parseDefineSound(byteStream: ByteStream): tags.DefineSound {
   const sampleCount: Uint32 = byteStream.readUint32LE();
   const data: Uint8Array = byteStream.tailBytes();
 
-  return {type: TagType.DefineSound, id, format, soundRate, soundSize, soundType, sampleCount, data};
+  // TODO: Use this order in swf-tree
+  return {type: TagType.DefineSound, id, format, soundType, soundSize, soundRate, sampleCount, data};
 }
 
 export function parseDefineSprite(byteStream: ByteStream, context: ParseContext): tags.DefineSprite {
@@ -712,11 +670,12 @@ export function parseFileAttributes(byteStream: ByteStream): tags.FileAttributes
 
 export function parseFrameLabel(byteStream: ByteStream): tags.FrameLabel {
   const name: string = byteStream.readCString();
-  const anchorFlag: boolean = byteStream.available() > 1 && byteStream.readUint8() !== 0;
+  // The isAnchor was introduced in SWF6, check version before reading?
+  const isAnchor: boolean = byteStream.available() > 0 && byteStream.readUint8() !== 0;
   return {
     type: TagType.FrameLabel,
     name,
-    anchorFlag,
+    isAnchor,
   };
 }
 
@@ -777,20 +736,23 @@ export function parsePlaceObject(byteStream: ByteStream): tags.PlaceObject {
     characterId,
     matrix,
     colorTransform,
-    filters: undefined,
+    filters: [],
+    blendMode: BlendMode.Normal,
+    visible: true,
+    clipActions: [],
   };
 }
 
 export function parsePlaceObject2(byteStream: ByteStream, swfVersion: UintSize): tags.PlaceObject {
   const flags: Uint16 = byteStream.readUint8();
-  const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
-  const hasClipDepth: boolean = (flags & (1 << 6)) !== 0;
-  const hasName: boolean = (flags & (1 << 5)) !== 0;
-  const hasRatio: boolean = (flags & (1 << 4)) !== 0;
-  const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
-  const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
-  const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
   const isMove: boolean = (flags & (1 << 0)) !== 0;
+  const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
+  const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
+  const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
+  const hasRatio: boolean = (flags & (1 << 4)) !== 0;
+  const hasName: boolean = (flags & (1 << 5)) !== 0;
+  const hasClipDepth: boolean = (flags & (1 << 6)) !== 0;
+  const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
   const depth: Uint16 = byteStream.readUint16LE();
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
   const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
@@ -801,9 +763,9 @@ export function parsePlaceObject2(byteStream: ByteStream, swfVersion: UintSize):
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
 
-  const clipActions: ClipActions[] | undefined = hasClipActions ?
+  const clipActions: ClipActions[] = hasClipActions ?
     parseClipActionsString(byteStream, swfVersion >= 6) :
-    undefined;
+    [];
 
   return {
     type: TagType.PlaceObject,
@@ -815,14 +777,15 @@ export function parsePlaceObject2(byteStream: ByteStream, swfVersion: UintSize):
     ratio,
     name,
     clipDepth,
-    filters: undefined,
+    filters: [],
+    blendMode: BlendMode.Normal,
+    visible: true,
     clipActions,
   };
 }
 
 export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize): tags.PlaceObject {
   const flags: Uint16 = byteStream.readUint16LE();
-  // Skip one bit (bit 15)
   const isMove: boolean = (flags & (1 << 0)) !== 0;
   const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
   const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
@@ -838,30 +801,31 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
   const hasImage: boolean = (flags & (1 << 12)) !== 0;
   const hasVisibility: boolean = (flags & (1 << 13)) !== 0;
   const hasBackgroundColor: boolean = (flags & (1 << 14)) !== 0;
+  // Skip bit 15
   const depth: Uint16 = byteStream.readUint16LE();
-  const className: string | undefined = hasClassName || (hasImage && hasCharacterId) ?
-    byteStream.readCString() :
-    undefined;
+  const className: string | undefined = hasClassName || (hasImage && hasCharacterId)
+    ? byteStream.readCString()
+    : undefined;
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
   const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
-  const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform ?
-    parseColorTransformWithAlpha(byteStream) :
-    undefined;
+  const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform
+    ? parseColorTransformWithAlpha(byteStream)
+    : undefined;
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
   const filters: Filter[] = hasFilters ? parseFilterList(byteStream) : [];
   const blendMode: BlendMode = hasBlendMode ? parseBlendMode(byteStream) : BlendMode.Normal;
-  const useBitmapCache: boolean = hasCacheHint ? byteStream.readUint8() !== 0 : false;
-  const isVisible: boolean = hasVisibility ? byteStream.readUint8() !== 0 : false;
+  const useBitmapCache: boolean | undefined = hasCacheHint ? byteStream.readUint8() !== 0 : undefined;
+  const isVisible: boolean = hasVisibility ? byteStream.readUint8() !== 0 : true;
   // This does not match the spec, see Shumway
   // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L158
   // TODO(demurgos): Check if it is RGBA or ARGB
   const backgroundColor: StraightSRgba8 | undefined = hasBackgroundColor ? parseStraightSRgba8(byteStream) : undefined;
 
-  const clipActions: ClipActions[] | undefined = hasClipActions ?
-    parseClipActionsString(byteStream, swfVersion >= 6) :
-    undefined;
+  const clipActions: ClipActions[] = hasClipActions
+    ? parseClipActionsString(byteStream, swfVersion >= 6)
+    : [];
 
   return {
     type: TagType.PlaceObject,

@@ -43,7 +43,7 @@ export function parseButtonRecord(byteStream: ByteStream, buttonVersion: ButtonV
   const stateHitTest: boolean = (flags & (1 << 3)) !== 0;
   const hasFilterList: boolean = (flags & (1 << 4)) !== 0;
   const hasBlendMode: boolean = (flags & (1 << 5)) !== 0;
-  // (Skip 2 bits)
+  // (Skip bits [6, 7])
 
   const characterId: Uint16 = byteStream.readUint16LE();
   const depth: Uint16 = byteStream.readUint16LE();
@@ -51,7 +51,7 @@ export function parseButtonRecord(byteStream: ByteStream, buttonVersion: ButtonV
   let colorTransform: ColorTransformWithAlpha | undefined = undefined;
   let filters: Filter[] = [];
   let blendMode: BlendMode = BlendMode.Normal;
-  if (buttonVersion >= ButtonVersion.Button1) {
+  if (buttonVersion >= ButtonVersion.Button2) {
     colorTransform = parseColorTransformWithAlpha(byteStream);
     if (hasFilterList) {
       filters = parseFilterList(byteStream);
@@ -61,10 +61,10 @@ export function parseButtonRecord(byteStream: ByteStream, buttonVersion: ButtonV
     }
   }
   return {
-    stateHitTest,
-    stateDown,
-    stateOver,
     stateUp,
+    stateOver,
+    stateDown,
+    stateHitTest,
     characterId,
     depth,
     matrix,

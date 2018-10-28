@@ -7,8 +7,7 @@ use std::io;
 use std::io::Read;
 use swf_tree as ast;
 
-pub fn parse_tag_string(input: &[u8]) -> NomResult<&[u8], Vec<ast::Tag>> {
-  let mut state = ParseState::new();
+pub fn parse_tag_block_string<'a>(input: &'a [u8], state: &mut ParseState) -> NomResult<&'a [u8], Vec<ast::Tag>> {
   let mut result: Vec<ast::Tag> = Vec::new();
   let mut current_input: &[u8] = input;
   while current_input.len() > 0 {
@@ -17,7 +16,7 @@ pub fn parse_tag_string(input: &[u8]) -> NomResult<&[u8], Vec<ast::Tag>> {
       current_input = &current_input[1..];
       break;
     }
-    match parse_swf_tag(current_input, &mut state) {
+    match parse_swf_tag(current_input, state) {
       Ok((next_input, swf_tag)) => {
         current_input = next_input;
         result.push(swf_tag);
@@ -30,10 +29,11 @@ pub fn parse_tag_string(input: &[u8]) -> NomResult<&[u8], Vec<ast::Tag>> {
 }
 
 pub fn parse_decompressed_movie(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
+  let mut state = ParseState::new(swf_version);
   do_parse!(
     input,
     header: call!(parse_header, swf_version) >>
-    tags: parse_tag_string >>
+    tags: apply!(parse_tag_block_string, &mut state) >>
     (ast::Movie {
       header: header,
       tags: tags,
@@ -52,7 +52,9 @@ pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
       decoder.read_to_end(&mut decoded_data).unwrap();
       match parse_decompressed_movie(&decoded_data[..], signature.swf_version) {
         Ok((_, parsed_swf_file)) => Ok((&[][..], parsed_swf_file)),
-        Err(_) => unimplemented!(),
+        Err(::nom::Err::Error(::nom::simple_errors::Context::Code(_, e))) => Err(::nom::Err::Error(::nom::simple_errors::Context::Code(&[][..], e))),
+        Err(::nom::Err::Failure(::nom::simple_errors::Context::Code(_, e))) => Err(::nom::Err::Failure(::nom::simple_errors::Context::Code(&[][..], e))),
+        Err(::nom::Err::Incomplete(n)) => Err(::nom::Err::Incomplete(n)),
       }
     }
     ast::CompressionMethod::Lzma => {

@@ -81,29 +81,114 @@ function main() {
     if (testItem.description !== undefined) {
       console.log(testItem.description);
     }
+    const expected = testItem.expected;
     for (const [parserName, parser] of PARSERS) {
       const actual = parser(testItem.inputPath);
       fs.writeFileSync(sysPath.join(testItem.dir, `${parserName}.actual.json`), actual);
-      const isOk = equalBuffers(actual, testItem.expected);
-      if (isOk) {
+      if (equalBuffers(actual, expected)) {
         console.log(`  ${parserName.padEnd(10, " ")} OK`);
       } else {
-       console.log(`  ${parserName.padEnd(10, " ")} ERR`);
+        const expectedTree = JSON.parse(expected.toString("UTF-8"));
+        const actualTree = JSON.parse(actual.toString("UTF-8"));
+        if (similarJsonValues(actualTree, expectedTree)) {
+          console.log(`  ${parserName.padEnd(10, " ")} OK (similar)`);
+        } else {
+          const diff = diffSwfTrees(expectedTree, actualTree);
+          console.log(`  ${parserName.padEnd(10, " ")} ERR`);
+          console.log(`    ${diff}`);
+        }
       }
     }
   }
 }
 
-function equalBuffers(a, b) {
-  if (a.length !== b.length) {
+function equalBuffers(actual, expected) {
+  if (actual.length !== expected.length) {
     return false;
   }
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
+  for (let i = 0; i < expected.length; i++) {
+    if (actual[i] !== expected[i]) {
       return false;
     }
   }
   return true;
+}
+
+function diffSwfTrees(oldTree, newTree) {
+  if (!equalJsonValues(newTree.header, oldTree.header)) {
+    return "Different header";
+  }
+
+  const differentTags = [];
+  for (let i = 0; i < oldTree.tags.length; i++) {
+    const newTag = newTree.tags[i];
+    const oldTag = oldTree.tags[i];
+    if (newTag === undefined) {
+      break;
+    }
+    if (!equalJsonValues(newTag, oldTag)) {
+      differentTags.push(i.toString(10));
+    }
+  }
+  if (differentTags.length > 0) {
+    return `Different tags: ${differentTags.join(", ")}`;
+  } else if (newTree.tags < oldTree.tags.length) {
+    return "Not enough tags"
+  } else if (newTree.tags > oldTree.tags.length) {
+    return "Too much tags"
+  }
+
+  return "Unknown difference";
+}
+
+function equalJsonValues(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected)
+}
+
+function similarJsonValues(actual, expected) {
+  switch (typeof expected) {
+    case "boolean":
+    case "string":
+      return actual === expected;
+    case "number":
+      if (Object.is(actual, expected)) {
+        return true;
+      } else {
+        const absDelta = Math.abs(actual - expected);
+        return Math.abs(absDelta / actual) < 0.001 && Math.abs(absDelta / expected) < 0.001;
+      }
+    case "array":
+      if (actual.length !== expected.length) {
+        return false;
+      }
+      for (let i = 0; i < expected.length; i++) {
+        if (!similarJsonValues(actual[i], expected[i])) {
+          return false;
+        }
+      }
+      return true;
+    case "object":
+      if (expected === null || actual === null) {
+        return actual === expected;
+      }
+      const actualKeys = Object.keys(actual);
+      const expectedKeys = Object.keys(expected);
+      if (actualKeys.length !== expectedKeys.length) {
+        return false;
+      }
+      for (let i = 0; i < expectedKeys.length; i++) {
+        if (actualKeys[i] !== expectedKeys[i]) {
+          return false;
+        }
+        const key = expectedKeys[i];
+        if (!similarJsonValues(actual[key], expected[key])) {
+          return false;
+        }
+      }
+      return true;
+    default:
+      return false;
+  }
 }
 
 main();

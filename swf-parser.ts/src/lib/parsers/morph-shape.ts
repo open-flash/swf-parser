@@ -373,10 +373,10 @@ export function parseMorphLineStyleList(
   const result: MorphLineStyle[] = [];
   const len: UintSize = parseListLength(byteStream, true);
   for (let i: UintSize = 0; i < len; i++) {
-    if (morphShapeVersion < MorphShapeVersion.MorphShape2) {
-      result.push(parseMorphLineStyle1(byteStream));
-    } else {
+    if (morphShapeVersion >= MorphShapeVersion.MorphShape2) {
       result.push(parseMorphLineStyle2(byteStream));
+    } else {
+      result.push(parseMorphLineStyle1(byteStream));
     }
   }
   return result;
@@ -410,15 +410,15 @@ export function parseMorphLineStyle2(byteStream: ByteStream): MorphLineStyle {
   const morphWidth: Uint16 = byteStream.readUint16LE();
 
   const flags: Uint16 = byteStream.readUint16LE();
-  // (Skip first 5 bits)
-  const noClose: boolean = (flags & (1 << 10)) !== 0;
-  const endCapStyleId: Uint2 = ((flags >>> 8) & 0b11) as Uint2;
-  const startCapStyleId: Uint2 = ((flags >>> 6) & 0b11) as Uint2;
-  const joinStyleId: Uint2 = ((flags >>> 4) & 0b11) as Uint2;
-  const hasFill: boolean = (flags & (1 << 3)) !== 0;
-  const noHScale: boolean = (flags & (1 << 2)) !== 0;
-  const noVScale: boolean = (flags & (1 << 1)) !== 0;
   const pixelHinting: boolean = (flags & (1 << 0)) !== 0;
+  const noVScale: boolean = (flags & (1 << 1)) !== 0;
+  const noHScale: boolean = (flags & (1 << 2)) !== 0;
+  const hasFill: boolean = (flags & (1 << 3)) !== 0;
+  const joinStyleId: Uint2 = ((flags >>> 4) & 0b11) as Uint2;
+  const startCapStyleId: Uint2 = ((flags >>> 6) & 0b11) as Uint2;
+  const endCapStyleId: Uint2 = ((flags >>> 8) & 0b11) as Uint2;
+  const noClose: boolean = (flags & (1 << 10)) !== 0;
+  // (Skip bits [11, 15])
 
   let join: JoinStyle;
   switch (joinStyleId) {

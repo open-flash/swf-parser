@@ -314,10 +314,10 @@ export function parseLineStyleList(
   const result: LineStyle[] = [];
   const len: UintSize = parseListLength(byteStream, shapeVersion >= ShapeVersion.Shape2);
   for (let i: UintSize = 0; i < len; i++) {
-    if (shapeVersion < ShapeVersion.Shape4) {
-      result.push(parseLineStyle(byteStream, shapeVersion >= ShapeVersion.Shape3));
-    } else {
+    if (shapeVersion >= ShapeVersion.Shape4) {
       result.push(parseLineStyle2(byteStream));
+    } else {
+      result.push(parseLineStyle(byteStream, shapeVersion >= ShapeVersion.Shape3));
     }
   }
   return result;
@@ -344,16 +344,17 @@ export function parseLineStyle(byteStream: ByteStream, withAlpha: boolean): Line
 
 export function parseLineStyle2(byteStream: ByteStream): LineStyle {
   const width: Uint16 = byteStream.readUint16LE();
+
   const flags: Uint16 = byteStream.readUint16LE();
-  // (Skip first 5 bits)
-  const noClose: boolean = (flags & (1 << 10)) !== 0;
-  const endCapStyleId: Uint2 = ((flags >>> 8) & 0b11) as Uint2;
-  const startCapStyleId: Uint2 = ((flags >>> 6) & 0b11) as Uint2;
-  const joinStyleId: Uint2 = ((flags >>> 4) & 0b11) as Uint2;
-  const hasFill: boolean = (flags & (1 << 3)) !== 0;
-  const noHScale: boolean = (flags & (1 << 2)) !== 0;
-  const noVScale: boolean = (flags & (1 << 1)) !== 0;
   const pixelHinting: boolean = (flags & (1 << 0)) !== 0;
+  const noVScale: boolean = (flags & (1 << 1)) !== 0;
+  const noHScale: boolean = (flags & (1 << 2)) !== 0;
+  const hasFill: boolean = (flags & (1 << 3)) !== 0;
+  const joinStyleId: Uint2 = ((flags >>> 4) & 0b11) as Uint2;
+  const startCapStyleId: Uint2 = ((flags >>> 6) & 0b11) as Uint2;
+  const endCapStyleId: Uint2 = ((flags >>> 8) & 0b11) as Uint2;
+  const noClose: boolean = (flags & (1 << 10)) !== 0;
+  // (Skip bits [11, 15])
 
   let join: JoinStyle;
   switch (joinStyleId) {
@@ -379,14 +380,14 @@ export function parseLineStyle2(byteStream: ByteStream): LineStyle {
 
   return {
     width,
+    fill,
+    pixelHinting,
+    noVScale,
+    noHScale,
+    noClose,
+    join,
     startCap: capStyleFromId(startCapStyleId),
     endCap: capStyleFromId(endCapStyleId),
-    join,
-    noHScale,
-    noVScale,
-    noClose,
-    pixelHinting,
-    fill,
   };
 }
 
