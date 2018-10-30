@@ -1,6 +1,6 @@
 [package]
 name = "swf-parser"
-version = "0.0.2"
+version = "0.0.8"
 authors = ["Charles Samborski <demurgos@demurgos.net>"]
 description = "SWF parser"
 documentation = "https://github.com/open-flash/swf-parser"
@@ -28,8 +28,8 @@ rust-lzma = "^0.3.0"
 serde = "^1.0.80"
 serde_derive = "^1.0.80"
 serde_json = "^1.0.32"
-swf-tree = "^0.0.15"
+swf-tree = "^0.0.18"
 swf-fixed = "^0.1.0"
 
-[replace]
-"swf-tree:0.0.15" = { path = '../../swf-tree/swf-tree.rs' }
+# [replace]
+# "swf-tree:0.0.18" = { path = '../../swf-tree/swf-tree.rs' }
