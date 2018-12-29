@@ -160,7 +160,7 @@ pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), 
     delta_y: apply!(parse_i32_bits, n_bits + 2) >>
     (ast::shape_records::CurvedEdge {
       control_delta: ast::Vector2D {x: control_x, y: control_y},
-      end_delta: ast::Vector2D {x: delta_x, y: delta_y},
+      anchor_delta: ast::Vector2D {x: delta_x, y: delta_y},
     })
   )
 }
@@ -174,7 +174,7 @@ pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize)
     delta_x: cond!(is_diagonal || !is_vertical, apply!(parse_i32_bits, n_bits + 2)) >>
     delta_y: cond!(is_diagonal || is_vertical, apply!(parse_i32_bits, n_bits + 2)) >>
     (ast::shape_records::StraightEdge {
-      end_delta: ast::Vector2D {x: delta_x.unwrap_or_default(), y: delta_y.unwrap_or_default()},
+      delta: ast::Vector2D {x: delta_x.unwrap_or_default(), y: delta_y.unwrap_or_default()},
     })
   )
 }

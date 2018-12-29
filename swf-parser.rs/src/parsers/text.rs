@@ -10,7 +10,6 @@ use parsers::basic_data_types::{
   parse_u32_bits,
 };
 use parsers::shapes::parse_glyph;
-use ordered_float::OrderedFloat;
 
 // TODO: Check with `nom`, it creates warnings: unused variable: `e`
 #[allow(unused_variables)]
@@ -71,8 +70,8 @@ pub fn parse_font_alignment_zone_data(input: &[u8]) -> IResult<&[u8], ast::text:
     size: parse_be_f16 >>
     // TODO(demurgos): What happens if we get a NaN?
     (ast::text::FontAlignmentZoneData {
-      origin: OrderedFloat::<f32>(origin),
-      size: OrderedFloat::<f32>(size),
+      origin,
+      size,
     })
   )
 }

@@ -1,6 +1,6 @@
 use std::f32;
 use swf_tree as ast;
-use swf_tree::fixed_point::{Fixed16P16, Fixed8P8, Ufixed8P8};
+use swf_tree::fixed_point::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
 use nom::{IResult, Needed};
 use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16};
 use num_traits::Float;
@@ -58,20 +58,20 @@ pub fn parse_encoded_le_u32(input: &[u8]) -> IResult<&[u8], u32> {
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 16.16-bit number
-pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Fixed16P16> {
+pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed16P16> {
   map!(
     input,
     apply!(parse_i32_bits, n),
-    |x| Fixed16P16::from_epsilons(x)
+    |x| Sfixed16P16::from_epsilons(x)
   )
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 8.8-bit number
-pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Fixed8P8> {
+pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed8P8> {
   map!(
     input,
     apply!(parse_i16_bits, n),
-    |x| Fixed8P8::from_epsilons(x)
+    |x| Sfixed8P8::from_epsilons(x)
   )
 }
 
@@ -125,13 +125,13 @@ pub fn parse_le_ufixed8_p8(input: &[u8]) -> IResult<&[u8], Ufixed8P8> {
 }
 
 /// Parse the little-endian representation of a signed fixed-point 8.8-bit number
-pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Fixed8P8> {
-  map!(input, parse_le_i16, |x| Fixed8P8::from_epsilons(x))
+pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Sfixed8P8> {
+  map!(input, parse_le_i16, |x| Sfixed8P8::from_epsilons(x))
 }
 
 /// Parse the little-endian representation of a signed fixed-point 16.16-bit number
-pub fn parse_le_fixed16_p16(input: &[u8]) -> IResult<&[u8], Fixed16P16> {
-  map!(input, parse_le_i32, |x| Fixed16P16::from_epsilons(x))
+pub fn parse_le_fixed16_p16(input: &[u8]) -> IResult<&[u8], Sfixed16P16> {
+  map!(input, parse_le_i32, |x| Sfixed16P16::from_epsilons(x))
 }
 
 pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
@@ -220,7 +220,7 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::
       )),
       |scale| match scale {
         Some((scale_x, scale_y)) => (scale_x, scale_y),
-        None => (Fixed16P16::from_epsilons(1 << 16), Fixed16P16::from_epsilons(1 << 16)),
+        None => (Sfixed16P16::from_epsilons(1 << 16), Sfixed16P16::from_epsilons(1 << 16)),
       }
     ) >>
     has_rotate: call!(parse_bool_bits) >>
@@ -233,7 +233,7 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::
       )),
       |skew| match skew {
         Some((skew0, skew1)) => (skew0, skew1),
-        None => (Fixed16P16::from_epsilons(0), Fixed16P16::from_epsilons(0)),
+        None => (Sfixed16P16::from_epsilons(0), Sfixed16P16::from_epsilons(0)),
       }
     ) >>
     translate_bits: apply!(parse_u16_bits, 5) >>
@@ -282,7 +282,7 @@ pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usiz
       )),
       |mult| match mult {
         Some((r, g, b)) => (r, g, b),
-        None => (Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8)),
+        None => (Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8)),
       }
     ) >>
     add: map!(
@@ -329,7 +329,7 @@ pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(
       )),
       |mult| match mult {
         Some((r, g, b, a)) => (r, g, b, a),
-        None => (Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8), Fixed8P8::from_epsilons(1 << 8)),
+        None => (Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8)),
       }
     ) >>
     add: map!(
@@ -493,7 +493,7 @@ mod tests {
   #[test]
   fn test_parse_fixed16_p16_bits() {
     let input = vec![0b00000000, 0b00000000, 0b00000000, 0b00000000];
-    assert_eq!(parse_fixed16_p16_bits((&input[..], 0), 32), IResult::Done((&input[4..], 0), Fixed16P16::from_epsilons(0)));
+    assert_eq!(parse_fixed16_p16_bits((&input[..], 0), 32), IResult::Done((&input[4..], 0), Sfixed16P16::from_epsilons(0)));
   }
 
   #[test]

@@ -1,7 +1,6 @@
 use swf_tree as ast;
 use nom::IResult;
 use nom::{be_f32 as parse_be_f32, be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u8 as parse_u8, le_u32 as parse_le_u32};
-use ordered_float::OrderedFloat;
 use parsers::avm1::parse_actions_block;
 use parsers::basic_data_types::{parse_le_fixed8_p8, parse_le_fixed16_p16, parse_straight_s_rgba8};
 
@@ -179,7 +178,7 @@ pub fn parse_blur_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Blur> {
 pub fn parse_color_matrix_filter(input: &[u8]) -> IResult<&[u8], ast::filters::ColorMatrix> {
   do_parse!(
     input,
-    matrix: length_count!(value!(20), map!(parse_be_f32, |x| OrderedFloat::<f32>(x))) >>
+    matrix: length_count!(value!(20), parse_be_f32) >>
     (ast::filters::ColorMatrix {
       matrix: matrix,
     })
@@ -191,9 +190,9 @@ pub fn parse_convolution_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Co
     input,
     matrix_width: map!(parse_u8, |x| x as usize) >>
     matrix_height: map!(parse_u8, |x| x as usize) >>
-    divisor: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
-    bias: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
-    matrix: length_count!(value!(matrix_width * matrix_height), map!(parse_be_f32, |x| OrderedFloat::<f32>(x))) >>
+    divisor: parse_be_f32 >>
+    bias: parse_be_f32 >>
+    matrix: length_count!(value!(matrix_width * matrix_height), parse_be_f32) >>
     default_color: parse_straight_s_rgba8 >>
     flags: parse_u8 >>
     clamp: value!((flags & (1 << 1)) != 0) >>

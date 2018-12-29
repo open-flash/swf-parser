@@ -222,18 +222,18 @@ pub fn parse_with_action(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::Wit
 }
 
 #[allow(unused_variables)]
-fn parse_action_value(input: &[u8]) -> IResult<&[u8], ast::avm1::actions::Value> {
+fn parse_action_value(input: &[u8]) -> IResult<&[u8], ast::avm1::Value> {
   switch!(input, parse_u8,
-   0 => map!(parse_c_string, |v: String| ast::avm1::actions::Value::CString(v)) |
-   1 => map!(parse_le_f32, |v| ast::avm1::actions::Value::F32(::ordered_float::OrderedFloat::<f32>(v))) |
-   2 => value!(ast::avm1::actions::Value::Null) |
-   3 => value!(ast::avm1::actions::Value::Undefined) |
-   4 => map!(parse_u8, |v| ast::avm1::actions::Value::Register(v)) |
-   5 => map!(parse_u8, |v| ast::avm1::actions::Value::Boolean(v != 0)) |
-   6 => map!(parse_le_f64, |v| ast::avm1::actions::Value::F64(::ordered_float::OrderedFloat::<f64>(v))) |
-   7 => map!(parse_le_i32, |v| ast::avm1::actions::Value::I32(v)) |
-   8 => map!(parse_u8, |v| ast::avm1::actions::Value::Constant(v as u16)) |
-   9 => map!(parse_le_u16, |v| ast::avm1::actions::Value::Constant(v))
+   0 => map!(parse_c_string, |v: String| ast::avm1::Value::String(v)) |
+   1 => map!(parse_le_f32, |v| ast::avm1::Value::Float32(v)) |
+   2 => value!(ast::avm1::Value::Null) |
+   3 => value!(ast::avm1::Value::Undefined) |
+   4 => map!(parse_u8, |v| ast::avm1::Value::Register(v)) |
+   5 => map!(parse_u8, |v| ast::avm1::Value::Boolean(v != 0)) |
+   6 => map!(parse_le_f64, |v| ast::avm1::Value::Float64(v)) |
+   7 => map!(parse_le_i32, |v| ast::avm1::Value::Sint32(v)) |
+   8 => map!(parse_u8, |v| ast::avm1::Value::Constant(v as u16)) |
+   9 => map!(parse_le_u16, |v| ast::avm1::Value::Constant(v))
   )
 }
 
@@ -513,9 +513,9 @@ mod tests {
         &[][..],
         ast::avm1::actions::Push {
           values: vec![
-            ast::avm1::actions::Value::Register(0),
-            ast::avm1::actions::Value::I32(1),
-            ast::avm1::actions::Value::Constant(2),
+            ast::avm1::Value::Register(0),
+            ast::avm1::Value::Sint32(1),
+            ast::avm1::Value::Constant(2),
           ]
         }
       );
@@ -528,7 +528,7 @@ mod tests {
         &[][..],
         ast::avm1::actions::Push {
           values: vec![
-            ast::avm1::actions::Value::CString(String::from("")),
+            ast::avm1::Value::String(String::from("")),
           ]
         }
       );
@@ -541,7 +541,7 @@ mod tests {
         &[][..],
         ast::avm1::actions::Push {
           values: vec![
-            ast::avm1::actions::Value::CString(String::from("\x01")),
+            ast::avm1::Value::String(String::from("\x01")),
           ]
         }
       );

@@ -1,7 +1,6 @@
 use swf_tree as ast;
 use nom::{IResult, Needed};
 use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, be_f32 as parse_be_f32};
-use ordered_float::OrderedFloat;
 use parsers::avm1::parse_actions_string;
 use parsers::basic_data_types::{
   parse_bool_bits,
@@ -119,8 +118,8 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
       // Implicitly skip 3 bits to align
       ((renderer, fitting))
     ))  >>
-    thickness: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
-    sharpness: map!(parse_be_f32, |x| OrderedFloat::<f32>(x)) >>
+    thickness: parse_be_f32 >>
+    sharpness: parse_be_f32 >>
     (ast::tags::CsmTextSettings {
       text_id: text_id,
       renderer: renderer_and_fitting.0,
@@ -497,7 +496,7 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
           red_mult: color_transform.red_mult,
           green_mult: color_transform.green_mult,
           blue_mult: color_transform.blue_mult,
-          alpha_mult: ast::fixed_point::Fixed8P8::from_epsilons(1 << 8),
+          alpha_mult: ast::fixed_point::Sfixed8P8::from_epsilons(1 << 8),
           red_add: color_transform.red_add,
           green_add: color_transform.green_add,
           blue_add: color_transform.blue_add,

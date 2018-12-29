@@ -36,9 +36,7 @@ pub fn parse_header(input: &[u8]) -> IResult<&[u8], ast::Header> {
     frame_rate: parse_le_ufixed8_p8 >>
     frame_count: parse_le_u16 >>
     (ast::Header {
-      compression_method: signature.compression_method,
       swf_version: signature.swf_version,
-      uncompressed_file_length: signature.uncompressed_file_length,
       frame_size: frame_size,
       frame_rate: frame_rate,
       frame_count: frame_count,

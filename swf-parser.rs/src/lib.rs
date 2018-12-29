@@ -2,7 +2,6 @@ extern crate libflate;
 #[macro_use]
 extern crate nom;
 extern crate num_traits;
-extern crate ordered_float;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
