@@ -19,8 +19,8 @@ name = "swf-parser"
 path = "src/main.rs"
 
 [dependencies]
+inflate = "0.4.4"
 lazy_static = "1.0.0"
-libflate = "0.1.14"
 lzma-rs = "0.1.0"
 nom = "3.2.1"
 num-traits = "0.1.43"

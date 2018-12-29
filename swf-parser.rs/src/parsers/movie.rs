@@ -1,8 +1,6 @@
 use swf_tree as ast;
 use nom::{IResult, Needed};
-use libflate;
-use std::io;
-use std::io::Read;
+use std::io::Write;
 use parsers::tags::parse_swf_tag;
 use parsers::header::{parse_header, parse_swf_signature};
 use state::ParseState;
@@ -47,9 +45,10 @@ pub fn parse_movie(input: &[u8]) -> IResult<&[u8], ast::Movie> {
       match signature.compression_method {
         ast::CompressionMethod::None => parse_decompressed_movie(input),
         ast::CompressionMethod::Deflate => {
-          let mut decoder = libflate::zlib::Decoder::new(io::Cursor::new(remaining_input)).unwrap();
-          let mut decoded_data: Vec<u8> = input[0..8].to_vec();
-          decoder.read_to_end(&mut decoded_data).unwrap();
+          let mut decoded_data = input[0..8].to_vec();
+          let mut decoder = ::inflate::InflateWriter::from_zlib(decoded_data);
+          decoder.write(remaining_input).unwrap();
+          decoded_data = decoder.finish().unwrap();
           match parse_decompressed_movie(&decoded_data[..]) {
             IResult::Done(_, parsed_swf_file) => IResult::Done(&input[input.len()..], parsed_swf_file),
             IResult::Error(e) => IResult::Error(e),
