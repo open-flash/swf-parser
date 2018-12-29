@@ -6,7 +6,6 @@ extern crate swf_parser;
 
 use swf_parser::parsers;
 
-extern crate libflate;
 extern crate nom;
 extern crate serde_json;
 extern crate swf_tree;
