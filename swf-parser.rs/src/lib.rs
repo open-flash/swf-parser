@@ -1,4 +1,4 @@
-extern crate libflate;
+extern crate inflate;
 #[macro_use]
 extern crate nom;
 extern crate num_traits;

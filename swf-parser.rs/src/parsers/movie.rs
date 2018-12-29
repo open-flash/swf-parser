@@ -1,10 +1,7 @@
-use libflate;
 use nom::{IResult as NomResult, Needed};
 use parsers::header::{parse_header, parse_swf_signature};
 use parsers::tags::parse_swf_tag;
 use state::ParseState;
-use std::io;
-use std::io::Read;
 use swf_tree as ast;
 
 pub fn parse_tag_block_string<'a>(input: &'a [u8], state: &mut ParseState) -> NomResult<&'a [u8], Vec<ast::Tag>> {
@@ -42,14 +39,16 @@ pub fn parse_decompressed_movie(input: &[u8], swf_version: u8) -> NomResult<&[u8
 }
 
 pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
+  use ::std::io::Write;
+
   let (input, signature) = parse_swf_signature(input)?;
   match signature.compression_method {
     ast::CompressionMethod::None => parse_decompressed_movie(input, signature.swf_version),
     ast::CompressionMethod::Deflate => {
-      let mut decoder = libflate::zlib::Decoder::new(io::Cursor::new(input)).unwrap();
-      let signature_len: usize = 8;
-      let mut decoded_data: Vec<u8> = Vec::with_capacity(signature.uncompressed_file_length - signature_len);
-      decoder.read_to_end(&mut decoded_data).unwrap();
+      let mut decoded_data = input[0..8].to_vec();
+      let mut decoder = ::inflate::InflateWriter::from_zlib(decoded_data);
+      decoder.write(input).unwrap();
+      decoded_data = decoder.finish().unwrap();
       match parse_decompressed_movie(&decoded_data[..], signature.swf_version) {
         Ok((_, parsed_swf_file)) => Ok((&[][..], parsed_swf_file)),
         Err(::nom::Err::Error(::nom::simple_errors::Context::Code(_, e))) => Err(::nom::Err::Error(::nom::simple_errors::Context::Code(&[][..], e))),
