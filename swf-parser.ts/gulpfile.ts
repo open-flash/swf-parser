@@ -1,12 +1,16 @@
-import gulp from "gulp";
-import minimist, { ParsedArgs } from "minimist";
 import * as buildTools from "turbo-gulp";
+import { LibTarget, registerLibTasks } from "turbo-gulp/targets/lib";
+import { MochaTarget, registerMochaTasks } from "turbo-gulp/targets/mocha";
+import { NodeTarget, registerNodeTasks } from "turbo-gulp/targets/node";
+
+import gulp from "gulp";
+import minimist from "minimist";
 
 interface Options {
   devDist?: string;
 }
 
-const options: Options & ParsedArgs = minimist(process.argv.slice(2), {
+const options: Options & minimist.ParsedArgs = minimist(process.argv.slice(2), {
   string: ["devDist"],
   default: {devDist: undefined},
   alias: {devDist: "dev-dist"},
@@ -21,13 +25,14 @@ const project: buildTools.Project = {
   tslint: {
     configuration: {
       rules: {
+        "max-file-line-count": false,
         "no-submodule-imports": false,
       },
     },
   },
 };
 
-const lib: buildTools.LibTarget = {
+const lib: LibTarget = {
   project,
   name: "lib",
   srcDir: "src/lib",
@@ -44,13 +49,14 @@ const lib: buildTools.LibTarget = {
   },
   customTypingsDir: "src/custom-typings",
   tscOptions: {
+    declaration: true,
     skipLibCheck: true,
   },
   typedoc: {
     dir: "typedoc",
     name: "SWF Parser",
     deploy: {
-      repository: "git@github.com:open-flash/swf-tree.git",
+      repository: "git@github.com:open-flash/swf-parser.git",
       branch: "gh-pages",
     },
   },
@@ -64,7 +70,7 @@ const lib: buildTools.LibTarget = {
   },
 };
 
-const test: buildTools.MochaTarget = {
+const test: MochaTarget = {
   project,
   name: "test",
   srcDir: "src",
@@ -85,7 +91,7 @@ const test: buildTools.MochaTarget = {
   },
 };
 
-const main: buildTools.NodeTarget = {
+const main: NodeTarget = {
   project,
   name: "main",
   srcDir: "src",
@@ -101,10 +107,11 @@ const main: buildTools.NodeTarget = {
   },
 };
 
-const libTasks: any = buildTools.registerLibTasks(gulp, lib);
-buildTools.registerMochaTasks(gulp, test);
-buildTools.registerNodeTasks(gulp, main);
+const libTasks: any = registerLibTasks(gulp, lib);
+registerMochaTasks(gulp, test);
+registerNodeTasks(gulp, main);
 buildTools.projectTasks.registerAll(gulp, project);
 
-gulp.task("all:tsconfig.json", gulp.parallel("lib:tsconfig.json", "test:tsconfig.json", "main:tsconfig.json"));
+gulp.task("all:tsconfig.json", gulp.parallel("lib:tsconfig.json", "main:tsconfig.json", "test:tsconfig.json"));
 gulp.task("dist", libTasks.dist);
+gulp.task("default", libTasks.dist);

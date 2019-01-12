@@ -1,7 +1,7 @@
 import { Incident } from "incident";
-import { SoundRate } from "swf-tree/sound/sound-rate";
 import { Uint2, Uint4 } from "semantic-types";
 import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
+import { SoundRate } from "swf-tree/sound/sound-rate";
 
 export function getSoundRateFromCode(soundRateCode: Uint2): SoundRate {
   switch (soundRateCode) {

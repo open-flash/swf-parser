@@ -1,5 +1,5 @@
 import { Incident } from "incident";
-import { Float32, Uint16, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
+import { Float32, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
 import {
   BlendMode,
   ClipActions,

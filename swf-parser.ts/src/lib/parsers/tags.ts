@@ -24,6 +24,10 @@ import { ButtonCondAction } from "swf-tree/button/button-cond-action";
 import { ButtonRecord } from "swf-tree/button/button-record";
 import { ImageType } from "swf-tree/image-type";
 import { MorphShape } from "swf-tree/morph-shape";
+import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
+import { SoundRate } from "swf-tree/sound/sound-rate";
+import { SoundSize } from "swf-tree/sound/sound-size";
+import { SoundType } from "swf-tree/sound/sound-type";
 import { SpriteTag } from "swf-tree/sprite-tag";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import { BitStream, ByteStream, Stream } from "../stream";
@@ -50,6 +54,7 @@ import {
 } from "./image";
 import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
 import { parseShape, ShapeVersion } from "./shape";
+import { getAudioCodingFormatFromCode, getSoundRateFromCode } from "./sound";
 import {
   parseCsmTableHintBits,
   parseFontAlignmentZone,
@@ -61,11 +66,6 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
 } from "./text";
-import { SoundType } from "swf-tree/sound/sound-type";
-import { SoundSize } from "swf-tree/sound/sound-size";
-import { SoundRate } from "swf-tree/sound/sound-rate";
-import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
-import { getAudioCodingFormatFromCode, getSoundRateFromCode } from "./sound";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -287,7 +287,7 @@ export function parseDefineBitsJpeg3(byteStream: ByteStream, swfVersion: Uint8):
 }
 
 // TODO: Merge defineBitsJpegX functions into defineBitsJpegAny
-export function parseDefineBitsJpeg4(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
+export function parseDefineBitsJpeg4(_byteStream: ByteStream, _swfVersion: Uint8): tags.DefineBitmap {
   throw new Incident("Unsupported DefineBitsJpeg4");
 }
 
@@ -398,14 +398,14 @@ export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
   const id: Uint16 = byteStream.readUint16LE();
 
   const flags: Uint8 = byteStream.readUint8();
-  const isBold = (flags & (1 << 0)) !== 0;
-  const isItalic = (flags & (1 << 1)) !== 0;
-  const useWideCodes = (flags & (1 << 2)) !== 0;
-  const useWideOffsets = (flags & (1 << 3)) !== 0;
-  const isAnsi = (flags & (1 << 4)) !== 0;
-  const isSmall = (flags & (1 << 5)) !== 0;
-  const isShiftJis = (flags & (1 << 6)) !== 0;
-  const hasLayout = (flags & (1 << 7)) !== 0;
+  const isBold: boolean = (flags & (1 << 0)) !== 0;
+  const isItalic: boolean = (flags & (1 << 1)) !== 0;
+  const useWideCodes: boolean = (flags & (1 << 2)) !== 0;
+  const useWideOffsets: boolean = (flags & (1 << 3)) !== 0;
+  const isAnsi: boolean = (flags & (1 << 4)) !== 0;
+  const isSmall: boolean = (flags & (1 << 5)) !== 0;
+  const isShiftJis: boolean = (flags & (1 << 6)) !== 0;
+  const hasLayout: boolean = (flags & (1 << 7)) !== 0;
 
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
@@ -504,8 +504,12 @@ export function parseDefineMorphShapeAny(
   const bounds: Rect = parseRect(byteStream);
   const morphBounds: Rect = parseRect(byteStream);
 
-  const edgeBounds: Rect | undefined = morphShapeVersion >= MorphShapeVersion.MorphShape2 ? parseRect(byteStream) : undefined;
-  const morphEdgeBounds: Rect | undefined = morphShapeVersion >= MorphShapeVersion.MorphShape2 ? parseRect(byteStream) : undefined;
+  const edgeBounds: Rect | undefined = morphShapeVersion >= MorphShapeVersion.MorphShape2
+    ? parseRect(byteStream)
+    : undefined;
+  const morphEdgeBounds: Rect | undefined = morphShapeVersion >= MorphShapeVersion.MorphShape2
+    ? parseRect(byteStream)
+    : undefined;
   const flags: Uint8 = morphShapeVersion >= MorphShapeVersion.MorphShape2 ? byteStream.readUint8() : 0;
   const hasScalingStrokes: boolean = (flags & (1 << 0)) !== 0;
   const hasNonScalingStrokes: boolean = (flags & (1 << 1)) !== 0;
@@ -568,11 +572,11 @@ export function parseDefineShape4(byteStream: ByteStream): tags.DefineShape {
 function parseDefineShapeAny(byteStream: ByteStream, shapeVersion: ShapeVersion): tags.DefineShape {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
-  let edgeBounds: Rect | undefined = shapeVersion >= ShapeVersion.Shape4 ? parseRect(byteStream) : undefined;
+  const edgeBounds: Rect | undefined = shapeVersion >= ShapeVersion.Shape4 ? parseRect(byteStream) : undefined;
   const flags: Uint8 = shapeVersion >= ShapeVersion.Shape4 ? byteStream.readUint8() : 0;
-  const hasScalingStrokes = (flags & (1 << 0)) !== 0;
-  const hasNonScalingStrokes = (flags & (1 << 1)) !== 0;
-  const hasFillWinding = (flags & (1 << 2)) !== 0;
+  const hasScalingStrokes: boolean = (flags & (1 << 0)) !== 0;
+  const hasNonScalingStrokes: boolean = (flags & (1 << 1)) !== 0;
+  const hasFillWinding: boolean = (flags & (1 << 2)) !== 0;
   // (Skip bits [3, 7])
   const shape: Shape = parseShape(byteStream, shapeVersion);
 

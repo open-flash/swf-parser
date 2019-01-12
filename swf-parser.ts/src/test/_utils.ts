@@ -1,10 +1,11 @@
-import * as fs from "fs";
-import * as sysPath from "path";
+import fs from "fs";
+import sysPath from "path";
+import meta from "./meta.js";
 
-export const testResourcesRoot: string = __dirname;
+export const testResourcesRoot: string = meta.dirname;
 
 export function readTestResource(path: string): Buffer {
-  return fs.readFileSync(sysPath.resolve(__dirname, path));
+  return fs.readFileSync(sysPath.resolve(testResourcesRoot, path));
 }
 
 export function readTestJson(path: string): any {

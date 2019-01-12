@@ -19,10 +19,10 @@ import {
   Vector2D,
 } from "swf-tree";
 import { JoinStyle } from "swf-tree/join-style";
+import { ShapeStyles } from "swf-tree/shape-styles";
 import { BitStream, ByteStream } from "../stream";
 import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGradient } from "./gradient";
-import { ShapeStyles } from "swf-tree/shape-styles";
 
 export enum ShapeVersion {
   Shape1 = 1,
@@ -54,7 +54,7 @@ export function parseShape(byteStream: ByteStream, shapeVersion: ShapeVersion): 
 }
 
 export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion): Shape {
-  const styles: _ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
+  const styles: ParserShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
   const records: ShapeRecord[] = parseShapeRecordStringBits(
     bitStream,
     styles.fillBits,
@@ -67,15 +67,14 @@ export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion)
   };
 }
 
-// TODO: Rename to InternalShapeStyles or ParserShapeStyles
-export interface _ShapeStyles {
+export interface ParserShapeStyles {
   fill: FillStyle[];
   line: LineStyle[];
   fillBits: UintSize;
   lineBits: UintSize;
 }
 
-export function parseShapeStylesBits(bitStream: BitStream, shapeVersion: ShapeVersion): _ShapeStyles {
+export function parseShapeStylesBits(bitStream: BitStream, shapeVersion: ShapeVersion): ParserShapeStyles {
   const byteStream: ByteStream = bitStream.asByteStream();
   const fill: FillStyle[] = parseFillStyleList(byteStream, shapeVersion);
   const line: LineStyle[] = parseLineStyleList(byteStream, shapeVersion);
@@ -174,7 +173,7 @@ export function parseStyleChangeBits(
   if (hasNewStyles) {
     // TODO: Shumway forces `hasNewStyle` to `false` if shapeVersion is `Shape1`, should we do it too?
     // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L851
-    const styles: _ShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
+    const styles: ParserShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
     newStyles = {
       fill: styles.fill,
       line: styles.line,

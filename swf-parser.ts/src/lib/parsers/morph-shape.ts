@@ -10,6 +10,8 @@ import { MorphGradient } from "swf-tree/morph-gradient";
 import { MorphLineStyle } from "swf-tree/morph-line-style";
 import { MorphShape } from "swf-tree/morph-shape";
 import { MorphShapeRecord } from "swf-tree/morph-shape-record";
+import { MorphShapeStyles } from "swf-tree/morph-shape-styles";
+import { MorphCurvedEdge, MorphStraightEdge, MorphStyleChange } from "swf-tree/shape-records";
 import { ShapeRecordType } from "swf-tree/shape-records/_type";
 import { CurvedEdge } from "swf-tree/shape-records/curved-edge";
 import { StraightEdge } from "swf-tree/shape-records/straight-edge";
@@ -19,8 +21,6 @@ import { BitStream, ByteStream } from "../stream";
 import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types";
 import { parseMorphGradient } from "./gradient";
 import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape";
-import { MorphCurvedEdge, MorphStraightEdge, MorphStyleChange } from "swf-tree/shape-records";
-import { MorphShapeStyles } from "swf-tree/morph-shape-styles";
 
 export enum MorphShapeVersion {
   MorphShape1 = 1,
@@ -36,7 +36,7 @@ export function parseMorphShape(byteStream: ByteStream, morphShapeVersion: Morph
 }
 
 export function parseMorphShapeBits(bitStream: BitStream, morphShapeVersion: MorphShapeVersion): MorphShape {
-  const styles: _MorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
+  const styles: ParserMorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
   const startRecords: MixedShapeRecord[] = parseMorphShapeStartRecordStringBits(
     bitStream,
     styles.fillBits,
@@ -61,7 +61,7 @@ export function parseMorphShapeBits(bitStream: BitStream, morphShapeVersion: Mor
   };
 }
 
-export interface _MorphShapeStyles {
+export interface ParserMorphShapeStyles {
   fill: MorphFillStyle[];
   line: MorphLineStyle[];
   fillBits: UintSize;
@@ -71,7 +71,7 @@ export interface _MorphShapeStyles {
 export function parseMorphShapeStylesBits(
   bitStream: BitStream,
   morphShapeVersion: MorphShapeVersion,
-): _MorphShapeStyles {
+): ParserMorphShapeStyles {
   const byteStream: ByteStream = bitStream.asByteStream();
   const fill: MorphFillStyle[] = parseMorphFillStyleList(byteStream);
   const line: MorphLineStyle[] = parseMorphLineStyleList(byteStream, morphShapeVersion);
@@ -239,7 +239,7 @@ export function parseMorphStyleChangeBits(
 
   let newStyles: MorphShapeStyles | undefined = undefined;
   if (hasNewStyles) {
-    const styles: _MorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
+    const styles: ParserMorphShapeStyles = parseMorphShapeStylesBits(bitStream, morphShapeVersion);
     newStyles = {
       fill: styles.fill,
       line: styles.line,
@@ -250,7 +250,7 @@ export function parseMorphStyleChangeBits(
 
   const styleChangeRecord: MorphStyleChange = {
     type: ShapeRecordType.StyleChange,
-    moveTo: moveTo,
+    moveTo,
     morphMoveTo: undefined,
     leftFill,
     rightFill,

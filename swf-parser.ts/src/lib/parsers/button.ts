@@ -1,5 +1,5 @@
 import { Incident } from "incident";
-import { Uint16, Uint32, Uint7, Uint8 } from "semantic-types";
+import { Uint16, Uint7, Uint8 } from "semantic-types";
 import { BlendMode } from "swf-tree/blend-mode";
 import { ButtonCond } from "swf-tree/button/button-cond";
 import { ButtonCondAction } from "swf-tree/button/button-cond-action";
@@ -8,7 +8,7 @@ import { ColorTransformWithAlpha } from "swf-tree/color-transform-with-alpha";
 import { Filter } from "swf-tree/filter";
 import { Matrix } from "swf-tree/matrix";
 import { createIncompleteStreamError } from "../errors/incomplete-stream";
-import { BitStream, ByteStream, Stream } from "../stream";
+import { ByteStream } from "../stream";
 import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types";
 import { parseBlendMode, parseFilterList } from "./display";
 

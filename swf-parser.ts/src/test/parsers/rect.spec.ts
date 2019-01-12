@@ -1,12 +1,10 @@
-import { DocumentIoType, DocumentType } from "kryo/types/document";
-import { assert } from "chai";
+import chai from "chai";
+import { JsonValueReader } from "kryo/readers/json-value";
+import { $Rect, Rect } from "swf-tree/rect";
 import { parseRect } from "../../lib/parsers/basic-data-types";
 import { Stream } from "../../lib/stream";
 import { readTestJson } from "../_utils";
 import { readStreamJson } from "./_utils";
-import { $Any } from "kryo/builtins/any";
-import { $Rect, Rect } from "swf-tree/rect";
-import { JsonValueReader } from "kryo/readers/json-value";
 
 describe("parseRect", function () {
   interface Item {
@@ -17,19 +15,19 @@ describe("parseRect", function () {
     };
   }
 
-  const $Item: DocumentIoType<Item> = new DocumentType<Item>({
-    properties: {
-      input: {type: $Any},
-      expected: {
-        type: new DocumentType({
-          properties: {
-            result: {type: $Rect},
-            stream: {type: $Any},
-          },
-        }),
-      },
-    },
-  });
+  // const $Item: DocumentIoType<Item> = new DocumentType<Item>({
+  //   properties: {
+  //     input: {type: $Any},
+  //     expected: {
+  //       type: new DocumentType({
+  //         properties: {
+  //           result: {type: $Rect},
+  //           stream: {type: $Any},
+  //         },
+  //       }),
+  //     },
+  //   },
+  // });
 
   const itemsJson: any[] = readTestJson("parsers/rect.json");
   const items: Item[] = [];
@@ -47,8 +45,8 @@ describe("parseRect", function () {
     const item: Item = items[i];
     it(`Should parse the rectangle in the test case ${i}`, function () {
       const actualRect: Rect = parseRect(item.input);
-      assert.isTrue($Rect.equals(actualRect, item.expected.result));
-      assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.isTrue($Rect.equals(actualRect, item.expected.result));
+      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

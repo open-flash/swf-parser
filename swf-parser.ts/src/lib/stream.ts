@@ -114,6 +114,7 @@ export class Stream implements BitStream, ByteStream {
     this.bytes = bytes;
     this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
     this.bytePos = 0;
+    this.bytePos = byteOffset;
     this.bitPos = bitOffset;
     this.byteEnd = bytes.length;
   }
@@ -382,12 +383,13 @@ export class Stream implements BitStream, ByteStream {
     }
   }
 
+  // tslint:disable-next-line:member-ordering
   static equals(left: Stream, right: Stream): boolean {
     if (left.bitPos !== right.bitPos) {
       return false;
     }
-    const leftLen = left.byteEnd - left.bytePos;
-    const rightLen = right.byteEnd - right.bytePos;
+    const leftLen: UintSize = left.byteEnd - left.bytePos;
+    const rightLen: UintSize = right.byteEnd - right.bytePos;
     if (leftLen !== rightLen) {
       return false;
     } else if (leftLen === 0) {
@@ -396,9 +398,9 @@ export class Stream implements BitStream, ByteStream {
     let i: number = 0;
     if (left.bitPos !== 0) {
       i = 1;
-      const leftPartialByte = left.bytes[left.bytePos];
-      const rightPartialByte = right.bytes[right.bytePos];
-      const mask = (1 << (8 - left.bitPos)) - 1;
+      const leftPartialByte: Uint8 = left.bytes[left.bytePos];
+      const rightPartialByte: Uint8 = right.bytes[right.bytePos];
+      const mask: Uint8 = (1 << (8 - left.bitPos)) - 1;
       if ((leftPartialByte & mask) !== (rightPartialByte & mask)) {
         return false;
       }

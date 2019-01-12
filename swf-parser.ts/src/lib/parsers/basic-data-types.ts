@@ -2,10 +2,10 @@ import { Sint16, UintSize } from "semantic-types";
 import {
   ColorTransform,
   ColorTransformWithAlpha,
-  Sfixed16P16,
-  Sfixed8P8,
   Matrix,
   Rect,
+  Sfixed16P16,
+  Sfixed8P8,
   SRgb8,
   StraightSRgba8,
 } from "swf-tree";

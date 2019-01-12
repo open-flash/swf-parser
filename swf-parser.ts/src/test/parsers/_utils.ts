@@ -9,7 +9,7 @@ export interface StreamJson {
 
 export function readBufferString(buffer: string): Buffer {
   if (buffer === "") {
-    return new Buffer(0);
+    return Buffer.alloc(0);
   } else if (buffer.startsWith("0b")) {
     const binaryString: string = buffer.substr(2).replace(/[^01]/g, "");
     if (binaryString.length % 8 !== 0) {

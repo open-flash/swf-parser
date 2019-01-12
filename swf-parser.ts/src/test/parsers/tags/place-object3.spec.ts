@@ -1,12 +1,12 @@
-import { assert } from "chai";
+import chai from "chai";
+import { JsonValueReader } from "kryo/readers/json-value";
 import { tags } from "swf-tree";
 import { parsePlaceObject3 } from "../../../lib/parsers/tags";
 import { Stream } from "../../../lib/stream";
 import { readTestJson } from "../../_utils";
 import { readStreamJson, StreamJson } from "../_utils";
-import { JsonValueReader } from "kryo/readers/json-value";
 
-const JSON_VALUE_READER = new JsonValueReader();
+const JSON_VALUE_READER: JsonValueReader = new JsonValueReader();
 
 describe("tags.parsePlaceObject3", function () {
   interface Item {
@@ -42,8 +42,8 @@ describe("tags.parsePlaceObject3", function () {
     it(`Should parse the Header in the test case ${i}`, function () {
       const actual: tags.PlaceObject = parsePlaceObject3(item.input, 8);
       // console.warn("Ignoring equality test due to floats");
-      assert.isTrue(tags.$PlaceObject.equals(actual, item.expected.result));
-      assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.isTrue(tags.$PlaceObject.equals(actual, item.expected.result));
+      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

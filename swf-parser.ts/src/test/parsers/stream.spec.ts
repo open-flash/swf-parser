@@ -1,4 +1,4 @@
-import { assert } from "chai";
+import chai from "chai";
 import { Uint32 } from "semantic-types";
 import { Stream } from "../../lib/stream";
 import { readTestJson } from "../_utils";
@@ -37,8 +37,8 @@ describe("readEncodedUint32LE", function () {
     const item: Item = items[i];
     it(`Should parse the encoded Uint32 in the test case ${i}`, function () {
       const actual: number = item.input.readUint32Leb128();
-      assert.deepEqual(actual, item.expected.result);
-      assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.deepEqual(actual, item.expected.result);
+      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });
