@@ -409,7 +409,8 @@ export function parseDefineFont3(byteStream: ByteStream): tags.DefineFont {
 
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
-  const fontName: string = byteStream.take(fontNameLength).readCString();
+  // TODO: Check for `NUL` terminators in font name
+  const fontName: string = byteStream.readString(fontNameLength);
 
   const glyphCount: UintSize = byteStream.readUint16LE();
   if (glyphCount === 0) {
