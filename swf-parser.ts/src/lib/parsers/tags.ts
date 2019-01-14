@@ -257,11 +257,11 @@ export function parseDefineBitsJpeg2(byteStream: ByteStream, swfVersion: Uint8):
 
 export function parseDefineBitsJpeg3(byteStream: ByteStream, swfVersion: Uint8): tags.DefineBitmap {
   const id: Uint16 = byteStream.readUint16LE();
-  const dataLen: Uint32 = byteStream.readUint32LE();
 
   const bytePos: UintSize = byteStream.bytePos;
-  let data: Uint8Array = byteStream.takeBytes(dataLen);
 
+  const dataLen: Uint32 = byteStream.readUint32LE();
+  let data: Uint8Array = byteStream.takeBytes(dataLen);
   let mediaType: ImageType;
   let imageDimensions: ImageDimensions;
 
