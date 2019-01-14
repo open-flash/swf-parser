@@ -24,7 +24,7 @@ export const ERRONEOUS_JPEG_START: Uint8Array = new Uint8Array([0xff, 0xd9, 0xff
 export function getPngImageDimensions(byteStream: ByteStream): ImageDimensions {
   // Skip signature (8 bytes) and size of chunk (4 bytes)
   byteStream.skip(12);
-  const chunkType: Uint32 = byteStream.readUint32LE();
+  const chunkType: Uint32 = byteStream.readUint32BE();
   const IHDR_CHUNK_TYPE: Uint32 = 0x49484452;
   if (chunkType !== IHDR_CHUNK_TYPE) {
     throw new Incident("InvalidPngFile", {byteStream}, "Expected first chunk to be `IHDR`");
