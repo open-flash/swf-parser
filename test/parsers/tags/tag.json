@@ -1,0 +1,20 @@
+[
+  {
+    "input": {
+      "buffer": "0x3f0302000000(0700)",
+      "byte-pos": 0,
+      "bit-pos": 0
+    },
+    "expected": {
+      "result": {
+        "type": "do-action",
+        "actions": "0700"
+      },
+      "stream": {
+        "buffer": "",
+        "byte-pos": 0,
+        "bit-pos": 0
+      }
+    }
+  }
+]
