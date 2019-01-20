@@ -659,7 +659,7 @@ export function parseExportAssets(byteStream: ByteStream): tags.ExportAssets {
 }
 
 export function parseFileAttributes(byteStream: ByteStream): tags.FileAttributes {
-  const flags: Uint8 = byteStream.readUint32LE();
+  const flags: Uint8 = byteStream.readUint8();
 
   return {
     type: TagType.FileAttributes,
