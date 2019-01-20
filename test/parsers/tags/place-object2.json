@@ -1,0 +1,34 @@
+[
+  {
+    "input": {
+      "buffer": "0x06:0200|0100|00",
+      "byte-pos": 0,
+      "bit-pos": 0
+    },
+    "expected": {
+      "result": {
+        "type": "place-object",
+        "is_move": false,
+        "depth": 2,
+        "character_id": 1,
+        "matrix": {
+          "scale_x": 65536,
+          "scale_y": 65536,
+          "rotate_skew0": 0,
+          "rotate_skew1": 0,
+          "translate_x": 0,
+          "translate_y": 0
+        },
+        "filters": [],
+        "blend_mode": "normal",
+        "visible": true,
+        "clip_actions": []
+      },
+      "stream": {
+        "buffer": "",
+        "byte-pos": 0,
+        "bit-pos": 0
+      }
+    }
+  }
+]

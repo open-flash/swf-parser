@@ -6,7 +6,7 @@
       "bit-pos": 0
     },
     "expected": {
-      "result":         {
+      "result": {
         "type": "place-object",
         "is_move": true,
         "depth": 1,
@@ -45,8 +45,9 @@
             ]
           }
         ],
-        "bitmap_cache": false,
-        "visible": false
+        "blend_mode": "normal",
+        "visible": true,
+        "clip_actions": []
       },
       "stream": {
         "buffer": "",

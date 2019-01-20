@@ -805,6 +805,7 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
   const hasClassName: boolean = (flags & (1 << 11)) !== 0;
   const hasImage: boolean = (flags & (1 << 12)) !== 0;
   const hasVisibility: boolean = (flags & (1 << 13)) !== 0;
+  // TODO: Check whether this should rather be `hasOpaqueBackground`
   const hasBackgroundColor: boolean = (flags & (1 << 14)) !== 0;
   // Skip bit 15
   const depth: Uint16 = byteStream.readUint16LE();
