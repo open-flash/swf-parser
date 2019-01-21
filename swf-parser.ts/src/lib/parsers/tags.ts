@@ -32,6 +32,7 @@ import { SpriteTag } from "swf-tree/sprite-tag";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import { BitStream, ByteStream, Stream } from "../stream";
 import {
+  DEFAULT_MATRIX,
   parseColorTransform,
   parseColorTransformWithAlpha,
   parseMatrix,
@@ -74,6 +75,7 @@ export function parseTagBlockString(byteStream: ByteStream, context: ParseContex
   const tags: Tag[] = [];
   while (byteStream.available() > 0) {
     // A null byte indicates the end-of-tags
+    // TODO: This is false. Example: empty `DoAction`. We should peek an Uint16.
     if (byteStream.peekUint8() === 0) {
       byteStream.skip(1);
       break;
@@ -760,7 +762,7 @@ export function parsePlaceObject2(byteStream: ByteStream, swfVersion: UintSize):
   const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
   const depth: Uint16 = byteStream.readUint16LE();
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
-  const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
+  const matrix: Matrix = hasMatrix ? parseMatrix(byteStream) : DEFAULT_MATRIX;
   const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform ?
     parseColorTransformWithAlpha(byteStream) :
     undefined;
@@ -813,7 +815,7 @@ export function parsePlaceObject3(byteStream: ByteStream, swfVersion: UintSize):
     ? byteStream.readCString()
     : undefined;
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
-  const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
+  const matrix: Matrix = hasMatrix ? parseMatrix(byteStream) : DEFAULT_MATRIX;
   const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform
     ? parseColorTransformWithAlpha(byteStream)
     : undefined;

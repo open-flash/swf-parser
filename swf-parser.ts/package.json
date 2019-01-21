@@ -21,7 +21,7 @@
   "dependencies": {
     "incident": "^3.2.0",
     "semantic-types": "^0.1.1",
-    "swf-tree": "^0.1.0"
+    "swf-tree": "^0.1.1"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
@@ -38,7 +38,7 @@
     "ts-node": "^7.0.1",
     "tslint": "^5.12.1",
     "turbo-gulp": "^0.18.0",
-    "typescript": "^3.2.2"
+    "typescript": "^3.2.4"
   },
   "c88": {
     "match": [

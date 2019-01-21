@@ -44,6 +44,15 @@ export function parseStraightSRgba8(byteStream: ByteStream): StraightSRgba8 {
   };
 }
 
+export const DEFAULT_MATRIX: Matrix = {
+  scaleX: Sfixed16P16.fromValue(1),
+  scaleY: Sfixed16P16.fromValue(1),
+  rotateSkew0: Sfixed16P16.fromValue(0),
+  rotateSkew1: Sfixed16P16.fromValue(0),
+  translateX: 0,
+  translateY: 0,
+};
+
 export function parseMatrix(byteStream: ByteStream): Matrix {
   const bitStream: BitStream = byteStream.asBitStream();
   const result: Matrix = parseMatrixBits(bitStream);
