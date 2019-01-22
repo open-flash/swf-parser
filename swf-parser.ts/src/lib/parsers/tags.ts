@@ -73,12 +73,18 @@ import {
  */
 export function parseTagBlockString(byteStream: ReadableByteStream, context: ParseContext): Tag[] {
   const tags: Tag[] = [];
-  while (byteStream.available() > 0) {
+  while (byteStream.available() >= 2) {
     // A null byte indicates the end-of-tags
     // TODO: This is false. Example: empty `DoAction`. We should peek an Uint16.
     if (byteStream.peekUint8() === 0) {
+      const oldBytePos: UintSize = byteStream.bytePos;
       byteStream.skip(1);
-      break;
+      if (byteStream.peekUint8() === 0) {
+        byteStream.skip(1);
+        break;
+      } else {
+        byteStream.bytePos = oldBytePos;
+      }
     }
     tags.push(parseTag(byteStream, context));
   }
