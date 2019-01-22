@@ -18,11 +18,7 @@
           "rotate_skew1": 0,
           "translate_x": 0,
           "translate_y": 0
-        },
-        "filters": [],
-        "blend_mode": "normal",
-        "visible": true,
-        "clip_actions": []
+        }
       },
       "stream": {
         "buffer": "",

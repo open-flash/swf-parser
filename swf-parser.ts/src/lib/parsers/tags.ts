@@ -748,10 +748,10 @@ export function parsePlaceObject(byteStream: ReadableByteStream): tags.PlaceObje
     characterId,
     matrix,
     colorTransform,
-    filters: [],
-    blendMode: BlendMode.Normal,
-    visible: true,
-    clipActions: [],
+    filters: undefined,
+    blendMode: undefined,
+    visible: undefined,
+    clipActions: undefined,
   };
 }
 
@@ -775,9 +775,9 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
 
-  const clipActions: ClipActions[] = hasClipActions ?
+  const clipActions: ClipActions[] | undefined = hasClipActions ?
     parseClipActionsString(byteStream, swfVersion >= 6) :
-    [];
+    undefined;
 
   return {
     type: TagType.PlaceObject,
@@ -789,9 +789,9 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
     ratio,
     name,
     clipDepth,
-    filters: [],
-    blendMode: BlendMode.Normal,
-    visible: true,
+    filters: undefined,
+    blendMode: undefined,
+    visible: undefined,
     clipActions,
   };
 }
@@ -836,9 +836,9 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
   // TODO(demurgos): Check if it is RGBA or ARGB
   const backgroundColor: StraightSRgba8 | undefined = hasBackgroundColor ? parseStraightSRgba8(byteStream) : undefined;
 
-  const clipActions: ClipActions[] = hasClipActions
+  const clipActions: ClipActions[] | undefined = hasClipActions
     ? parseClipActionsString(byteStream, swfVersion >= 6)
-    : [];
+    : undefined;
 
   return {
     type: TagType.PlaceObject,

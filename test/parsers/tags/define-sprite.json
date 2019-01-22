@@ -23,11 +23,7 @@
               "rotate_skew1": 0,
               "translate_x": 0,
               "translate_y": 0
-            },
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            }
           },
           {
             "type": "show-frame"
@@ -36,11 +32,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 2,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 2
           },
           {
             "type": "show-frame"
@@ -49,11 +41,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 3,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 3
           },
           {
             "type": "show-frame"
@@ -62,11 +50,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 4,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 4
           },
           {
             "type": "show-frame"
@@ -75,11 +59,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 5,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 5
           },
           {
             "type": "show-frame"
@@ -88,11 +68,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 6,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 6
           },
           {
             "type": "show-frame"
@@ -101,11 +77,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 7,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 7
           },
           {
             "type": "show-frame"
@@ -114,11 +86,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 8,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 8
           },
           {
             "type": "show-frame"
@@ -127,11 +95,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 9,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 9
           },
           {
             "type": "show-frame"
@@ -140,11 +104,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 10,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 10
           },
           {
             "type": "show-frame"
@@ -153,11 +113,7 @@
             "type": "place-object",
             "is_update": true,
             "depth": 2,
-            "character_id": 11,
-            "filters": [],
-            "blend_mode": "normal",
-            "visible": true,
-            "clip_actions": []
+            "character_id": 11
           },
           {
             "type": "show-frame"
