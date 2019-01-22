@@ -3,8 +3,7 @@ import { JsonValueWriter } from "kryo/writers/json-value";
 import * as sysPath from "path";
 import { Movie } from "swf-tree";
 import { $Movie } from "swf-tree/movie";
-import { parseMovie } from "../lib/parsers/movie";
-import { Stream } from "../lib/stream";
+import { movieFromBytes } from "../lib";
 
 async function main(): Promise<void> {
   if (process.argv.length < 3) {
@@ -13,10 +12,9 @@ async function main(): Promise<void> {
   }
   const filePath: string = process.argv[2];
   const absFilePath: string = sysPath.resolve(filePath);
-  const data: Buffer = fs.readFileSync(absFilePath);
-  const byteStream: Stream = new Stream(data);
-  const result: Movie = parseMovie(byteStream);
-  console.log(JSON.stringify($Movie.write(new JsonValueWriter(), result), null, 2));
+  const bytes: Uint8Array = fs.readFileSync(absFilePath);
+  const movie: Movie = movieFromBytes(bytes);
+  console.log(JSON.stringify($Movie.write(new JsonValueWriter(), movie), null, 2));
 }
 
 main()

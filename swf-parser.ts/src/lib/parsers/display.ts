@@ -1,3 +1,4 @@
+import { ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Float32, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
 import {
@@ -12,10 +13,9 @@ import {
   Sfixed8P8,
   StraightSRgba8,
 } from "swf-tree";
-import { ByteStream } from "../stream";
 import { parseStraightSRgba8 } from "./basic-data-types";
 
-export function parseBlendMode(byteStream: ByteStream): BlendMode {
+export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {
   switch (byteStream.readUint8()) {
     case 0:
     case 1:
@@ -51,7 +51,7 @@ export function parseBlendMode(byteStream: ByteStream): BlendMode {
   }
 }
 
-export function parseClipActionsString(byteStream: ByteStream, extendedEvents: boolean): ClipActions[] {
+export function parseClipActionsString(byteStream: ReadableByteStream, extendedEvents: boolean): ClipActions[] {
   byteStream.skip(2); // Reserved
   byteStream.skip(4); // All events (union of the events)
   const result: ClipActions[] = [];
@@ -69,7 +69,7 @@ export function parseClipActionsString(byteStream: ByteStream, extendedEvents: b
   return result;
 }
 
-export function parseClipEventFlags(byteStream: ByteStream, extendedEvents: boolean): ClipEventFlags {
+export function parseClipEventFlags(byteStream: ReadableByteStream, extendedEvents: boolean): ClipEventFlags {
   const flags: Uint32 = extendedEvents ? byteStream.readFloat32LE() : byteStream.readUint16LE();
 
   const load: boolean = (flags & (1 << 0)) !== 0;
@@ -115,7 +115,7 @@ export function parseClipEventFlags(byteStream: ByteStream, extendedEvents: bool
   };
 }
 
-export function parseClipActions(byteStream: ByteStream, extendedEvents: boolean): ClipActions {
+export function parseClipActions(byteStream: ReadableByteStream, extendedEvents: boolean): ClipActions {
   const events: ClipEventFlags = parseClipEventFlags(byteStream, extendedEvents);
   let actionsSize: UintSize = byteStream.readUint32LE();
   let keyCode: Uint8 | undefined = undefined;
@@ -127,7 +127,7 @@ export function parseClipActions(byteStream: ByteStream, extendedEvents: boolean
   return {events, keyCode, actions};
 }
 
-export function parseFilterList(byteStream: ByteStream): Filter[] {
+export function parseFilterList(byteStream: ReadableByteStream): Filter[] {
   const filterCount: UintSize = byteStream.readUint8();
   const result: Filter[] = [];
   for (let i: number = 0; i < filterCount; i++) {
@@ -136,7 +136,7 @@ export function parseFilterList(byteStream: ByteStream): Filter[] {
   return result;
 }
 
-export function parseFilter(byteStream: ByteStream): Filter {
+export function parseFilter(byteStream: ReadableByteStream): Filter {
   switch (byteStream.readUint8()) {
     case 0:
       return parseDropShadowFilter(byteStream);
@@ -159,14 +159,14 @@ export function parseFilter(byteStream: ByteStream): Filter {
   }
 }
 
-export function parseBevelFilter(byteStream: ByteStream): filters.Bevel {
+export function parseBevelFilter(byteStream: ReadableByteStream): filters.Bevel {
   const shadowColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
   const highlightColor: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const blurY: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const angle: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const distance: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
   const passes: Uint4 = <Uint4> (flags & 0b1111);
   const onTop: boolean = (flags & (1 << 4)) !== 0;
@@ -190,9 +190,9 @@ export function parseBevelFilter(byteStream: ByteStream): filters.Bevel {
   };
 }
 
-export function parseBlurFilter(byteStream: ByteStream): filters.Blur {
-  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
+export function parseBlurFilter(byteStream: ReadableByteStream): filters.Blur {
+  const blurX: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const blurY: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
   const flags: Uint8 = byteStream.readUint8();
   // Skip bits [0, 2]
   const passes: Uint5 = <Uint5> ((flags >>> 3) & 0x1f);
@@ -204,7 +204,7 @@ export function parseBlurFilter(byteStream: ByteStream): filters.Blur {
   };
 }
 
-export function parseColorMatrixFilter(byteStream: ByteStream): filters.ColorMatrix {
+export function parseColorMatrixFilter(byteStream: ReadableByteStream): filters.ColorMatrix {
   const matrix: Float32[] = [];
   for (let i: number = 0; i < 20; i++) {
     matrix.push(byteStream.readFloat32LE());
@@ -215,7 +215,7 @@ export function parseColorMatrixFilter(byteStream: ByteStream): filters.ColorMat
   };
 }
 
-export function parseConvolutionFilter(byteStream: ByteStream): filters.Convolution {
+export function parseConvolutionFilter(byteStream: ReadableByteStream): filters.Convolution {
   const matrixWidth: UintSize = byteStream.readUint8();
   const matrixHeight: UintSize = byteStream.readUint8();
   const divisor: Float32 = byteStream.readFloat32LE();
@@ -242,13 +242,13 @@ export function parseConvolutionFilter(byteStream: ByteStream): filters.Convolut
   };
 }
 
-export function parseDropShadowFilter(byteStream: ByteStream): filters.DropShadow {
+export function parseDropShadowFilter(byteStream: ReadableByteStream): filters.DropShadow {
   const color: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const blurY: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const angle: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const distance: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
   const passes: Uint5 = flags & ((1 << 5) - 1);
   const compositeSource: boolean = (flags & (1 << 5)) !== 0;
@@ -269,11 +269,11 @@ export function parseDropShadowFilter(byteStream: ByteStream): filters.DropShado
   };
 }
 
-export function parseGlowFilter(byteStream: ByteStream): filters.Glow {
+export function parseGlowFilter(byteStream: ReadableByteStream): filters.Glow {
   const color: StraightSRgba8 = parseStraightSRgba8(byteStream);
-  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const blurY: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
   const passes: Uint5 = flags & ((1 << 5) - 1);
   const compositeSource: boolean = (flags & (1 << 5)) !== 0;
@@ -292,7 +292,7 @@ export function parseGlowFilter(byteStream: ByteStream): filters.Glow {
   };
 }
 
-export function parseGradientBevelFilter(byteStream: ByteStream): filters.GradientBevel {
+export function parseGradientBevelFilter(byteStream: ReadableByteStream): filters.GradientBevel {
   const colorCount: UintSize = byteStream.readUint8();
   const gradient: ColorStop[] = [];
   for (let i: number = 0; i < colorCount; i++) {
@@ -301,11 +301,11 @@ export function parseGradientBevelFilter(byteStream: ByteStream): filters.Gradie
   for (let i: number = 0; i < colorCount; i++) {
     gradient[i].ratio = byteStream.readUint8();
   }
-  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const blurY: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const angle: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const distance: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
   const passes: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
   const onTop: boolean = (flags & (1 << 4)) !== 0;
@@ -328,7 +328,7 @@ export function parseGradientBevelFilter(byteStream: ByteStream): filters.Gradie
   };
 }
 
-export function parseGradientGlowFilter(byteStream: ByteStream): filters.GradientGlow {
+export function parseGradientGlowFilter(byteStream: ReadableByteStream): filters.GradientGlow {
   const colorCount: UintSize = byteStream.readUint8();
   const gradient: ColorStop[] = [];
   for (let i: number = 0; i < colorCount; i++) {
@@ -337,11 +337,11 @@ export function parseGradientGlowFilter(byteStream: ByteStream): filters.Gradien
   for (let i: number = 0; i < colorCount; i++) {
     gradient[i].ratio = byteStream.readUint8();
   }
-  const blurX: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const blurY: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const angle: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const distance: Sfixed16P16 = byteStream.readFixed16P16LE();
-  const strength: Sfixed8P8 = byteStream.readFixed8P8LE();
+  const blurX: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const blurY: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const angle: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const distance: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
+  const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
   const passes: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
   const onTop: boolean = (flags & (1 << 4)) !== 0;

@@ -1,11 +1,11 @@
+import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Float16, Sint16, SintSize, Uint16, Uint8, UintSize } from "semantic-types";
 import { Glyph, LanguageCode, Rect, StraightSRgba8, text } from "swf-tree";
-import { BitStream, ByteStream } from "../stream";
 import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGlyph } from "./shape";
 
-export function parseGridFittingBits(bitStream: BitStream): text.GridFitting {
+export function parseGridFittingBits(bitStream: ReadableBitStream): text.GridFitting {
   const code: UintSize = bitStream.readUint32Bits(3);
   switch (code) {
     case 0:
@@ -19,7 +19,7 @@ export function parseGridFittingBits(bitStream: BitStream): text.GridFitting {
   }
 }
 
-export function parseLanguageCode(byteStream: ByteStream): LanguageCode {
+export function parseLanguageCode(byteStream: ReadableByteStream): LanguageCode {
   const code: Uint8 = byteStream.readUint8();
   switch (code) {
     case 0:
@@ -39,7 +39,7 @@ export function parseLanguageCode(byteStream: ByteStream): LanguageCode {
   }
 }
 
-export function parseTextRendererBits(bitStream: BitStream): text.TextRenderer {
+export function parseTextRendererBits(bitStream: ReadableBitStream): text.TextRenderer {
   const code: UintSize = bitStream.readUint32Bits(2);
   switch (code) {
     case 0:
@@ -52,7 +52,7 @@ export function parseTextRendererBits(bitStream: BitStream): text.TextRenderer {
 }
 
 export function parseTextRecordString(
-  byteStream: ByteStream,
+  byteStream: ReadableByteStream,
   hasAlpha: boolean,
   indexBits: UintSize,
   advanceBits: UintSize,
@@ -66,7 +66,7 @@ export function parseTextRecordString(
 }
 
 export function parseTextRecord(
-  byteStream: ByteStream,
+  byteStream: ReadableByteStream,
   hasAlpha: boolean,
   indexBits: UintSize,
   advanceBits: UintSize,
@@ -86,7 +86,7 @@ export function parseTextRecord(
   const fontSize: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
 
   const entryCount: UintSize = byteStream.readUint8();
-  const bitStream: BitStream = byteStream.asBitStream();
+  const bitStream: ReadableBitStream = byteStream.asBitStream();
   const entries: text.GlyphEntry[] = [];
   for (let i: UintSize = 0; i < entryCount; i++) {
     const index: UintSize = bitStream.readUint32Bits(indexBits);
@@ -97,7 +97,7 @@ export function parseTextRecord(
   return {fontId, color, offsetX, offsetY, fontSize, entries};
 }
 
-export function parseCsmTableHintBits(bitStream: BitStream): text.CsmTableHint {
+export function parseCsmTableHintBits(bitStream: ReadableBitStream): text.CsmTableHint {
   switch (bitStream.readUint16Bits(2)) {
     case 0:
       return text.CsmTableHint.Thin;
@@ -110,7 +110,7 @@ export function parseCsmTableHintBits(bitStream: BitStream): text.CsmTableHint {
   }
 }
 
-export function parseFontAlignmentZone(byteStream: ByteStream): text.FontAlignmentZone {
+export function parseFontAlignmentZone(byteStream: ReadableByteStream): text.FontAlignmentZone {
   const zoneDataCount: UintSize = byteStream.readUint8();
   // TODO: Assert zoneDataCount === 2
   const data: text.FontAlignmentZoneData[] = [];
@@ -123,14 +123,14 @@ export function parseFontAlignmentZone(byteStream: ByteStream): text.FontAlignme
   return {data, hasX, hasY};
 }
 
-export function parseFontAlignmentZoneData(byteStream: ByteStream): text.FontAlignmentZoneData {
+export function parseFontAlignmentZoneData(byteStream: ReadableByteStream): text.FontAlignmentZoneData {
   const origin: Float16 = byteStream.readFloat16LE();
   const size: Float16 = byteStream.readFloat16LE();
   return {origin, size};
 }
 
 export function parseOffsetGlyphs(
-  byteStream: ByteStream,
+  byteStream: ReadableByteStream,
   glyphCount: UintSize,
   useWideOffset: boolean,
 ): Glyph[] {
@@ -147,7 +147,7 @@ export function parseOffsetGlyphs(
   return result;
 }
 
-export function parseFontLayout(byteStream: ByteStream, glyphCount: UintSize): text.FontLayout {
+export function parseFontLayout(byteStream: ReadableByteStream, glyphCount: UintSize): text.FontLayout {
   const ascent: Uint16 = byteStream.readUint16LE();
   const descent: Uint16 = byteStream.readUint16LE();
   const leading: Uint16 = byteStream.readUint16LE();
@@ -166,14 +166,14 @@ export function parseFontLayout(byteStream: ByteStream, glyphCount: UintSize): t
   return {ascent, descent, leading, advances, bounds, kerning};
 }
 
-export function parseKerningRecord(byteStream: ByteStream): text.KerningRecord {
+export function parseKerningRecord(byteStream: ReadableByteStream): text.KerningRecord {
   const left: Uint16 = byteStream.readUint16LE();
   const right: Uint16 = byteStream.readUint16LE();
   const adjustment: Sint16 = byteStream.readSint16LE();
   return {left, right, adjustment};
 }
 
-export function parseTextAlignment(byteStream: ByteStream): text.TextAlignment {
+export function parseTextAlignment(byteStream: ReadableByteStream): text.TextAlignment {
   switch (byteStream.readUint8()) {
     case 0:
       return text.TextAlignment.Left;

@@ -1,12 +1,12 @@
+import { ReadableStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Uint16, Uint32, Uint8 } from "semantic-types";
 import { CompressionMethod, Header, Rect, SwfSignature, Ufixed8P8 } from "swf-tree";
 import { createIncompleteStreamError } from "../errors/incomplete-stream";
-import { Stream } from "../stream";
 import { parseRect } from "./basic-data-types";
 
 // TODO: Move to `movie.ts`
-export function parseCompressionMethod(byteStream: Stream): CompressionMethod {
+export function parseCompressionMethod(byteStream: ReadableStream): CompressionMethod {
   if (byteStream.byteEnd < 3) {
     throw createIncompleteStreamError(3);
   }
@@ -36,7 +36,7 @@ export function parseCompressionMethod(byteStream: Stream): CompressionMethod {
   return result;
 }
 
-export function parseSwfSignature(byteStream: Stream): SwfSignature {
+export function parseSwfSignature(byteStream: ReadableStream): SwfSignature {
   if (byteStream.byteEnd < 8) {
     throw createIncompleteStreamError(8);
   }
@@ -48,10 +48,10 @@ export function parseSwfSignature(byteStream: Stream): SwfSignature {
   return {compressionMethod, swfVersion, uncompressedFileLength};
 }
 
-export function parseHeader(byteStream: Stream): Header {
+export function parseHeader(byteStream: ReadableStream): Header {
   const signature: SwfSignature = parseSwfSignature(byteStream);
   const frameSize: Rect = parseRect(byteStream);
-  const frameRate: Ufixed8P8 = byteStream.readUfixed8P8LE();
+  const frameRate: Ufixed8P8 = Ufixed8P8.fromEpsilons(byteStream.readUint16LE());
   const frameCount: Uint16 = byteStream.readUint16LE();
   return {swfVersion: signature.swfVersion, frameSize, frameRate, frameCount};
 }

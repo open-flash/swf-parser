@@ -1,12 +1,12 @@
+import { ReadableByteStream } from "@open-flash/stream";
 import { Uint2, Uint4, Uint8 } from "semantic-types";
 import {
   ColorSpace, ColorStop, Gradient, GradientSpread, MorphColorStop, MorphGradient,
   StraightSRgba8,
 } from "swf-tree";
-import { ByteStream } from "../stream";
 import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 
-export function parseColorStop(byteStream: ByteStream, withAlpha: boolean): ColorStop {
+export function parseColorStop(byteStream: ReadableByteStream, withAlpha: boolean): ColorStop {
   const ratio: Uint8 = byteStream.readUint8();
   let color: StraightSRgba8;
   if (withAlpha) {
@@ -17,7 +17,7 @@ export function parseColorStop(byteStream: ByteStream, withAlpha: boolean): Colo
   return {ratio, color};
 }
 
-export function parseGradient(byteStream: ByteStream, withAlpha: boolean): Gradient {
+export function parseGradient(byteStream: ReadableByteStream, withAlpha: boolean): Gradient {
   const flags: Uint8 = byteStream.readUint8();
   // The spec says that spreadId and colorSpaceId should be ignored for shapeVersion < Shape4
   // and color count should be capped at 8. We're ignoring it for the moment.
@@ -60,13 +60,13 @@ export function parseGradient(byteStream: ByteStream, withAlpha: boolean): Gradi
   };
 }
 
-export function parseMorphColorStop(byteStream: ByteStream, withAlpha: boolean): MorphColorStop {
+export function parseMorphColorStop(byteStream: ReadableByteStream, withAlpha: boolean): MorphColorStop {
   const {ratio, color} = parseColorStop(byteStream, withAlpha);
   const {ratio: morphRatio, color: morphColor} = parseColorStop(byteStream, withAlpha);
   return {ratio, color, morphRatio, morphColor};
 }
 
-export function parseMorphGradient(byteStream: ByteStream, withAlpha: boolean): MorphGradient {
+export function parseMorphGradient(byteStream: ReadableByteStream, withAlpha: boolean): MorphGradient {
   const flags: Uint8 = byteStream.readUint8();
   const spreadId: Uint2 = <Uint2> ((flags & ((1 << 8) - 1)) >>> 6);
   const colorSpaceId: Uint2 = <Uint2> ((flags & ((1 << 6) - 1)) >>> 4);

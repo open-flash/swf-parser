@@ -1,10 +1,10 @@
+import {  ReadableStream } from "@open-flash/stream";
 import chai from "chai";
 import { JsonValueReader } from "kryo/readers/json-value";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import { $Tag, Tag } from "swf-tree/tag";
 import { DefaultParseContext } from "../../../lib/parse-context";
 import { parseTag } from "../../../lib/parsers/tags";
-import { Stream } from "../../../lib/stream";
 import { readTestJson } from "../../_utils";
 import { readStreamJson, StreamJson } from "../_utils";
 
@@ -13,10 +13,10 @@ const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 
 describe("tags.parseTag", function () {
   interface Item {
-    input: Stream;
+    input: ReadableStream;
     expected: {
       result: Tag;
-      stream: Stream;
+      stream: ReadableStream;
     };
   }
 
@@ -50,7 +50,7 @@ describe("tags.parseTag", function () {
         $Tag.write(JSON_VALUE_WRITER, item.expected.result),
       );
       chai.assert.isTrue($Tag.equals(actual, item.expected.result));
-      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.isTrue(ReadableStream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

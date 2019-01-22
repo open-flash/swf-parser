@@ -1,3 +1,4 @@
+import { ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Uint16, Uint7, Uint8 } from "semantic-types";
 import { BlendMode } from "swf-tree/blend-mode";
@@ -8,7 +9,6 @@ import { ColorTransformWithAlpha } from "swf-tree/color-transform-with-alpha";
 import { Filter } from "swf-tree/filter";
 import { Matrix } from "swf-tree/matrix";
 import { createIncompleteStreamError } from "../errors/incomplete-stream";
-import { ByteStream } from "../stream";
 import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types";
 import { parseBlendMode, parseFilterList } from "./display";
 
@@ -17,7 +17,7 @@ export enum ButtonVersion {
   Button2 = 2,
 }
 
-export function parseButtonRecordString(byteStream: ByteStream, buttonVersion: ButtonVersion): ButtonRecord[] {
+export function parseButtonRecordString(byteStream: ReadableByteStream, buttonVersion: ButtonVersion): ButtonRecord[] {
   const result: ButtonRecord[] = [];
 
   while (true) {
@@ -35,7 +35,7 @@ export function parseButtonRecordString(byteStream: ByteStream, buttonVersion: B
   return result;
 }
 
-export function parseButtonRecord(byteStream: ByteStream, buttonVersion: ButtonVersion): ButtonRecord {
+export function parseButtonRecord(byteStream: ReadableByteStream, buttonVersion: ButtonVersion): ButtonRecord {
   const flags: Uint8 = byteStream.readUint8();
   const stateUp: boolean = (flags & (1 << 0)) !== 0;
   const stateOver: boolean = (flags & (1 << 1)) !== 0;
@@ -77,7 +77,7 @@ export function parseButtonRecord(byteStream: ByteStream, buttonVersion: ButtonV
 /**
  * Reads a string of at least one Button2 cond actions
  */
-export function parseButton2CondActionString(byteStream: ByteStream): ButtonCondAction[] {
+export function parseButton2CondActionString(byteStream: ReadableByteStream): ButtonCondAction[] {
   const result: ButtonCondAction[] = [];
 
   let nextActionOffset: Uint16;
@@ -89,13 +89,13 @@ export function parseButton2CondActionString(byteStream: ByteStream): ButtonCond
   return result;
 }
 
-export function parseButton2CondAction(byteStream: ByteStream): ButtonCondAction {
+export function parseButton2CondAction(byteStream: ReadableByteStream): ButtonCondAction {
   const conditions: ButtonCond = parseButtonCond(byteStream);
   const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
   return {conditions, actions};
 }
 
-export function parseButtonCond(byteStream: ByteStream): ButtonCond {
+export function parseButtonCond(byteStream: ReadableByteStream): ButtonCond {
   const flags: Uint16 = byteStream.readUint16LE();
 
   let keyPress: Uint7 | undefined = (flags >> 0) & 0x7f;

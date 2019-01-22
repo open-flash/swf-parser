@@ -1,8 +1,8 @@
+import { ReadableStream } from "@open-flash/stream";
 import chai from "chai";
 import { JsonValueReader } from "kryo/readers/json-value";
 import { tags } from "swf-tree";
 import { parsePlaceObject2 } from "../../../lib/parsers/tags";
-import { Stream } from "../../../lib/stream";
 import { readTestJson } from "../../_utils";
 import { readStreamJson, StreamJson } from "../_utils";
 
@@ -10,10 +10,10 @@ const JSON_VALUE_READER: JsonValueReader = new JsonValueReader();
 
 describe("tags.parsePlaceObject2", function () {
   interface Item {
-    input: Stream;
+    input: ReadableStream;
     expected: {
       result: tags.PlaceObject;
-      stream: Stream;
+      stream: ReadableStream;
     };
   }
 
@@ -43,7 +43,7 @@ describe("tags.parsePlaceObject2", function () {
       const actual: tags.PlaceObject = parsePlaceObject2(item.input, 8);
       // console.warn("Ignoring equality test due to floats");
       chai.assert.isTrue(tags.$PlaceObject.equals(actual, item.expected.result));
-      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.isTrue(ReadableStream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

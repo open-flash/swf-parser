@@ -1,3 +1,4 @@
+import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Sint32, Uint16, Uint2, Uint8, UintSize } from "semantic-types";
 import {
@@ -20,7 +21,6 @@ import {
 } from "swf-tree";
 import { JoinStyle } from "swf-tree/join-style";
 import { ShapeStyles } from "swf-tree/shape-styles";
-import { BitStream, ByteStream } from "../stream";
 import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGradient } from "./gradient";
 
@@ -31,14 +31,14 @@ export enum ShapeVersion {
   Shape4 = 4,
 }
 
-export function parseGlyph(byteStream: ByteStream): Glyph {
-  const bitStream: BitStream = byteStream.asBitStream();
+export function parseGlyph(byteStream: ReadableByteStream): Glyph {
+  const bitStream: ReadableBitStream = byteStream.asBitStream();
   const result: Glyph = parseGlyphBits(bitStream);
   bitStream.align();
   return result;
 }
 
-export function parseGlyphBits(bitStream: BitStream): Glyph {
+export function parseGlyphBits(bitStream: ReadableBitStream): Glyph {
   const fillBits: UintSize = bitStream.readUint32Bits(4);
   const lineBits: UintSize = bitStream.readUint32Bits(4);
   // TODO: Check which shape version to use
@@ -46,14 +46,14 @@ export function parseGlyphBits(bitStream: BitStream): Glyph {
   return {records};
 }
 
-export function parseShape(byteStream: ByteStream, shapeVersion: ShapeVersion): Shape {
-  const bitStream: BitStream = byteStream.asBitStream();
+export function parseShape(byteStream: ReadableByteStream, shapeVersion: ShapeVersion): Shape {
+  const bitStream: ReadableBitStream = byteStream.asBitStream();
   const result: Shape = parseShapeBits(bitStream, shapeVersion);
   bitStream.align();
   return result;
 }
 
-export function parseShapeBits(bitStream: BitStream, shapeVersion: ShapeVersion): Shape {
+export function parseShapeBits(bitStream: ReadableBitStream, shapeVersion: ShapeVersion): Shape {
   const styles: ParserShapeStyles = parseShapeStylesBits(bitStream, shapeVersion);
   const records: ShapeRecord[] = parseShapeRecordStringBits(
     bitStream,
@@ -74,8 +74,8 @@ export interface ParserShapeStyles {
   lineBits: UintSize;
 }
 
-export function parseShapeStylesBits(bitStream: BitStream, shapeVersion: ShapeVersion): ParserShapeStyles {
-  const byteStream: ByteStream = bitStream.asByteStream();
+export function parseShapeStylesBits(bitStream: ReadableBitStream, shapeVersion: ShapeVersion): ParserShapeStyles {
+  const byteStream: ReadableByteStream = bitStream.asByteStream();
   const fill: FillStyle[] = parseFillStyleList(byteStream, shapeVersion);
   const line: LineStyle[] = parseLineStyleList(byteStream, shapeVersion);
   bitStream = byteStream.asBitStream();
@@ -85,7 +85,7 @@ export function parseShapeStylesBits(bitStream: BitStream, shapeVersion: ShapeVe
 }
 
 export function parseShapeRecordStringBits(
-  bitStream: BitStream,
+  bitStream: ReadableBitStream,
   fillBits: UintSize,
   lineBits: UintSize,
   shapeVersion: ShapeVersion,
@@ -121,7 +121,7 @@ export function parseShapeRecordStringBits(
   return result;
 }
 
-export function parseCurvedEdgeBits(bitStream: BitStream): shapeRecords.CurvedEdge {
+export function parseCurvedEdgeBits(bitStream: ReadableBitStream): shapeRecords.CurvedEdge {
   const nBits: UintSize = bitStream.readUint16Bits(4) + 2;
   const controlX: Sint32 = bitStream.readSint32Bits(nBits);
   const controlY: Sint32 = bitStream.readSint32Bits(nBits);
@@ -134,7 +134,7 @@ export function parseCurvedEdgeBits(bitStream: BitStream): shapeRecords.CurvedEd
   };
 }
 
-export function parseStraightEdgeBits(bitStream: BitStream): shapeRecords.StraightEdge {
+export function parseStraightEdgeBits(bitStream: ReadableBitStream): shapeRecords.StraightEdge {
   const nBits: UintSize = bitStream.readUint16Bits(4) + 2;
   const isDiagonal: boolean = bitStream.readBoolBits();
   const isVertical: boolean = !isDiagonal && bitStream.readBoolBits();
@@ -147,7 +147,7 @@ export function parseStraightEdgeBits(bitStream: BitStream): shapeRecords.Straig
 }
 
 export function parseStyleChangeBits(
-  bitStream: BitStream,
+  bitStream: ReadableBitStream,
   fillBits: UintSize,
   lineBits: UintSize,
   shapeVersion: ShapeVersion,
@@ -203,7 +203,7 @@ export function parseStyleChangeBits(
  *                      - `false` for `DefineShape`
  * @returns List length
  */
-export function parseListLength(byteStream: ByteStream, allowExtended: boolean): UintSize {
+export function parseListLength(byteStream: ReadableByteStream, allowExtended: boolean): UintSize {
   const len: UintSize = byteStream.readUint8();
   if (len === 0xff && allowExtended) {
     return byteStream.readUint16LE();
@@ -213,7 +213,7 @@ export function parseListLength(byteStream: ByteStream, allowExtended: boolean):
 }
 
 export function parseFillStyleList(
-  byteStream: ByteStream,
+  byteStream: ReadableByteStream,
   shapeVersion: ShapeVersion,
 ): FillStyle[] {
   const result: FillStyle[] = [];
@@ -224,7 +224,7 @@ export function parseFillStyleList(
   return result;
 }
 
-export function parseFillStyle(byteStream: ByteStream, withAlpha: boolean): FillStyle {
+export function parseFillStyle(byteStream: ReadableByteStream, withAlpha: boolean): FillStyle {
   const code: Uint8 = byteStream.readUint8();
   switch (code) {
     case 0x00:
@@ -249,7 +249,11 @@ export function parseFillStyle(byteStream: ByteStream, withAlpha: boolean): Fill
   }
 }
 
-export function parseBitmapFill(byteStream: ByteStream, repeating: boolean, smoothed: boolean): fillStyles.Bitmap {
+export function parseBitmapFill(
+  byteStream: ReadableByteStream,
+  repeating: boolean,
+  smoothed: boolean,
+): fillStyles.Bitmap {
   const bitmapId: Uint16 = byteStream.readUint16LE();
   const matrix: Matrix = parseMatrix(byteStream);
   return {
@@ -261,10 +265,10 @@ export function parseBitmapFill(byteStream: ByteStream, repeating: boolean, smoo
   };
 }
 
-export function parseFocalGradientFill(byteStream: ByteStream, withAlpha: boolean): fillStyles.FocalGradient {
+export function parseFocalGradientFill(byteStream: ReadableByteStream, withAlpha: boolean): fillStyles.FocalGradient {
   const matrix: Matrix = parseMatrix(byteStream);
   const gradient: Gradient = parseGradient(byteStream, withAlpha);
-  const focalPoint: Sfixed8P8 = byteStream.readFixed8P8LE();
+  const focalPoint: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   return {
     type: FillStyleType.FocalGradient,
     matrix,
@@ -273,7 +277,7 @@ export function parseFocalGradientFill(byteStream: ByteStream, withAlpha: boolea
   };
 }
 
-export function parseLinearGradientFill(byteStream: ByteStream, withAlpha: boolean): fillStyles.LinearGradient {
+export function parseLinearGradientFill(byteStream: ReadableByteStream, withAlpha: boolean): fillStyles.LinearGradient {
   const matrix: Matrix = parseMatrix(byteStream);
   const gradient: Gradient = parseGradient(byteStream, withAlpha);
   return {
@@ -283,7 +287,7 @@ export function parseLinearGradientFill(byteStream: ByteStream, withAlpha: boole
   };
 }
 
-export function parseRadialGradientFill(byteStream: ByteStream, withAlpha: boolean): fillStyles.RadialGradient {
+export function parseRadialGradientFill(byteStream: ReadableByteStream, withAlpha: boolean): fillStyles.RadialGradient {
   const matrix: Matrix = parseMatrix(byteStream);
   const gradient: Gradient = parseGradient(byteStream, withAlpha);
   return {
@@ -293,7 +297,7 @@ export function parseRadialGradientFill(byteStream: ByteStream, withAlpha: boole
   };
 }
 
-export function parseSolidFill(byteStream: ByteStream, withAlpha: boolean): fillStyles.Solid {
+export function parseSolidFill(byteStream: ReadableByteStream, withAlpha: boolean): fillStyles.Solid {
   let color: StraightSRgba8;
   if (withAlpha) {
     color = parseStraightSRgba8(byteStream);
@@ -307,7 +311,7 @@ export function parseSolidFill(byteStream: ByteStream, withAlpha: boolean): fill
 }
 
 export function parseLineStyleList(
-  byteStream: ByteStream,
+  byteStream: ReadableByteStream,
   shapeVersion: ShapeVersion,
 ): LineStyle[] {
   const result: LineStyle[] = [];
@@ -322,7 +326,7 @@ export function parseLineStyleList(
   return result;
 }
 
-export function parseLineStyle(byteStream: ByteStream, withAlpha: boolean): LineStyle {
+export function parseLineStyle(byteStream: ReadableByteStream, withAlpha: boolean): LineStyle {
   const width: Uint16 = byteStream.readUint16LE();
   const color: StraightSRgba8 = withAlpha ? parseStraightSRgba8(byteStream) : {...parseSRgb8(byteStream), a: 255};
   return {
@@ -341,7 +345,7 @@ export function parseLineStyle(byteStream: ByteStream, withAlpha: boolean): Line
   };
 }
 
-export function parseLineStyle2(byteStream: ByteStream): LineStyle {
+export function parseLineStyle2(byteStream: ReadableByteStream): LineStyle {
   const width: Uint16 = byteStream.readUint16LE();
 
   const flags: Uint16 = byteStream.readUint16LE();
@@ -364,7 +368,7 @@ export function parseLineStyle2(byteStream: ByteStream): LineStyle {
       join = {type: JoinStyleType.Bevel};
       break;
     case 2:
-      join = {type: JoinStyleType.Miter, limit: byteStream.readFixed8P8LE()};
+      join = {type: JoinStyleType.Miter, limit: Sfixed8P8.fromEpsilons(byteStream.readSint16LE())};
       break;
     default:
       throw new Incident("UnexpectedJoinStyleId", {id: joinStyleId});

@@ -1,15 +1,15 @@
+import { ReadableStream } from "@open-flash/stream";
 import chai from "chai";
 import { Uint32 } from "semantic-types";
-import { Stream } from "../../lib/stream";
 import { readTestJson } from "../_utils";
 import { readStreamJson, StreamJson } from "./_utils";
 
 describe("readEncodedUint32LE", function () {
   interface Item {
-    input: Stream;
+    input: ReadableStream;
     expected: {
       result: Uint32;
-      stream: Stream;
+      stream: ReadableStream;
     };
   }
 
@@ -38,7 +38,7 @@ describe("readEncodedUint32LE", function () {
     it(`Should parse the encoded Uint32 in the test case ${i}`, function () {
       const actual: number = item.input.readUint32Leb128();
       chai.assert.deepEqual(actual, item.expected.result);
-      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.isTrue(ReadableStream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

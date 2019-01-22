@@ -1,17 +1,17 @@
+import { ReadableStream } from "@open-flash/stream";
 import chai from "chai";
 import { JsonValueReader } from "kryo/readers/json-value";
 import { $Rect, Rect } from "swf-tree/rect";
 import { parseRect } from "../../lib/parsers/basic-data-types";
-import { Stream } from "../../lib/stream";
 import { readTestJson } from "../_utils";
 import { readStreamJson } from "./_utils";
 
 describe("parseRect", function () {
   interface Item {
-    input: Stream;
+    input: ReadableStream;
     expected: {
       result: Rect;
-      stream: Stream;
+      stream: ReadableStream;
     };
   }
 
@@ -46,7 +46,7 @@ describe("parseRect", function () {
     it(`Should parse the rectangle in the test case ${i}`, function () {
       const actualRect: Rect = parseRect(item.input);
       chai.assert.isTrue($Rect.equals(actualRect, item.expected.result));
-      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.isTrue(ReadableStream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

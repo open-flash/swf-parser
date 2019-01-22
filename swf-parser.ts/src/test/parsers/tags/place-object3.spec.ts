@@ -1,9 +1,9 @@
+import { ReadableStream } from "@open-flash/stream";
 import chai from "chai";
 import { JsonValueReader } from "kryo/readers/json-value";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import { $PlaceObject, PlaceObject } from "swf-tree/tags";
 import { parsePlaceObject3 } from "../../../lib/parsers/tags";
-import { Stream } from "../../../lib/stream";
 import { readTestJson } from "../../_utils";
 import { readStreamJson, StreamJson } from "../_utils";
 
@@ -12,10 +12,10 @@ const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 
 describe("tags.parsePlaceObject3", function () {
   interface Item {
-    input: Stream;
+    input: ReadableStream;
     expected: {
       result: PlaceObject;
-      stream: Stream;
+      stream: ReadableStream;
     };
   }
 
@@ -49,7 +49,7 @@ describe("tags.parsePlaceObject3", function () {
         $PlaceObject.write(JSON_VALUE_WRITER, item.expected.result),
       );
       chai.assert.isTrue($PlaceObject.equals(actual, item.expected.result));
-      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream));
+      chai.assert.isTrue(ReadableStream.equals(item.input.tail(), item.expected.stream));
     });
   }
 });

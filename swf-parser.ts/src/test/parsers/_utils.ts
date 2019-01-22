@@ -1,5 +1,5 @@
+import { ReadableStream } from "@open-flash/stream";
 import { Incident } from "incident";
-import { Stream } from "../../lib/stream";
 
 export interface StreamJson {
   buffer: string;
@@ -38,7 +38,7 @@ export function readBufferString(buffer: string): Buffer {
   }
 }
 
-export function readStreamJson(input: StreamJson): Stream {
+export function readStreamJson(input: StreamJson): ReadableStream {
   const buffer: Buffer = readBufferString(input.buffer);
-  return new Stream(buffer, input.bytePos, input.bitPos);
+  return new ReadableStream(buffer, input.bytePos, input.bitPos);
 }

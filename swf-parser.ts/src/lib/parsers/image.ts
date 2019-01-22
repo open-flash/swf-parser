@@ -1,6 +1,6 @@
+import { ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Uint16, Uint32, Uint8, UintSize } from "semantic-types";
-import { ByteStream } from "../stream";
 
 export interface ImageDimensions {
   width: number;
@@ -21,7 +21,7 @@ export const ERRONEOUS_JPEG_START: Uint8Array = new Uint8Array([0xff, 0xd9, 0xff
  * @see https://www.w3.org/TR/PNG/#5ChunkOrdering
  * @see https://www.w3.org/TR/PNG/#11IHDR
  */
-export function getPngImageDimensions(byteStream: ByteStream): ImageDimensions {
+export function getPngImageDimensions(byteStream: ReadableByteStream): ImageDimensions {
   // Skip signature (8 bytes) and size of chunk (4 bytes)
   byteStream.skip(12);
   const chunkType: Uint32 = byteStream.readUint32BE();
@@ -34,7 +34,7 @@ export function getPngImageDimensions(byteStream: ByteStream): ImageDimensions {
   return {width, height};
 }
 
-// export function readJpeg(byteStream: ByteStream, fixJpeg: boolean): [Uint8Array, ImageProperties] {
+// export function readJpeg(byteStream: ReadableByteStream, fixJpeg: boolean): [Uint8Array, ImageProperties] {
 //   let height: Uint16 | undefined = undefined;
 //   let width: Uint16 | undefined = undefined;
 //
@@ -77,7 +77,7 @@ export function getPngImageDimensions(byteStream: ByteStream): ImageDimensions {
 //   return [concatBytes(chunks), {width, height, hasAlpha: false}];
 // }
 
-export function getJpegImageDimensions(byteStream: ByteStream): ImageDimensions {
+export function getJpegImageDimensions(byteStream: ReadableByteStream): ImageDimensions {
   let height: Uint16 | undefined = undefined;
   let width: Uint16 | undefined = undefined;
 
@@ -107,7 +107,7 @@ export function getJpegImageDimensions(byteStream: ByteStream): ImageDimensions 
 /**
  * Returns the JPEG chunks: assumes all the chunks are complete.
  */
-function* readJpegChunks(byteStream: ByteStream): Iterable<Uint8Array> {
+function* readJpegChunks(byteStream: ReadableByteStream): Iterable<Uint8Array> {
   const bytes: Uint8Array = byteStream.takeBytes(byteStream.available());
   let i: UintSize = 0;
   const byteCount: UintSize = bytes.length;
@@ -146,7 +146,7 @@ function* readJpegChunks(byteStream: ByteStream): Iterable<Uint8Array> {
   }
 }
 
-export function getGifImageDimensions(byteStream: ByteStream): ImageDimensions {
+export function getGifImageDimensions(byteStream: ReadableByteStream): ImageDimensions {
   byteStream.skip(6); // GIF header: "GIF89a" in ASCII for SWF
   const width: Uint16 = byteStream.readUint16BE();
   const height: Uint16 = byteStream.readUint16BE();

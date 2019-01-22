@@ -19,6 +19,7 @@
     "lint": "gulp :lint:fix"
   },
   "dependencies": {
+    "@open-flash/stream": "^0.1.0",
     "incident": "^3.2.0",
     "semantic-types": "^0.1.1",
     "swf-tree": "^0.1.1"

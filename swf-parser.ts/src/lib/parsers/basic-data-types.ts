@@ -1,3 +1,4 @@
+import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import { Sint16, UintSize } from "semantic-types";
 import {
   ColorTransform,
@@ -9,16 +10,15 @@ import {
   SRgb8,
   StraightSRgba8,
 } from "swf-tree";
-import { BitStream, ByteStream } from "../stream";
 
-export function parseRect(byteStream: ByteStream): Rect {
-  const bitStream: BitStream = byteStream.asBitStream();
+export function parseRect(byteStream: ReadableByteStream): Rect {
+  const bitStream: ReadableBitStream = byteStream.asBitStream();
   const result: Rect = parseRectBits(bitStream);
   bitStream.align();
   return result;
 }
 
-export function parseRectBits(bitStream: BitStream): Rect {
+export function parseRectBits(bitStream: ReadableBitStream): Rect {
   const nBits: UintSize = bitStream.readUint16Bits(5);
   const xMin: Sint16 = bitStream.readSint16Bits(nBits);
   const xMax: Sint16 = bitStream.readSint16Bits(nBits);
@@ -27,7 +27,7 @@ export function parseRectBits(bitStream: BitStream): Rect {
   return {xMin, xMax, yMin, yMax};
 }
 
-export function parseSRgb8(byteStream: ByteStream): SRgb8 {
+export function parseSRgb8(byteStream: ReadableByteStream): SRgb8 {
   return {
     r: byteStream.readUint8(),
     g: byteStream.readUint8(),
@@ -35,7 +35,7 @@ export function parseSRgb8(byteStream: ByteStream): SRgb8 {
   };
 }
 
-export function parseStraightSRgba8(byteStream: ByteStream): StraightSRgba8 {
+export function parseStraightSRgba8(byteStream: ReadableByteStream): StraightSRgba8 {
   return {
     r: byteStream.readUint8(),
     g: byteStream.readUint8(),
@@ -53,21 +53,21 @@ export const DEFAULT_MATRIX: Matrix = {
   translateY: 0,
 };
 
-export function parseMatrix(byteStream: ByteStream): Matrix {
-  const bitStream: BitStream = byteStream.asBitStream();
+export function parseMatrix(byteStream: ReadableByteStream): Matrix {
+  const bitStream: ReadableBitStream = byteStream.asBitStream();
   const result: Matrix = parseMatrixBits(bitStream);
   bitStream.align();
   return result;
 }
 
-export function parseMatrixBits(bitStream: BitStream): Matrix {
+export function parseMatrixBits(bitStream: ReadableBitStream): Matrix {
   const hasScale: boolean = bitStream.readBoolBits();
   let scaleX: Sfixed16P16;
   let scaleY: Sfixed16P16;
   if (hasScale) {
     const scaleBits: UintSize = bitStream.readUint16Bits(5);
-    scaleX = bitStream.readSfixed16P16Bits(scaleBits);
-    scaleY = bitStream.readSfixed16P16Bits(scaleBits);
+    scaleX = Sfixed16P16.fromEpsilons(bitStream.readSint32Bits(scaleBits));
+    scaleY = Sfixed16P16.fromEpsilons(bitStream.readSint32Bits(scaleBits));
   } else {
     scaleX = Sfixed16P16.fromValue(1);
     scaleY = Sfixed16P16.fromValue(1);
@@ -77,8 +77,8 @@ export function parseMatrixBits(bitStream: BitStream): Matrix {
   let skew1: Sfixed16P16;
   if (hasSkew) {
     const skewBits: UintSize = bitStream.readUint16Bits(5);
-    skew0 = bitStream.readSfixed16P16Bits(skewBits);
-    skew1 = bitStream.readSfixed16P16Bits(skewBits);
+    skew0 = Sfixed16P16.fromEpsilons(bitStream.readSint32Bits(skewBits));
+    skew1 = Sfixed16P16.fromEpsilons(bitStream.readSint32Bits(skewBits));
   } else {
     skew0 = Sfixed16P16.fromValue(0);
     skew1 = Sfixed16P16.fromValue(0);
@@ -97,14 +97,14 @@ export function parseMatrixBits(bitStream: BitStream): Matrix {
   };
 }
 
-export function parseColorTransform(byteStream: ByteStream): ColorTransform {
-  const bitStream: BitStream = byteStream.asBitStream();
+export function parseColorTransform(byteStream: ReadableByteStream): ColorTransform {
+  const bitStream: ReadableBitStream = byteStream.asBitStream();
   const result: ColorTransform = parseColorTransformBits(bitStream);
   bitStream.align();
   return result;
 }
 
-export function parseColorTransformBits(bitStream: BitStream): ColorTransform {
+export function parseColorTransformBits(bitStream: ReadableBitStream): ColorTransform {
   const hasAdd: boolean = bitStream.readBoolBits();
   const hasMult: boolean = bitStream.readBoolBits();
   const nBits: UintSize = bitStream.readUint16Bits(4);
@@ -145,14 +145,14 @@ export function parseColorTransformBits(bitStream: BitStream): ColorTransform {
   };
 }
 
-export function parseColorTransformWithAlpha(byteStream: ByteStream): ColorTransformWithAlpha {
-  const bitStream: BitStream = byteStream.asBitStream();
+export function parseColorTransformWithAlpha(byteStream: ReadableByteStream): ColorTransformWithAlpha {
+  const bitStream: ReadableBitStream = byteStream.asBitStream();
   const result: ColorTransformWithAlpha = parseColorTransformWithAlphaBits(bitStream);
   bitStream.align();
   return result;
 }
 
-export function parseColorTransformWithAlphaBits(bitStream: BitStream): ColorTransformWithAlpha {
+export function parseColorTransformWithAlphaBits(bitStream: ReadableBitStream): ColorTransformWithAlpha {
   const hasAdd: boolean = bitStream.readBoolBits();
   const hasMult: boolean = bitStream.readBoolBits();
   const nBits: UintSize = bitStream.readUint16Bits(4);

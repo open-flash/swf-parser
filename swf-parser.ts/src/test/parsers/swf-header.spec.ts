@@ -1,8 +1,8 @@
+import { ReadableStream } from "@open-flash/stream";
 import chai from "chai";
 import { JsonValueReader } from "kryo/readers/json-value";
 import { $Header, Header } from "swf-tree/header";
 import { parseHeader } from "../../lib/parsers/header";
-import { Stream } from "../../lib/stream";
 import { readTestJson } from "../_utils";
 import { readStreamJson, StreamJson } from "./_utils";
 
@@ -10,10 +10,10 @@ const JSON_VALUE_READER: JsonValueReader = new JsonValueReader();
 
 describe("parseHeader", function () {
   interface Item {
-    input: Stream;
+    input: ReadableStream;
     expected: {
       result: Header;
-      stream: Stream;
+      stream: ReadableStream;
     };
   }
 
@@ -42,7 +42,7 @@ describe("parseHeader", function () {
     it(`Should parse the Header in the test case ${i}`, function () {
       const actual: Header = parseHeader(item.input);
       chai.assert.isTrue($Header.equals(actual, item.expected.result), "Header equality failed");
-      chai.assert.isTrue(Stream.equals(item.input.tail(), item.expected.stream), "Stream equality failed");
+      chai.assert.isTrue(ReadableStream.equals(item.input.tail(), item.expected.stream), "Stream equality failed");
     });
   }
 });
