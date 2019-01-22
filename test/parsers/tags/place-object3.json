@@ -8,7 +8,7 @@
     "expected": {
       "result": {
         "type": "place-object",
-        "is_move": true,
+        "is_update": true,
         "depth": 1,
         "matrix": {
           "scale_x": -65536,
@@ -45,8 +45,6 @@
             ]
           }
         ],
-        "blend_mode": "normal",
-        "visible": true,
         "clip_actions": []
       },
       "stream": {

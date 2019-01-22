@@ -32,7 +32,6 @@ import { SoundType } from "swf-tree/sound/sound-type";
 import { SpriteTag } from "swf-tree/sprite-tag";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import {
-  DEFAULT_MATRIX,
   parseColorTransform,
   parseColorTransformWithAlpha,
   parseMatrix,
@@ -744,7 +743,7 @@ export function parsePlaceObject(byteStream: ReadableByteStream): tags.PlaceObje
 
   return {
     type: TagType.PlaceObject,
-    isMove: false,
+    isUpdate: false,
     depth,
     characterId,
     matrix,
@@ -758,7 +757,7 @@ export function parsePlaceObject(byteStream: ReadableByteStream): tags.PlaceObje
 
 export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: UintSize): tags.PlaceObject {
   const flags: Uint16 = byteStream.readUint8();
-  const isMove: boolean = (flags & (1 << 0)) !== 0;
+  const isUpdate: boolean = (flags & (1 << 0)) !== 0;
   const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
   const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
   const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
@@ -768,7 +767,7 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
   const hasClipActions: boolean = (flags & (1 << 7)) !== 0;
   const depth: Uint16 = byteStream.readUint16LE();
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
-  const matrix: Matrix = hasMatrix ? parseMatrix(byteStream) : DEFAULT_MATRIX;
+  const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
   const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform ?
     parseColorTransformWithAlpha(byteStream) :
     undefined;
@@ -782,7 +781,7 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
 
   return {
     type: TagType.PlaceObject,
-    isMove,
+    isUpdate,
     depth,
     characterId,
     matrix,
@@ -799,7 +798,7 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
 
 export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: UintSize): tags.PlaceObject {
   const flags: Uint16 = byteStream.readUint16LE();
-  const isMove: boolean = (flags & (1 << 0)) !== 0;
+  const isUpdate: boolean = (flags & (1 << 0)) !== 0;
   const hasCharacterId: boolean = (flags & (1 << 1)) !== 0;
   const hasMatrix: boolean = (flags & (1 << 2)) !== 0;
   const hasColorTransform: boolean = (flags & (1 << 3)) !== 0;
@@ -821,17 +820,17 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
     ? byteStream.readCString()
     : undefined;
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
-  const matrix: Matrix = hasMatrix ? parseMatrix(byteStream) : DEFAULT_MATRIX;
+  const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
   const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform
     ? parseColorTransformWithAlpha(byteStream)
     : undefined;
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
-  const filters: Filter[] = hasFilters ? parseFilterList(byteStream) : [];
-  const blendMode: BlendMode = hasBlendMode ? parseBlendMode(byteStream) : BlendMode.Normal;
+  const filters: Filter[] | undefined = hasFilters ? parseFilterList(byteStream) : undefined;
+  const blendMode: BlendMode | undefined = hasBlendMode ? parseBlendMode(byteStream) : undefined;
   const useBitmapCache: boolean | undefined = hasCacheHint ? byteStream.readUint8() !== 0 : undefined;
-  const isVisible: boolean = hasVisibility ? byteStream.readUint8() !== 0 : true;
+  const isVisible: boolean | undefined = hasVisibility ? byteStream.readUint8() !== 0 : undefined;
   // This does not match the spec, see Shumway
   // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L158
   // TODO(demurgos): Check if it is RGBA or ARGB
@@ -843,7 +842,7 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
 
   return {
     type: TagType.PlaceObject,
-    isMove,
+    isUpdate,
     depth,
     characterId,
     matrix,

@@ -8,7 +8,7 @@
     "expected": {
       "result": {
         "type": "place-object",
-        "is_move": false,
+        "is_update": false,
         "depth": 2,
         "character_id": 1,
         "matrix": {
