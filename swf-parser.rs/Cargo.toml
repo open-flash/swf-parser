@@ -7,8 +7,8 @@ documentation = "https://github.com/open-flash/swf-parser"
 homepage = "https://github.com/open-flash/swf-parser"
 repository = "https://github.com/open-flash/swf-parser"
 readme = "./README.md"
-keywords = ["parser", "swf", "ast"]
-license = "MIT"
+keywords = ["parser", "swf", "flash"]
+license = "AGPL-3.0-or-later"
 
 [lib]
 name = "swf_parser"
