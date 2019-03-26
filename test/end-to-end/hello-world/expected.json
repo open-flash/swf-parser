@@ -46,7 +46,7 @@
     {
       "type": "define-font",
       "id": 1,
-      "font_name": "Times New Roman",
+      "font_name": "Times New Roman\u0000",
       "is_bold": false,
       "is_italic": false,
       "is_ansi": false,
@@ -2807,7 +2807,7 @@
     },
     {
       "type": "place-object",
-      "is_move": false,
+      "is_update": false,
       "depth": 1,
       "character_id": 2,
       "matrix": {
@@ -2817,11 +2817,7 @@
         "rotate_skew1": 0,
         "translate_x": 2019,
         "translate_y": 3245
-      },
-      "filters": [],
-      "blend_mode": "normal",
-      "visible": true,
-      "clip_actions": []
+      }
     },
     {
       "type": "show-frame"

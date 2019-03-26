@@ -28,7 +28,7 @@ function tsParse(swfPath) {
 }
 
 const PARSERS = new Map([
-  ["rs", rsParse],
+  // ["rs", rsParse],
   ["ts", tsParse],
 ]);
 

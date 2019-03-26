@@ -275,7 +275,7 @@
     },
     {
       "type": "place-object",
-      "is_move": false,
+      "is_update": false,
       "depth": 1,
       "character_id": 1,
       "matrix": {
@@ -285,11 +285,7 @@
         "rotate_skew1": 0,
         "translate_x": 0,
         "translate_y": 0
-      },
-      "filters": [],
-      "blend_mode": "normal",
-      "visible": true,
-      "clip_actions": []
+      }
     },
     {
       "type": "show-frame"
