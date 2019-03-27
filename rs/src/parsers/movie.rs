@@ -25,7 +25,7 @@ pub fn parse_tag_block_string<'a>(input: &'a [u8], state: &mut ParseState) -> No
   Ok((current_input, result))
 }
 
-pub fn parse_decompressed_movie(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
+pub fn parse_movie_payload(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
   let mut state = ParseState::new(swf_version);
   do_parse!(
     input,
@@ -43,14 +43,14 @@ pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
 
   let (input, signature) = parse_swf_signature(input)?;
   match signature.compression_method {
-    ast::CompressionMethod::None => parse_decompressed_movie(input, signature.swf_version),
+    ast::CompressionMethod::None => parse_movie_payload(input, signature.swf_version),
     ast::CompressionMethod::Deflate => {
-      let mut decoded_data = input[0..8].to_vec();
-      let mut decoder = ::inflate::InflateWriter::from_zlib(decoded_data);
+      let mut decoder = ::inflate::InflateWriter::from_zlib(Vec::new());
       decoder.write(input).unwrap();
-      decoded_data = decoder.finish().unwrap();
-      match parse_decompressed_movie(&decoded_data[..], signature.swf_version) {
-        Ok((_, parsed_swf_file)) => Ok((&[][..], parsed_swf_file)),
+      let payload = decoder.finish().unwrap();
+
+      match parse_movie_payload(&payload[..], signature.swf_version) {
+        Ok((_, movie)) => Ok((&[][..], movie)),
         Err(::nom::Err::Error(::nom::simple_errors::Context::Code(_, e))) => Err(::nom::Err::Error(::nom::simple_errors::Context::Code(&[][..], e))),
         Err(::nom::Err::Failure(::nom::simple_errors::Context::Code(_, e))) => Err(::nom::Err::Failure(::nom::simple_errors::Context::Code(&[][..], e))),
         Err(::nom::Err::Incomplete(n)) => Err(::nom::Err::Incomplete(n)),

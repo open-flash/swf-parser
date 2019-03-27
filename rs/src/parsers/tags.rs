@@ -734,7 +734,7 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
       )
     ) >>
     (ast::tags::PlaceObject {
-      is_move: false,
+      is_update: false,
       depth: depth,
       character_id: Option::Some(character_id),
       matrix: Option::Some(matrix),
@@ -743,21 +743,22 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
       name: Option::None,
       class_name: Option::None,
       clip_depth: Option::None,
-      filters: Vec::new(),
-      blend_mode: ast::BlendMode::Normal,
+      filters: Option::None,
+      blend_mode: Option::None,
       bitmap_cache: Option::None,
-      visible: true,
+      visible: Option::None,
       background_color: Option::None,
-      clip_actions: Vec::new(),
+      clip_actions: Option::None,
     })
   )
 }
 
+/// `extended_events` corresponds to `swf_version >= 6`
 pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
   do_parse!(
     input,
     flags: parse_u8 >>
-    is_move: value!((flags & (1 << 0)) != 0) >>
+    is_update: value!((flags & (1 << 0)) != 0) >>
     has_character_id: value!((flags & (1 << 1)) != 0) >>
     has_matrix: value!((flags & (1 << 2)) != 0) >>
     has_color_transform: value!((flags & (1 << 3)) != 0) >>
@@ -772,12 +773,9 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8]
     ratio: cond!(has_ratio, parse_le_u16) >>
     name: cond!(has_name, parse_c_string) >>
     clip_depth: cond!(has_clip_depth, parse_le_u16) >>
-    clip_actions: switch!(value!(has_clip_actions),
-      true => apply!(parse_clip_actions_string, extended_events) |
-      false => value!(Vec::new())
-    )  >>
+    clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events)) >>
     (ast::tags::PlaceObject {
-      is_move: is_move,
+      is_update: is_update,
       depth: depth,
       character_id: character_id,
       matrix: matrix,
@@ -786,21 +784,22 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8]
       name: name,
       class_name: Option::None,
       clip_depth: clip_depth,
-      filters: Vec::new(),
-      blend_mode: ast::BlendMode::Normal,
+      filters: Option::None,
+      blend_mode: Option::None,
       bitmap_cache: Option::None,
-      visible: true,
+      visible: Option::None,
       background_color: Option::None,
       clip_actions: clip_actions,
     })
   )
 }
 
+/// `extended_events` corresponds to `swf_version >= 6`
 pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
   do_parse!(
     input,
     flags: parse_le_u16 >>
-    is_move: value!((flags & (1 << 0)) != 0) >>
+    is_update: value!((flags & (1 << 0)) != 0) >>
     has_character_id: value!((flags & (1 << 1)) != 0) >>
     has_matrix: value!((flags & (1 << 2)) != 0) >>
     has_color_transform: value!((flags & (1 << 3)) != 0) >>
@@ -824,27 +823,15 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
     ratio: cond!(has_ratio, parse_le_u16) >>
     name: cond!(has_name, parse_c_string) >>
     clip_depth: cond!(has_clip_depth, parse_le_u16) >>
-    filters: switch!(value!(has_filters),
-      true => call!(parse_filter_list) |
-      false => value!(Vec::new())
-    )  >>
-    blend_mode: switch!(value!(has_blend_mode),
-      true => call!(parse_blend_mode) |
-      false => value!(ast::BlendMode::Normal)
-    )  >>
+    filters: cond!(has_filters, parse_filter_list)  >>
+    blend_mode: cond!(has_blend_mode, parse_blend_mode)  >>
     use_bitmap_cache: cond!(has_cache_hint, map!(parse_u8, |x| x != 0)) >>
-    is_visible: switch!(value!(has_visibility),
-      true => map!(parse_u8, |x| x != 0) |
-      false => value!(true)
-    )  >>
+    is_visible: cond!(has_visibility, map!(parse_u8, |x| x != 0))  >>
     // TODO(demurgos): Check if it is RGBA or ARGB
     background_color: cond!(has_background_color, parse_straight_s_rgba8) >>
-    clip_actions: switch!(value!(has_clip_actions),
-      true => apply!(parse_clip_actions_string, extended_events) |
-      false => value!(Vec::new())
-    )  >>
+    clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events)) >>
     (ast::tags::PlaceObject {
-      is_move: is_move,
+      is_update: is_update,
       depth: depth,
       character_id: character_id,
       matrix: matrix,

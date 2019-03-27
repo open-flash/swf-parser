@@ -417,7 +417,11 @@ export function parseDefineFont3(byteStream: ReadableByteStream): tags.DefineFon
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
   // TODO: Check for `NUL` terminators in font name
-  const fontName: string = byteStream.readString(fontNameLength);
+  let fontName: string = byteStream.readString(fontNameLength);
+  const nulIndex: number = fontName.indexOf("\0");
+  if (nulIndex >= 0) {
+    fontName = fontName.substr(0, nulIndex);
+  }
 
   const glyphCount: UintSize = byteStream.readUint16LE();
   if (glyphCount === 0) {
@@ -748,9 +752,12 @@ export function parsePlaceObject(byteStream: ReadableByteStream): tags.PlaceObje
     characterId,
     matrix,
     colorTransform,
+    ratio: undefined,
+    name: undefined,
     filters: undefined,
     blendMode: undefined,
     visible: undefined,
+    backgroundColor: undefined,
     clipActions: undefined,
   };
 }
@@ -768,16 +775,15 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
   const depth: Uint16 = byteStream.readUint16LE();
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
   const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
-  const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform ?
-    parseColorTransformWithAlpha(byteStream) :
-    undefined;
+  const colorTransform: ColorTransformWithAlpha | undefined = hasColorTransform
+    ? parseColorTransformWithAlpha(byteStream)
+    : undefined;
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
-
-  const clipActions: ClipActions[] | undefined = hasClipActions ?
-    parseClipActionsString(byteStream, swfVersion >= 6) :
-    undefined;
+  const clipActions: ClipActions[] | undefined = hasClipActions
+    ? parseClipActionsString(byteStream, swfVersion >= 6)
+    : undefined;
 
   return {
     type: TagType.PlaceObject,
@@ -792,6 +798,7 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
     filters: undefined,
     blendMode: undefined,
     visible: undefined,
+    backgroundColor: undefined,
     clipActions,
   };
 }
