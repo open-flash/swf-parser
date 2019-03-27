@@ -391,7 +391,7 @@ mod tests {
     }
     {
       let input = vec![0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(2))));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
     }
     {
       let input = vec![0x80, 0x01];
@@ -407,7 +407,7 @@ mod tests {
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(5))));
+      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x01];

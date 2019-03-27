@@ -1,7 +1,7 @@
 use nom::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::IResult as NomResult;
-use parsers::basic_data_types::{parse_color_transform_with_alpha, parse_matrix};
-use parsers::display::{parse_blend_mode, parse_filter_list};
+use crate::parsers::basic_data_types::{parse_color_transform_with_alpha, parse_matrix};
+use crate::parsers::display::{parse_blend_mode, parse_filter_list};
 use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]

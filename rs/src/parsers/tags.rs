@@ -1,6 +1,6 @@
 use nom::{IResult, Needed};
 use nom::{be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
-use parsers::basic_data_types::{
+use crate::parsers::basic_data_types::{
   parse_bool_bits,
   parse_c_string,
   parse_color_transform_with_alpha,
@@ -13,19 +13,19 @@ use parsers::basic_data_types::{
   parse_straight_s_rgba8,
   skip_bits,
 };
-use parsers::button::{ButtonVersion, parse_button2_cond_action_string, parse_button_record_string};
-use parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
-use parsers::image::{ERRONEOUS_JPEG_START, get_jpeg_image_dimensions, JPEG_START, test_image_start};
-use parsers::image::get_gif_image_dimensions;
-use parsers::image::get_png_image_dimensions;
-use parsers::image::GIF_START;
-use parsers::image::PNG_START;
-use parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
-use parsers::movie::parse_tag_block_string;
-use parsers::shape::{parse_shape, ShapeVersion};
-use parsers::sound::{audio_coding_format_from_id, sound_rate_from_id};
-use parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
-use state::ParseState;
+use crate::parsers::button::{ButtonVersion, parse_button2_cond_action_string, parse_button_record_string};
+use crate::parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
+use crate::parsers::image::{ERRONEOUS_JPEG_START, get_jpeg_image_dimensions, JPEG_START, test_image_start};
+use crate::parsers::image::get_gif_image_dimensions;
+use crate::parsers::image::get_png_image_dimensions;
+use crate::parsers::image::GIF_START;
+use crate::parsers::image::PNG_START;
+use crate::parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
+use crate::parsers::movie::parse_tag_block_string;
+use crate::parsers::shape::{parse_shape, ShapeVersion};
+use crate::parsers::sound::{audio_coding_format_from_id, sound_rate_from_id};
+use crate::parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
+use crate::state::ParseState;
 use swf_tree as ast;
 
 pub struct SwfTagHeader {

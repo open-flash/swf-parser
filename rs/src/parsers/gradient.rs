@@ -1,7 +1,7 @@
 use swf_tree as ast;
 use nom::IResult;
 use nom::{le_u8 as parse_u8};
-use parsers::basic_data_types::{parse_s_rgb8, parse_straight_s_rgba8};
+use crate::parsers::basic_data_types::{parse_s_rgb8, parse_straight_s_rgba8};
 
 #[allow(unused_variables)]
 pub fn parse_color_stop(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::ColorStop> {

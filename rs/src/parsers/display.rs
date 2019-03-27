@@ -1,7 +1,7 @@
 use swf_tree as ast;
 use nom::IResult;
 use nom::{le_f32 as parse_le_f32, be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u8 as parse_u8, le_u32 as parse_le_u32};
-use parsers::basic_data_types::{parse_le_fixed8_p8, parse_le_fixed16_p16, parse_straight_s_rgba8};
+use crate::parsers::basic_data_types::{parse_le_fixed8_p8, parse_le_fixed16_p16, parse_straight_s_rgba8};
 
 #[allow(unused_variables)]
 pub fn parse_blend_mode(input: &[u8]) -> IResult<&[u8], ast::BlendMode> {

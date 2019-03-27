@@ -1,7 +1,7 @@
 use swf_tree as ast;
 use nom::IResult;
 use nom::{le_i16 as parse_le_i16, le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
-use parsers::basic_data_types::{
+use crate::parsers::basic_data_types::{
   parse_rect,
   parse_le_f16,
   parse_s_rgb8,
@@ -9,7 +9,7 @@ use parsers::basic_data_types::{
   parse_i32_bits,
   parse_u32_bits,
 };
-use parsers::shape::parse_glyph;
+use crate::parsers::shape::parse_glyph;
 
 pub fn parse_grid_fitting_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::GridFitting> {
   switch!(

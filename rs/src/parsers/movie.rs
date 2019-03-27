@@ -1,7 +1,7 @@
 use nom::{IResult as NomResult, Needed};
-use parsers::header::{parse_header, parse_swf_signature};
-use parsers::tags::parse_swf_tag;
-use state::ParseState;
+use crate::parsers::header::{parse_header, parse_swf_signature};
+use crate::parsers::tags::parse_swf_tag;
+use crate::state::ParseState;
 use swf_tree as ast;
 
 pub fn parse_tag_block_string<'a>(input: &'a [u8], state: &mut ParseState) -> NomResult<&'a [u8], Vec<ast::Tag>> {

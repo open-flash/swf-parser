@@ -1,6 +1,6 @@
 use nom::{IResult as NomResult, Needed};
 use nom::{le_u16 as parse_le_u16, le_u8 as parse_u8};
-use parsers::basic_data_types::{
+use crate::parsers::basic_data_types::{
   parse_bool_bits,
   parse_i32_bits,
   parse_le_fixed8_p8,
@@ -9,8 +9,8 @@ use parsers::basic_data_types::{
   parse_u16_bits,
   parse_u32_bits,
 };
-use parsers::gradient::parse_morph_gradient;
-use super::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits};
+use crate::parsers::gradient::parse_morph_gradient;
+use crate::parsers::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits};
 use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
