@@ -491,12 +491,13 @@ export function parseDefineFontName(byteStream: ReadableByteStream): tags.Define
   return {type: TagType.DefineFontName, fontId, name, copyright};
 }
 
-export function parseDefineJpegTables(byteStream: ReadableByteStream, swfVersion: Uint8): tags.DefineJpegTables {
+export function parseDefineJpegTables(byteStream: ReadableByteStream, _swfVersion: Uint8): tags.DefineJpegTables {
   const data: Uint8Array = byteStream.tailBytes();
-  if (!(testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START)))) {
-    throw new Incident("UnknownBitmapType");
-  }
-
+  // TODO: Check validity of jpeg tables?
+  // Can be empty (e.g. `open-flash-db/standalone-movies/homestuck-02791`
+  // if (!(testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START)))) {
+  //   throw new Incident(`InvalidJpegTablesSignature`);
+  // }
   return {type: TagType.DefineJpegTables, data};
 }
 
