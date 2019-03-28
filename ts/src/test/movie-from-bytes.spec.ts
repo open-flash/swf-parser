@@ -14,19 +14,27 @@ const TEST_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "ope
 const JSON_READER: JsonReader = new JsonReader();
 const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 
-describe("movieFromBytes", function () {
+describe.only("movieFromBytes", function () {
   for (const sample of getSamples()) {
     it(sample.name, async function () {
       const inputBytes: Buffer = await readFile(sysPath.join(TEST_SAMPLES_ROOT, sample.name, "main.swf"));
       const actualMovie: Movie = movieFromBytes(inputBytes);
-      chai.assert.isTrue($Movie.test(actualMovie));
+      const testErr: Error | undefined = $Movie.testError!(actualMovie);
+      try {
+        chai.assert.isUndefined(testErr, "InvalidMovie");
+      } catch (err) {
+        console.error(testErr!.toString());
+        throw err;
+      }
+      const actualJson: string = JSON.stringify($Movie.write(JSON_VALUE_WRITER, actualMovie), null, 2);
+      await writeTextFile(sysPath.join(TEST_SAMPLES_ROOT, sample.name, "tmp-ast.ts.json"), `${actualJson}\n`);
       const expectedJson: string = await readTextFile(sysPath.join(TEST_SAMPLES_ROOT, sample.name, "ast.json"));
       const expectedMovie: Movie = $Movie.read(JSON_READER, expectedJson);
       try {
         chai.assert.isTrue($Movie.equals(actualMovie, expectedMovie));
       } catch (err) {
         chai.assert.strictEqual(
-          JSON.stringify($Movie.write(JSON_VALUE_WRITER, actualMovie), null, 2),
+          actualJson,
           JSON.stringify($Movie.write(JSON_VALUE_WRITER, expectedMovie), null, 2),
         );
         throw err;
@@ -59,14 +67,26 @@ async function readFile(filePath: fs.PathLike): Promise<Buffer> {
   });
 }
 
+async function writeTextFile(filePath: fs.PathLike, text: string): Promise<void> {
+  return new Promise<void>((resolve, reject): void => {
+    fs.writeFile(filePath, text, (err: NodeJS.ErrnoException | null): void => {
+      if (err !== null) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 interface Sample {
   name: string;
 }
 
 function* getSamples(): IterableIterator<Sample> {
   // yield {name: "blank"};
-  yield {name: "hello-world"};
+  // yield {name: "hello-world"};
   // yield {name: "homestuck-beta-1"};
-  yield {name: "morph-rotating-square"};
-  yield {name: "squares"};
+  // yield {name: "morph-rotating-square"};
+  yield {name: "homestuck-02791"};
 }
