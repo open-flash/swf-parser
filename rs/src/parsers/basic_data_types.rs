@@ -147,10 +147,10 @@ pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Re
   do_parse!(
     input,
     n_bits: apply!(parse_u16_bits, 5) >>
-    x_min: apply!(parse_i16_bits, n_bits as usize) >>
-    x_max: apply!(parse_i16_bits, n_bits as usize) >>
-    y_min: apply!(parse_i16_bits, n_bits as usize) >>
-    y_max: apply!(parse_i16_bits, n_bits as usize) >>
+    x_min: apply!(parse_i32_bits, n_bits as usize) >>
+    x_max: apply!(parse_i32_bits, n_bits as usize) >>
+    y_min: apply!(parse_i32_bits, n_bits as usize) >>
+    y_max: apply!(parse_i32_bits, n_bits as usize) >>
     (ast::Rect {x_min: x_min, x_max: x_max, y_min: y_min, y_max: y_max})
   )
 }
