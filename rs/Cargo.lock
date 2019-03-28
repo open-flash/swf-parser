@@ -201,13 +201,13 @@ dependencies = [
  "serde_derive 1.0.83 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "swf-fixed 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "swf-tree 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "swf-tree 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "test-generator 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "swf-tree"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -292,7 +292,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum serde_derive 1.0.83 (registry+https://github.com/rust-lang/crates.io-index)" = "9469829702497daf2daf3c190e130c3fa72f719920f73c86160d43e8f8d76951"
 "checksum serde_json 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)" = "c37ccd6be3ed1fdf419ee848f7c758eb31b054d7cd3ae3600e3bae0adf569811"
 "checksum swf-fixed 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a415efca192c4f4881d9e963d582e95c2c6f6be71cea59a42126068bedd1e0b1"
-"checksum swf-tree 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2503a6feeb2ef12a4e94ebe3542f76b5ae4f7e355bd7fc83246e65f4734961b6"
+"checksum swf-tree 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aa0ce102bbc627f495a54f0f90a3ac2639c606d8c722dc646681d48271d0e0fa"
 "checksum syn 0.15.29 (registry+https://github.com/rust-lang/crates.io-index)" = "1825685f977249735d510a242a6727b46efe914bb67e38d30c071b1b72b1d5c2"
 "checksum test-generator 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9b26bb9ef026bbc1e5abab33e3299be7b31b73790c0980e225241d694ccd6f71"
 "checksum thread_local 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c6b53e329000edc2b34dbe8545fd20e55a333362d0a321909685a19bd28c3f1b"

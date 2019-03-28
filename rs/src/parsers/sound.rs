@@ -23,3 +23,12 @@ pub fn audio_coding_format_from_id(audio_coding_format_id: u8) -> ast::AudioCodi
     _ => panic!("Unexpected audio coding format id"),
   }
 }
+
+// TODO: Implement `Copy` on `AudioCodingFormat` and pass it by value
+pub fn is_uncompressed_audio_coding_format(format: &ast::AudioCodingFormat) -> bool {
+  match format {
+    ast::AudioCodingFormat::UncompressedNativeEndian => true,
+    ast::AudioCodingFormat::UncompressedLittleEndian => true,
+    _ => false,
+  }
+}

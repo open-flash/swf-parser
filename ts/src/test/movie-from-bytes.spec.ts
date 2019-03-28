@@ -3,10 +3,9 @@ import fs from "fs";
 import { JsonReader } from "kryo/readers/json";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import sysPath from "path";
-import meta from "./meta.js";
+import { $Movie, Movie } from "swf-tree/movie";
 import { movieFromBytes } from "../lib";
-import { Movie } from "swf-tree";
-import { $Movie } from "swf-tree/movie";
+import meta from "./meta.js";
 
 const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..", "..", "..");
 const TEST_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "open-flash-db", "standalone-movies");

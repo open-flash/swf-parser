@@ -1,5 +1,7 @@
 use nom::{IResult, Needed};
 use nom::{be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
+use swf_tree as ast;
+
 use crate::parsers::basic_data_types::{
   parse_bool_bits,
   parse_c_string,
@@ -23,10 +25,9 @@ use crate::parsers::image::PNG_START;
 use crate::parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
 use crate::parsers::movie::parse_tag_block_string;
 use crate::parsers::shape::{parse_shape, ShapeVersion};
-use crate::parsers::sound::{audio_coding_format_from_id, sound_rate_from_id};
+use crate::parsers::sound::{audio_coding_format_from_id, is_uncompressed_audio_coding_format, sound_rate_from_id};
 use crate::parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use crate::state::ParseState;
-use swf_tree as ast;
 
 pub struct SwfTagHeader {
   pub tag_code: u16,
@@ -70,6 +71,8 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           // TODO: Ignore DoAction if version >= 9 && use_as3
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
           14 => map!(record_data, parse_define_sound, |t| ast::Tag::DefineSound(t)),
+          18 => map!(record_data, parse_sound_stream_head, |t| ast::Tag::SoundStreamHead(t)),
+          19 => map!(record_data, parse_sound_stream_block, |t| ast::Tag::SoundStreamBlock(t)),
           20 => map!(record_data, parse_define_bits_lossless, |t| ast::Tag::DefineBitmap(t)),
           21 => map!(record_data, apply!(parse_define_bits_jpeg2, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
           22 => map!(record_data, parse_define_shape2, |t| ast::Tag::DefineShape(t)),
@@ -82,6 +85,7 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           37 => map!(record_data, parse_define_edit_text, |t| ast::Tag::DefineDynamicText(t)),
           39 => map!(record_data, apply!(parse_define_sprite, state), |t| ast::Tag::DefineSprite(t)),
           43 => map!(record_data, parse_frame_label, |t| ast::Tag::FrameLabel(t)),
+          45 => map!(record_data, parse_sound_stream_head2, |t| ast::Tag::SoundStreamHead(t)),
           46 => map!(record_data, parse_define_morph_shape, |t| ast::Tag::DefineMorphShape(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           57 => map!(record_data, parse_import_assets, |t| ast::Tag::ImportAssets(t)),
@@ -565,10 +569,10 @@ fn parse_define_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSound> {
     data: parse_bytes >>
     (ast::tags::DefineSound {
       id,
-      format,
       sound_type,
-      sound_size,
+      sound_size: if is_uncompressed_audio_coding_format(&format) { sound_size } else { ast::SoundSize::SoundSize16 },
       sound_rate,
+      format,
       sample_count,
       data,
     })
@@ -880,6 +884,64 @@ pub fn parse_set_background_color_tag(input: &[u8]) -> IResult<&[u8], ast::tags:
     color: parse_s_rgb8 >>
     (ast::tags::SetBackgroundColor {
       color: color,
+    })
+  )
+}
+
+fn parse_sound_stream_block(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamBlock> {
+  do_parse!(
+    input,
+    data: parse_bytes >>
+    (ast::tags::SoundStreamBlock {
+      data,
+    })
+  )
+}
+
+fn parse_sound_stream_head(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamHead> {
+  parse_sound_stream_head_any(input)
+}
+
+fn parse_sound_stream_head2(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamHead> {
+  parse_sound_stream_head_any(input)
+}
+
+fn parse_sound_stream_head_any(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamHead> {
+  do_parse!(
+    input,
+    flags: parse_le_u16  >>
+    playback_sound_type: switch!(value!((flags & (1 << 0)) != 0),
+      true => value!(ast::SoundType::Stereo) |
+      false => value!(ast::SoundType::Mono)
+    )  >>
+    playback_sound_size: switch!(value!((flags & (1 << 1)) != 0),
+      true => value!(ast::SoundSize::SoundSize16) |
+      false => value!(ast::SoundSize::SoundSize8)
+    )  >>
+    playback_sound_rate: map!(value!(((flags >> 2) & 0b11) as u8), sound_rate_from_id) >>
+    // Bits [4,7] are reserved
+    stream_sound_type: switch!(value!((flags & (1 << 8)) != 0),
+      true => value!(ast::SoundType::Stereo) |
+      false => value!(ast::SoundType::Mono)
+    )  >>
+    stream_sound_size: switch!(value!((flags & (1 << 9)) != 0),
+      true => value!(ast::SoundSize::SoundSize16) |
+      false => value!(ast::SoundSize::SoundSize8)
+    )  >>
+    stream_sound_rate: map!(value!(((flags >> 10) & 0b11) as u8), sound_rate_from_id) >>
+    stream_format: map!(value!(((flags >> 12) & 0b1111) as u8), audio_coding_format_from_id) >>
+    stream_sample_count: parse_le_u16 >>
+    latency_seek: cond!(stream_format == ast::AudioCodingFormat::Mp3, parse_le_i16) >>
+    (ast::tags::SoundStreamHead {
+      playback_sound_type,
+      playback_sound_size,
+      playback_sound_rate,
+      stream_sound_type,
+      stream_sound_size: if is_uncompressed_audio_coding_format(&stream_format) { stream_sound_size } else { ast::SoundSize::SoundSize16 },
+      stream_sound_rate,
+      stream_format,
+      stream_sample_count,
+      latency_seek,
     })
   )
 }

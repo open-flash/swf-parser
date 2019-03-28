@@ -54,7 +54,7 @@ import {
 } from "./image";
 import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
 import { parseShape, ShapeVersion } from "./shape";
-import { getAudioCodingFormatFromCode, getSoundRateFromCode } from "./sound";
+import { getAudioCodingFormatFromCode, getSoundRateFromCode, isUncompressedAudioCodingFormat } from "./sound";
 import {
   parseCsmTableHintBits,
   parseFontAlignmentZone,
@@ -150,6 +150,10 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseDoAction(byteStream);
     case 14:
       return parseDefineSound(byteStream);
+    case 18:
+      return parseSoundStreamHead(byteStream);
+    case 19:
+      return parseSoundStreamBlock(byteStream);
     case 20:
       return parseDefineBitsLossless(byteStream);
     case 21:
@@ -174,6 +178,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseDefineSprite(byteStream, context);
     case 43:
       return parseFrameLabel(byteStream);
+    case 45:
+      return parseSoundStreamHead2(byteStream);
     case 46:
       return parseDefineMorphShape(byteStream);
     case 56:
@@ -611,15 +617,17 @@ function parseDefineSound(byteStream: ReadableByteStream): tags.DefineSound {
 
   const flags: Uint8 = byteStream.readUint8();
   const soundType: SoundType = (flags & (1 << 0)) !== 0 ? SoundType.Stereo : SoundType.Mono;
-  const soundSize: SoundSize = (flags & (1 << 1)) !== 0 ? 16 : 8;
+  let soundSize: SoundSize = (flags & (1 << 1)) !== 0 ? 16 : 8;
   const soundRate: SoundRate = getSoundRateFromCode(((flags >>> 2) & 0b11) as Uint2);
   const format: AudioCodingFormat = getAudioCodingFormatFromCode(((flags >>> 4) & 0b1111) as Uint4);
+  if (!isUncompressedAudioCodingFormat(format)) {
+    soundSize = 16;
+  }
 
   const sampleCount: Uint32 = byteStream.readUint32LE();
   const data: Uint8Array = byteStream.tailBytes();
 
-  // TODO: Use this order in swf-tree
-  return {type: TagType.DefineSound, id, format, soundType, soundSize, soundRate, sampleCount, data};
+  return {type: TagType.DefineSound, id, soundType, soundSize, soundRate, format, sampleCount, data};
 }
 
 export function parseDefineSprite(byteStream: ReadableByteStream, context: ParseContext): tags.DefineSprite {
@@ -881,4 +889,51 @@ export function parseRemoveObject2(byteStream: ReadableByteStream): tags.RemoveO
 
 export function parseSetBackgroundColor(byteStream: ReadableByteStream): tags.SetBackgroundColor {
   return {type: TagType.SetBackgroundColor, color: parseSRgb8(byteStream)};
+}
+
+export function parseSoundStreamBlock(byteStream: ReadableByteStream): tags.SoundStreamBlock {
+  const data: Uint8Array = byteStream.tailBytes();
+  return {type: TagType.SoundStreamBlock, data};
+}
+
+export function parseSoundStreamHead(byteStream: ReadableByteStream): tags.SoundStreamHead {
+  // TODO: Check streamFormat and streamSoundSize?
+  return parseSoundStreamHeadAny(byteStream);
+}
+
+export function parseSoundStreamHead2(byteStream: ReadableByteStream): tags.SoundStreamHead {
+  return parseSoundStreamHeadAny(byteStream);
+}
+
+export function parseSoundStreamHeadAny(byteStream: ReadableByteStream): tags.SoundStreamHead {
+  const flags: Uint8 = byteStream.readUint16LE();
+  const playbackSoundType: SoundType = (flags & (1 << 0)) !== 0 ? SoundType.Stereo : SoundType.Mono;
+  const playbackSoundSize: SoundSize = (flags & (1 << 1)) !== 0 ? 16 : 8;
+  const playbackSoundRate: SoundRate = getSoundRateFromCode(((flags >>> 2) & 0b11) as Uint2);
+  // Bits [4,7] are reserved
+  const streamSoundType: SoundType = (flags & (1 << 8)) !== 0 ? SoundType.Stereo : SoundType.Mono;
+  let streamSoundSize: SoundSize = (flags & (1 << 9)) !== 0 ? 16 : 8;
+  const streamSoundRate: SoundRate = getSoundRateFromCode(((flags >>> 10) & 0b11) as Uint2);
+  const streamFormat: AudioCodingFormat = getAudioCodingFormatFromCode(((flags >>> 12) & 0b1111) as Uint4);
+  if (!isUncompressedAudioCodingFormat(streamFormat)) {
+    streamSoundSize = 16;
+  }
+
+  const streamSampleCount: Uint16 = byteStream.readUint16LE();
+  const latencySeek: Sint16 | undefined = streamFormat === AudioCodingFormat.Mp3
+    ? byteStream.readSint16LE()
+    : undefined;
+
+  return {
+    type: TagType.SoundStreamHead,
+    playbackSoundType,
+    playbackSoundSize,
+    playbackSoundRate,
+    streamSoundType,
+    streamSoundSize,
+    streamSoundRate,
+    streamFormat,
+    streamSampleCount,
+    latencySeek,
+  };
 }

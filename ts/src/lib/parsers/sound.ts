@@ -40,3 +40,7 @@ export function getAudioCodingFormatFromCode(formatCode: Uint4): AudioCodingForm
       throw new Incident("UnexpectedFormatCode", {code: formatCode});
   }
 }
+
+export function isUncompressedAudioCodingFormat(format: AudioCodingFormat): boolean {
+  return format === AudioCodingFormat.UncompressedNativeEndian || format === AudioCodingFormat.UncompressedLittleEndian;
+}
