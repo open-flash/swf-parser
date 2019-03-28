@@ -213,22 +213,22 @@ pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> IResult<&[u8], 
 }
 
 pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
-  let (input, id) = parse_le_u16(input)?;
-  let (input, data_len) = parse_le_u32(input)
+  let (ajpeg_data, id) = parse_le_u16(input)?;
+  let (input, data_len) = parse_le_u32(ajpeg_data)
     .map(|(i, dl)| (i, dl as usize))?;
-  let data_slice = &input[..data_len];
+  let data = &input[..data_len];
 
-  let (media_type, dimensions, data) = if test_image_start(data_slice, &JPEG_START) || (swf_version < 8 && test_image_start(data_slice, &ERRONEOUS_JPEG_START)) {
+  let (media_type, dimensions, data) = if test_image_start(data, &JPEG_START) || (swf_version < 8 && test_image_start(data, &ERRONEOUS_JPEG_START)) {
     let dimensions = get_jpeg_image_dimensions(&input[..data_len]).unwrap();
     if input.len() > data_len {
-      (ast::ImageType::Ajpeg, dimensions, input.to_vec())
+      (ast::ImageType::Ajpeg, dimensions, ajpeg_data.to_vec())
     } else {
-      (ast::ImageType::Jpeg, dimensions, data_slice.to_vec())
+      (ast::ImageType::Jpeg, dimensions, data.to_vec())
     }
-  } else if test_image_start(data_slice, &PNG_START) {
-    (ast::ImageType::Png, get_png_image_dimensions(data_slice).unwrap(), data_slice.to_vec())
-  } else if test_image_start(data_slice, &GIF_START) {
-    (ast::ImageType::Gif, get_gif_image_dimensions(data_slice).unwrap(), data_slice.to_vec())
+  } else if test_image_start(data, &PNG_START) {
+    (ast::ImageType::Png, get_png_image_dimensions(data).unwrap(), data.to_vec())
+  } else if test_image_start(data, &GIF_START) {
+    (ast::ImageType::Gif, get_gif_image_dimensions(data).unwrap(), data.to_vec())
   } else {
     panic!("UnknownBitmapType");
   };
@@ -418,13 +418,14 @@ pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
   )
 }
 
-pub fn parse_define_jpeg_tables(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineJpegTables> {
+pub fn parse_define_jpeg_tables(input: &[u8], _swf_version: u8) -> IResult<&[u8], ast::tags::DefineJpegTables> {
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
 
-  if !(test_image_start(&data, &JPEG_START) || (swf_version < 8 && test_image_start(&data, &ERRONEOUS_JPEG_START))) {
-    panic!("UnknownBitmapType");
-  }
+//  if !(test_image_start(&data, &JPEG_START) || (swf_version < 8 && test_image_start(&data, &ERRONEOUS_JPEG_START))) {
+//    panic!("InvalidJpegTablesSignature");
+//  }
+
   Ok((input, ast::tags::DefineJpegTables { data }))
 }
 

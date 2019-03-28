@@ -15,6 +15,8 @@ const JSON_READER: JsonReader = new JsonReader();
 const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 
 describe.only("movieFromBytes", function () {
+  this.timeout(10000);
+
   for (const sample of getSamples()) {
     it(sample.name, async function () {
       const inputBytes: Buffer = await readFile(sysPath.join(TEST_SAMPLES_ROOT, sample.name, "main.swf"));
@@ -84,9 +86,10 @@ interface Sample {
 }
 
 function* getSamples(): IterableIterator<Sample> {
-  // yield {name: "blank"};
-  // yield {name: "hello-world"};
-  // yield {name: "homestuck-beta-1"};
-  // yield {name: "morph-rotating-square"};
+  yield {name: "blank"};
+  yield {name: "hello-world"};
   yield {name: "homestuck-02791"};
+  // yield {name: "homestuck-beta-1"};
+  yield {name: "morph-rotating-square"};
+  yield {name: "squares"};
 }
