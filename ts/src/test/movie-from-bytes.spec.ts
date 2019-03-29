@@ -14,7 +14,7 @@ const JSON_READER: JsonReader = new JsonReader();
 const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 
 describe.only("movieFromBytes", function () {
-  this.timeout(10000);
+  this.timeout(300000); // The timeout is this high due to CI being extremely slow
 
   for (const sample of getSamples()) {
     it(sample.name, async function () {
