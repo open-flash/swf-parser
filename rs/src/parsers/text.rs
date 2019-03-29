@@ -106,10 +106,7 @@ pub fn parse_text_record(input: &[u8], has_alpha: bool, index_bits: usize, advan
     offset_y: cond!(has_offset_y, parse_le_i16) >>
     font_size: cond!(has_font, parse_le_u16) >>
     entry_count: parse_u8 >>
-    entries: bits!(length_count!(
-      value!(entry_count),
-      apply!(parse_glyph_entry, index_bits, advance_bits)
-    )) >>
+    entries: bits!(apply!(parse_glyph_entries, entry_count, index_bits, advance_bits)) >>
     (ast::text::TextRecord {
       font_id: font_id,
       color: color,
@@ -118,6 +115,13 @@ pub fn parse_text_record(input: &[u8], has_alpha: bool, index_bits: usize, advan
       font_size: font_size,
       entries: entries,
     })
+  )
+}
+
+pub fn parse_glyph_entries(input: (&[u8], usize), entry_count: u8, index_bits: usize, advance_bits: usize) -> IResult<(&[u8], usize), Vec<ast::text::GlyphEntry>> {
+  length_count!(input,
+    value!(entry_count),
+    apply!(parse_glyph_entry, index_bits, advance_bits)
   )
 }
 
