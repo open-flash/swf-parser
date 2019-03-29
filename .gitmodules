@@ -1,6 +1,3 @@
-[submodule "test/open-flash-db/avm1-scripts"]
-	path = test/open-flash-db/avm1-scripts
-	url = ../../open-flash-db/avm1-scripts.git
 [submodule "tests/open-flash-db/standalone-movies"]
 	path = tests/open-flash-db/standalone-movies
 	url = https://github.com/open-flash-db/standalone-movies.git

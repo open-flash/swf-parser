@@ -13,3 +13,10 @@ Both implementations support parsing of the general structure of SWF files (comp
 shapes, styles and AVM1 actions. The Rust parser also partially supports font definitions.
 
 You can check the test directory for some examples of output (`*.expected.json`).
+
+The test samples are defined in Git submodules. To run the tests, you need to make sure that
+the Git submodules are up-to-date:
+
+```sh
+git submodule update --recursive --remote
+```
