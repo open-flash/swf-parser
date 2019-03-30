@@ -172,7 +172,7 @@ dependencies = [
 
 [[package]]
 name = "swf-fixed"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -188,23 +188,21 @@ dependencies = [
  "nom 4.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "swf-fixed 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "swf-tree 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "swf-fixed 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "swf-tree 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "test-generator 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "swf-tree"
-version = "0.3.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "swf-fixed 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "swf-fixed 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -281,8 +279,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)" = "92514fb95f900c9b5126e32d020f5c6d40564c27a5ea6d1d7d9f157a96623560"
 "checksum serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)" = "bb6eabf4b5914e88e24eea240bb7c9f9a2cbc1bbbe8d961d381975ec3c6b806c"
 "checksum serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)" = "5a23aa71d4a4d43fdbfaac00eff68ba8a06a51759a89ac3304323e800c4dd40d"
-"checksum swf-fixed 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a415efca192c4f4881d9e963d582e95c2c6f6be71cea59a42126068bedd1e0b1"
-"checksum swf-tree 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aa0ce102bbc627f495a54f0f90a3ac2639c606d8c722dc646681d48271d0e0fa"
+"checksum swf-fixed 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f58f3f8a3cb887fcf22d47590ce187e4541729700a9cc24ad582fc54d240f911"
+"checksum swf-tree 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0e8dabe97879fbff4fdc74c34f78ad0ddc2c42a1bf479381c6758844732e1fd3"
 "checksum syn 0.15.29 (registry+https://github.com/rust-lang/crates.io-index)" = "1825685f977249735d510a242a6727b46efe914bb67e38d30c071b1b72b1d5c2"
 "checksum test-generator 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9b26bb9ef026bbc1e5abab33e3299be7b31b73790c0980e225241d694ccd6f71"
 "checksum thread_local 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "c6b53e329000edc2b34dbe8545fd20e55a333362d0a321909685a19bd28c3f1b"

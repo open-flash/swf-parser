@@ -1,3 +1,4 @@
+use nom::{IResult as NomResult, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use swf_tree as ast;
 
 pub fn sound_rate_from_id(sound_rate_id: u8) -> ast::SoundRate {
@@ -31,4 +32,44 @@ pub fn is_uncompressed_audio_coding_format(format: &ast::AudioCodingFormat) -> b
     ast::AudioCodingFormat::UncompressedLittleEndian => true,
     _ => false,
   }
+}
+
+pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], ast::SoundInfo> {
+  do_parse!(
+    input,
+    flags: parse_u8 >>
+    has_in_point: value!((flags & (1 << 0)) != 0) >>
+    has_out_point: value!((flags & (1 << 1)) != 0) >>
+    has_loops: value!((flags & (1 << 2)) != 0) >>
+    has_envelope: value!((flags & (1 << 3)) != 0) >>
+    sync_no_multiple: value!((flags & (1 << 4)) != 0) >>
+    sync_stop: value!((flags & (1 << 5)) != 0) >>
+    // Bits [6, 7] are reserved
+    in_point: cond!(has_in_point, parse_le_u32) >>
+    out_point: cond!(has_out_point, parse_le_u32) >>
+    loop_count: cond!(has_loops, parse_le_u16) >>
+    envelope_records: cond!(has_envelope, length_count!(parse_u8, parse_sound_envelope)) >>
+    (ast::SoundInfo {
+      sync_stop,
+      sync_no_multiple,
+      in_point,
+      out_point,
+      loop_count,
+      envelope_records,
+    })
+  )
+}
+
+pub fn parse_sound_envelope(input: &[u8]) -> NomResult<&[u8], ast::SoundEnvelope> {
+  do_parse!(
+    input,
+    pos44: parse_le_u32 >>
+    left_level: parse_le_u16 >>
+    right_level: parse_le_u16 >>
+    (ast::SoundEnvelope {
+      pos44,
+      left_level,
+      right_level,
+    })
+  )
 }

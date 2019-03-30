@@ -26,6 +26,7 @@ import { ButtonRecord } from "swf-tree/button/button-record";
 import { ImageType } from "swf-tree/image-type";
 import { MorphShape } from "swf-tree/morph-shape";
 import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
+import { SoundInfo } from "swf-tree/sound/sound-info";
 import { SoundRate } from "swf-tree/sound/sound-rate";
 import { SoundSize } from "swf-tree/sound/sound-size";
 import { SoundType } from "swf-tree/sound/sound-type";
@@ -54,7 +55,12 @@ import {
 } from "./image";
 import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
 import { parseShape, ShapeVersion } from "./shape";
-import { getAudioCodingFormatFromCode, getSoundRateFromCode, isUncompressedAudioCodingFormat } from "./sound";
+import {
+  getAudioCodingFormatFromCode,
+  getSoundRateFromCode,
+  isUncompressedAudioCodingFormat,
+  parseSoundInfo,
+} from "./sound";
 import {
   parseCsmTableHintBits,
   parseFontAlignmentZone,
@@ -150,6 +156,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseDoAction(byteStream);
     case 14:
       return parseDefineSound(byteStream);
+    case 15:
+      return parseStartSound(byteStream);
     case 18:
       return parseSoundStreamHead(byteStream);
     case 19:
@@ -188,6 +196,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseImportAssets(byteStream);
     case 59:
       return parseDoInitAction(byteStream);
+    case 65:
+      return parseScriptLimits(byteStream);
     case 69:
       return parseFileAttributes(byteStream);
     case 70:
@@ -200,8 +210,12 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseCsmTextSettings(byteStream);
     case 75:
       return parseDefineFont3(byteStream);
+    case 76:
+      return parseSymbolClass(byteStream);
     case 77:
       return parseMetadata(byteStream);
+    case 82:
+      return parseDoAbc(byteStream);
     case 83:
       return parseDefineShape4(byteStream);
     case 84:
@@ -210,6 +224,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseDefineSceneAndFrameLabelData(byteStream);
     case 88:
       return parseDefineFontName(byteStream);
+    case 89:
+      return parseStartSound2(byteStream);
     case 90:
       return parseDefineBitsJpeg4(byteStream, context.getVersion());
     default:
@@ -653,6 +669,13 @@ export function parseDefineText(byteStream: ReadableByteStream): tags.DefineText
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 
+export function parseDoAbc(byteStream: ReadableByteStream): tags.DoAbc {
+  const flags: Uint32 = byteStream.readUint32LE();
+  const name: string = byteStream.readCString();
+  const data: Uint8Array = Uint8Array.from(byteStream.tailBytes());
+  return {type: TagType.DoAbc, flags, name, data};
+}
+
 export function parseDoAction(byteStream: ReadableByteStream): tags.DoAction {
   const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
   return {type: TagType.DoAction, actions};
@@ -667,7 +690,7 @@ export function parseDoInitAction(byteStream: ReadableByteStream): tags.DoInitAc
 export function parseExportAssets(byteStream: ReadableByteStream): tags.ExportAssets {
   const assetCount: UintSize = byteStream.readUint16LE();
   const assets: NamedId[] = [];
-  for (let i: number = 0; i < assetCount; i++) {
+  for (let i: UintSize = 0; i < assetCount; i++) {
     const id: Uint16 = byteStream.readUint16LE();
     const name: string = byteStream.readCString();
     assets.push({id, name});
@@ -887,6 +910,12 @@ export function parseRemoveObject2(byteStream: ReadableByteStream): tags.RemoveO
   return {type: TagType.RemoveObject, depth};
 }
 
+export function parseScriptLimits(byteStream: ReadableByteStream): tags.ScriptLimits {
+  const maxRecursionDepth: Uint16 = byteStream.readUint16LE();
+  const scriptTimeout: Uint16 = byteStream.readUint16LE();
+  return {type: TagType.ScriptLimits, maxRecursionDepth, scriptTimeout};
+}
+
 export function parseSetBackgroundColor(byteStream: ReadableByteStream): tags.SetBackgroundColor {
   return {type: TagType.SetBackgroundColor, color: parseSRgb8(byteStream)};
 }
@@ -935,5 +964,31 @@ export function parseSoundStreamHeadAny(byteStream: ReadableByteStream): tags.So
     streamFormat,
     streamSampleCount,
     latencySeek,
+  };
+}
+
+export function parseStartSound(byteStream: ReadableByteStream): tags.StartSound {
+  const soundId: Uint16 = byteStream.readUint16LE();
+  const soundInfo: SoundInfo = parseSoundInfo(byteStream);
+  return {type: TagType.StartSound, soundId, soundInfo};
+}
+
+export function parseStartSound2(byteStream: ReadableByteStream): tags.StartSound2 {
+  const soundClassName: string = byteStream.readCString();
+  const soundInfo: SoundInfo = parseSoundInfo(byteStream);
+  return {type: TagType.StartSound2, soundClassName, soundInfo};
+}
+
+export function parseSymbolClass(byteStream: ReadableByteStream): tags.SymbolClass {
+  const symbolCount: UintSize = byteStream.readUint16LE();
+  const symbols: NamedId[] = [];
+  for (let i: UintSize = 0; i < symbolCount; i++) {
+    const id: Uint16 = byteStream.readUint16LE();
+    const name: string = byteStream.readCString();
+    symbols.push({id, name});
+  }
+  return {
+    type: TagType.SymbolClass,
+    symbols,
   };
 }

@@ -25,7 +25,7 @@ use crate::parsers::image::PNG_START;
 use crate::parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
 use crate::parsers::movie::parse_tag_block_string;
 use crate::parsers::shape::{parse_shape, ShapeVersion};
-use crate::parsers::sound::{audio_coding_format_from_id, is_uncompressed_audio_coding_format, sound_rate_from_id};
+use crate::parsers::sound::{audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id};
 use crate::parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use crate::state::ParseState;
 
@@ -71,6 +71,7 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           // TODO: Ignore DoAction if version >= 9 && use_as3
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
           14 => map!(record_data, parse_define_sound, |t| ast::Tag::DefineSound(t)),
+          15 => map!(record_data, parse_start_sound, |t| ast::Tag::StartSound(t)),
           18 => map!(record_data, parse_sound_stream_head, |t| ast::Tag::SoundStreamHead(t)),
           19 => map!(record_data, parse_sound_stream_block, |t| ast::Tag::SoundStreamBlock(t)),
           20 => map!(record_data, parse_define_bits_lossless, |t| ast::Tag::DefineBitmap(t)),
@@ -90,17 +91,21 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           57 => map!(record_data, parse_import_assets, |t| ast::Tag::ImportAssets(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
+          65 => map!(record_data, parse_script_limits, |t| ast::Tag::ScriptLimits(t)),
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
           70 => map!(record_data, apply!(parse_place_object3, state.get_swf_version() >= 6), |t| ast::Tag::PlaceObject(t)),
           71 => map!(record_data, parse_import_assets2, |t| ast::Tag::ImportAssets(t)),
           73 => map!(record_data, apply!(parse_define_font_align_zones, |font_id| state.get_glyph_count(font_id)), |t| ast::Tag::DefineFontAlignZones(t)),
           74 => map!(record_data, parse_csm_text_settings, |t| ast::Tag::CsmTextSettings(t)),
           75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont(t)),
+          76 => map!(record_data, parse_symbol_class, |t| ast::Tag::SymbolClass(t)),
           77 => map!(record_data, parse_metadata, |t| ast::Tag::Metadata(t)),
+          82 => map!(record_data, parse_do_abc, |t| ast::Tag::DoAbc(t)),
           83 => map!(record_data, parse_define_shape4, |t| ast::Tag::DefineShape(t)),
           84 => map!(record_data, parse_define_morph_shape2, |t| ast::Tag::DefineMorphShape(t)),
           86 => map!(record_data, parse_define_scene_and_frame_label_data_tag, |t| ast::Tag::DefineSceneAndFrameLabelData(t)),
           88 => map!(record_data, parse_define_font_name, |t| ast::Tag::DefineFontName(t)),
+          89 => map!(record_data, parse_start_sound2, |t| ast::Tag::StartSound2(t)),
           _ => {
             Ok((&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() })))
           }
@@ -279,6 +284,7 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
     id: parse_le_u16 >>
     bounds: parse_rect >>
 
+    // TODO: parse_le_u16
     flags: parse_be_u16 >>
     has_text: value!((flags & (1 << 15)) != 0) >>
     word_wrap: value!((flags & (1 << 14)) != 0) >>
@@ -612,17 +618,23 @@ pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> 
   )
 }
 
+pub fn parse_do_abc(input: &[u8]) -> IResult<&[u8], ast::tags::DoAbc> {
+  let (input, flags) = parse_le_u32(input)?;
+  let (input, name) = parse_c_string(input)?;
+  let (input, data) = (&[][..], input.to_vec());
+  let tag = ast::tags::DoAbc { flags, name, data };
+  Ok((input, tag))
+}
+
 pub fn parse_do_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoAction> {
   Ok((&[][..], ast::tags::DoAction { actions: input.to_vec() }))
 }
 
 pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAction> {
   let (input, sprite_id) = parse_le_u16(input)?;
-  let tag = ast::tags::DoInitAction {
-    sprite_id: sprite_id,
-    actions: input.to_vec(),
-  };
-  Ok((&[][..], tag))
+  let (input, actions) = (&[][..], input.to_vec());
+  let tag = ast::tags::DoInitAction { sprite_id, actions };
+  Ok((input, tag))
 }
 
 pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAssets> {
@@ -878,6 +890,18 @@ pub fn parse_remove_object2(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObj
   )
 }
 
+pub fn parse_script_limits(input: &[u8]) -> IResult<&[u8], ast::tags::ScriptLimits> {
+  do_parse!(
+    input,
+    max_recursion_depth: parse_le_u16 >>
+    script_timeout: parse_le_u16 >>
+    (ast::tags::ScriptLimits {
+      max_recursion_depth,
+      script_timeout,
+    })
+  )
+}
+
 pub fn parse_set_background_color_tag(input: &[u8]) -> IResult<&[u8], ast::tags::SetBackgroundColor> {
   do_parse!(
     input,
@@ -942,6 +966,40 @@ fn parse_sound_stream_head_any(input: &[u8]) -> IResult<&[u8], ast::tags::SoundS
       stream_format,
       stream_sample_count,
       latency_seek,
+    })
+  )
+}
+
+pub fn parse_start_sound(input: &[u8]) -> IResult<&[u8], ast::tags::StartSound> {
+  do_parse!(
+    input,
+    sound_id: parse_le_u16 >>
+    sound_info: parse_sound_info >>
+    (ast::tags::StartSound {
+      sound_id,
+      sound_info,
+    })
+  )
+}
+
+pub fn parse_start_sound2(input: &[u8]) -> IResult<&[u8], ast::tags::StartSound2> {
+  do_parse!(
+    input,
+    sound_class_name: parse_c_string >>
+    sound_info: parse_sound_info >>
+    (ast::tags::StartSound2 {
+      sound_class_name,
+      sound_info,
+    })
+  )
+}
+
+pub fn parse_symbol_class(input: &[u8]) -> IResult<&[u8], ast::tags::SymbolClass> {
+  do_parse!(
+    input,
+    symbols: length_count!(parse_le_u16, parse_named_id) >>
+    (ast::tags::SymbolClass {
+      symbols,
     })
   )
 }

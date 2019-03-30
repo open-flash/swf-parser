@@ -321,9 +321,9 @@
   integrity sha512-1axi39YdtBI7z957vdqXI4Ac25e7YihYQtJa+Clnxg1zTJEaIRbndt71O3sP4GAMgiAm0pY26/b9BrY4MR/PMw==
 
 "@types/node@*":
-  version "11.12.0"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.12.0.tgz#ec5594728811dc2797e42396cfcdf786f2052c12"
-  integrity sha512-Lg00egj78gM+4aE0Erw05cuDbvX9sLJbaaPwwRtdCdAMnIudqrQZ0oZX98Ek0yiSK/A2nubHgJfvII/rTT2Dwg==
+  version "11.12.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-11.12.1.tgz#d90123f6c61fdf2f7cddd286ddae891586dd3488"
+  integrity sha512-sKDlqv6COJrR7ar0+GqqhrXQDzQlMcqMnF2iEU6m9hLo8kxozoAGUazwPyELHlRVmjsbvlnGXjnzyptSXVmceA==
 
 "@types/node@^10.12.18":
   version "10.14.4"
@@ -3871,10 +3871,10 @@ sver-compat@^1.5.0:
     es6-iterator "^2.0.1"
     es6-symbol "^3.1.1"
 
-swf-tree@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.3.0.tgz#8d912839b85efdc33d207fc064c1aa942798c1b8"
-  integrity sha512-LKokaLQ2iooBMC39dAXCp9qf7M+cAtU+pZhqJW1XAZxzcSLYpVlRJwUbGNLY+W7tTwcdpRn7WEyaImjyAqKF3A==
+swf-tree@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.4.0.tgz#417b5cc5d9b926eea354caa7ed623ed815f6c171"
+  integrity sha512-cXLEUnQQKGCnhezbFW2MjUlIQL2rud+40sdjXYoP/3YPRgIK5wdKSHE7yEgEa6G1s0Xr1lMsu6y5U4ss4LAIkg==
   dependencies:
     incident "^3.2.0"
     kryo "^0.8.1"
@@ -4160,9 +4160,9 @@ typescript@3.1.x:
   integrity sha512-tDMYfVtvpb96msS1lDX9MEdHrW4yOuZ4Kdc4Him9oU796XldPYF/t2+uKoX0BBa0hXXwDlqYQbXY5Rzjzc5hBA==
 
 typescript@^3.2.1, typescript@^3.2.4:
-  version "3.3.4000"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.3.4000.tgz#76b0f89cfdbf97827e1112d64f283f1151d6adf0"
-  integrity sha512-jjOcCZvpkl2+z7JFn0yBOoLQyLoIkNZAs/fYJkUG6VKy6zLPHJGfQJYFHzibB6GJaF/8QrcECtlQ5cpvRHSMEA==
+  version "3.4.1"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.4.1.tgz#b6691be11a881ffa9a05765a205cb7383f3b63c6"
+  integrity sha512-3NSMb2VzDQm8oBTLH6Nj55VVtUEpe/rgkIzMir0qVoLyjDZlnMBva0U6vDiV3IH+sl/Yu6oP5QwsAQtHPmDd2Q==
 
 uglify-js@^3.1.4:
   version "3.5.2"

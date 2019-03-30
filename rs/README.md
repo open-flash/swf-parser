@@ -5,7 +5,6 @@
 
 # SWF Parser
 
-[![npm](https://img.shields.io/npm/v/swf-parser.svg?maxAge=2592000)](https://www.npmjs.com/package/swf-parser)
 [![crates.io](https://img.shields.io/crates/v/swf-parser.svg?maxAge=2592000)](https://crates.io/crates/swf-parser)
 [![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
 [![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg?maxAge=2592000)](https://travis-ci.org/open-flash/swf-parser)

@@ -2,8 +2,6 @@ extern crate inflate;
 #[macro_use]
 extern crate nom;
 extern crate num_traits;
-extern crate serde;
-extern crate serde_derive;
 extern crate swf_fixed;
 extern crate swf_tree;
 
