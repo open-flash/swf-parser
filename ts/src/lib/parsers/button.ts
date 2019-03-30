@@ -101,12 +101,12 @@ export function parseButtonCond(byteStream: ReadableByteStream): ButtonCond {
   let keyPress: Uint7 | undefined = (flags >> 0) & 0x7f;
   if (keyPress === 0) {
     keyPress = undefined;
-  } else if (
-    keyPress === 7
-    || (9 <= keyPress && keyPress <= 12)
-    || (20 <= keyPress && keyPress <= 31)
-    || keyPress > 126
-  ) {
+  } else if (!(
+    (1 <= keyPress && keyPress <= 6)
+    || keyPress === 8
+    || (13 <= keyPress && keyPress <= 19)
+    || (32 <= keyPress && keyPress <= 126)
+  )) {
     throw new Incident("InvalidKeyCode", {code: keyPress});
   }
 

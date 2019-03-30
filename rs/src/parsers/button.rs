@@ -110,8 +110,8 @@ pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
   fn key_press_from_id(key_press_id: u16) -> Option<u32> {
     match key_press_id {
       0 => Option::None,
-      k @ 1..=6 | k @ 13..=19 | k @ 32..=126 => Some(k as u32),
-      _ => panic!("InvalidKeyCode"),
+      k @ 1..=6 | k @ 8 | k @ 13..=19 | k @ 32..=126 => Some(k as u32),
+      _ => panic!("InvalidKeyCode: {}", key_press_id),
     }
   }
 
