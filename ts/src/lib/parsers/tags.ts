@@ -349,10 +349,19 @@ export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineB
   const flags: Uint8 = byteStream.readUint8();
   const trackAsMenu: boolean = (flags & (1 << 0)) !== 0;
   // Skip bits [1, 7]
-  // TODO: Assert action offset matches
+  const pos: UintSize = byteStream.bytePos;
   const actionOffset: Uint16 = byteStream.readUint16LE();
   const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button2);
-  const actions: ButtonCondAction[] = actionOffset === 0 ? [] : parseButton2CondActionString(byteStream);
+  let actions: ButtonCondAction[];
+  if (actionOffset === 0) {
+    actions = [];
+  } else {
+    const actionPos: UintSize = pos + actionOffset;
+    if (byteStream.bytePos !== actionPos) {
+      throw new Error("Bytestream position does not match DefineButton2 action position");
+    }
+    actions = parseButton2CondActionString(byteStream);
+  }
   return {type: TagType.DefineButton, id, trackAsMenu, characters, actions};
 }
 

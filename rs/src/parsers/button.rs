@@ -82,8 +82,17 @@ pub fn parse_button2_cond_action_string(input: &[u8]) -> NomResult<&[u8], Vec<as
   let mut current_input: &[u8] = input;
   loop {
     let (input, next_action_offset) = parse_le_u16(current_input)?;
+
+    let (input, next_input) = if next_action_offset == 0 {
+      (input, &[] as &[u8])
+    } else {
+      let next_action_offset = next_action_offset as usize;
+      let le_u16_size = current_input.len() - input.len();
+      (&current_input[le_u16_size..next_action_offset], &current_input[next_action_offset..])
+    };
+
     match parse_button2_cond_action(input) {
-      Ok((next_input, cond_action)) => {
+      Ok((_, cond_action)) => {
         current_input = next_input;
         result.push(cond_action);
       }

@@ -1,6 +1,6 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
-import { Uint16, Uint7, Uint8 } from "semantic-types";
+import { Uint16, Uint7, Uint8, UintSize } from "semantic-types";
 import { BlendMode } from "swf-tree/blend-mode";
 import { ButtonCond } from "swf-tree/button/button-cond";
 import { ButtonCondAction } from "swf-tree/button/button-cond-action";
@@ -82,8 +82,16 @@ export function parseButton2CondActionString(byteStream: ReadableByteStream): Bu
 
   let nextActionOffset: Uint16;
   do {
+    const pos: UintSize = byteStream.bytePos;
     nextActionOffset = byteStream.readUint16LE();
-    result.push(parseButton2CondAction(byteStream));
+    let condActionStream: ReadableByteStream;
+    if (nextActionOffset === 0) {
+      condActionStream = byteStream;
+    } else {
+      const condActionSize: UintSize = pos + nextActionOffset - byteStream.bytePos;
+      condActionStream = byteStream.take(condActionSize);
+    }
+    result.push(parseButton2CondAction(condActionStream));
   } while (nextActionOffset !== 0);
 
   return result;
