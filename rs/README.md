@@ -20,7 +20,7 @@ use swf_tree;
 
 fn main() {
   let bytes: &[u8] = ...;
-  let (_, movie): (_, swf_tree::Movie) = swf_parser::parsers::movie::parse_movie(&data[..])
+  let (_, movie): (_, swf_tree::Movie) = swf_parser::parsers::movie::parse_movie(&bytes[..])
   .expect("Failed to parse movie");
 }
 ```
@@ -36,13 +36,16 @@ git clone --recurse-submodules git://github.com/open-flash/swf-parser.git
 git submodule update --recursive --remote
 ```
 
-This library uses Gulp and npm for its builds, yarn is recommended for the
-dependencies.
+This library is a standard Cargo project. You can test your changes with
+`cargo test`.
+
+The Rust implementation supports fuzzing:
 
 ```
-npm install
-# work your changes...
-npm test
+# Make sure that you have `cargo-fuzz`
+cargo install cargo-fuzz
+# Fuzz the `movie` parser
+cargo fuzz run movie
 ```
 
 Prefer non-`master` branches when sending a PR so your changes can be rebased if

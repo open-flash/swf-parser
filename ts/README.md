@@ -39,8 +39,14 @@ git clone --recurse-submodules git://github.com/open-flash/swf-parser.git
 git submodule update --recursive --remote
 ```
 
-This library is a standard Cargo project. You can test your changes with
-`cargo test`.
+This library uses Gulp and npm for its builds, yarn is recommended for the
+dependencies.
+
+```
+npm install
+# work your changes...
+npm test
+```
 
 Prefer non-`master` branches when sending a PR so your changes can be rebased if
 needed. All the commits must be made on top of `master` (fast-forward merge).
