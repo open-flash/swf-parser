@@ -106,7 +106,16 @@ export function parseButton2CondAction(byteStream: ReadableByteStream): ButtonCo
 export function parseButtonCond(byteStream: ReadableByteStream): ButtonCond {
   const flags: Uint16 = byteStream.readUint16LE();
 
-  let keyPress: Uint7 | undefined = (flags >> 0) & 0x7f;
+  const idleToOverUp: boolean = (flags & (1 << 0)) !== 0;
+  const overUpToIdle: boolean = (flags & (1 << 1)) !== 0;
+  const overUpToOverDown: boolean = (flags & (1 << 2)) !== 0;
+  const overDownToOverUp: boolean = (flags & (1 << 3)) !== 0;
+  const overDownToOutDown: boolean = (flags & (1 << 4)) !== 0;
+  const outDownToOverDown: boolean = (flags & (1 << 5)) !== 0;
+  const outDownToIdle: boolean = (flags & (1 << 6)) !== 0;
+  const idleToOverDown: boolean = (flags & (1 << 7)) !== 0;
+  const overDownToIdle: boolean = (flags & (1 << 8)) !== 0;
+  let keyPress: Uint7 | undefined = (flags >> 9) & 0x7f;
   if (keyPress === 0) {
     keyPress = undefined;
   } else if (!(
@@ -117,16 +126,6 @@ export function parseButtonCond(byteStream: ReadableByteStream): ButtonCond {
   )) {
     throw new Incident("InvalidKeyCode", {code: keyPress});
   }
-
-  const overDownToIdle: boolean = (flags & (1 << 7)) !== 0;
-  const idleToOverUp: boolean = (flags & (1 << 8)) !== 0;
-  const overUpToIdle: boolean = (flags & (1 << 9)) !== 0;
-  const overUpToOverDown: boolean = (flags & (1 << 10)) !== 0;
-  const overDownToOverUp: boolean = (flags & (1 << 11)) !== 0;
-  const overDownToOutDown: boolean = (flags & (1 << 12)) !== 0;
-  const outDownToOverDown: boolean = (flags & (1 << 13)) !== 0;
-  const outDownToIdle: boolean = (flags & (1 << 14)) !== 0;
-  const idleToOverDown: boolean = (flags & (1 << 15)) !== 0;
 
   return {
     keyPress,

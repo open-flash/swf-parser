@@ -127,16 +127,16 @@ pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
   do_parse!(
     input,
     flags: parse_le_u16 >>
-    key_press: map!(value!((flags >> 0) & 0x7f), key_press_from_id) >>
-    over_down_to_idle: value!((flags & (1 << 7)) != 0) >>
-    idle_to_over_up: value!((flags & (1 << 8)) != 0) >>
-    over_up_to_idle: value!((flags & (1 << 9)) != 0) >>
-    over_up_to_over_down: value!((flags & (1 << 10)) != 0) >>
-    over_down_to_over_up: value!((flags & (1 << 11)) != 0) >>
-    over_down_to_out_down: value!((flags & (1 << 12)) != 0) >>
-    out_down_to_over_down: value!((flags & (1 << 13)) != 0) >>
-    out_down_to_idle: value!((flags & (1 << 14)) != 0) >>
-    idle_to_over_down: value!((flags & (1 << 15)) != 0) >>
+    idle_to_over_up: value!((flags & (1 << 0)) != 0) >>
+    over_up_to_idle: value!((flags & (1 << 1)) != 0) >>
+    over_up_to_over_down: value!((flags & (1 << 2)) != 0) >>
+    over_down_to_over_up: value!((flags & (1 << 3)) != 0) >>
+    over_down_to_out_down: value!((flags & (1 << 4)) != 0) >>
+    out_down_to_over_down: value!((flags & (1 << 5)) != 0) >>
+    out_down_to_idle: value!((flags & (1 << 6)) != 0) >>
+    idle_to_over_down: value!((flags & (1 << 7)) != 0) >>
+    over_down_to_idle: value!((flags & (1 << 8)) != 0) >>
+    key_press: map!(value!((flags >> 9) & 0x7f), key_press_from_id) >>
     (ast::ButtonCond {
       key_press,
       over_down_to_idle,
