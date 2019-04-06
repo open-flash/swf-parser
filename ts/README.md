@@ -5,9 +5,9 @@
 
 # SWF Parser (Typescript)
 
-[![npm](https://img.shields.io/npm/v/swf-parser.svg?maxAge=2592000)](https://www.npmjs.com/package/swf-parser)
-[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
-[![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg?maxAge=2592000)](https://travis-ci.org/open-flash/swf-parser)
+[![npm](https://img.shields.io/npm/v/swf-parser.svg?maxAge=86400)](https://www.npmjs.com/package/swf-parser)
+[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg?maxAge=86400)](https://github.com/open-flash/swf-parser)
+[![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg?maxAge=86400)](https://travis-ci.org/open-flash/swf-parser)
 
 SWF parser implemented in Typescript, for Node and browsers.
 Converts bytes to [`swf-tree` movies][swf-tree].
