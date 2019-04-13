@@ -121,27 +121,27 @@ export function parseShapeRecordStringBits(
   return result;
 }
 
-export function parseCurvedEdgeBits(bitStream: ReadableBitStream): shapeRecords.CurvedEdge {
+export function parseCurvedEdgeBits(bitStream: ReadableBitStream): shapeRecords.Edge {
   const nBits: UintSize = bitStream.readUint16Bits(4) + 2;
   const controlX: Sint32 = bitStream.readSint32Bits(nBits);
   const controlY: Sint32 = bitStream.readSint32Bits(nBits);
-  const deltaX: Sint32 = bitStream.readSint32Bits(nBits);
-  const deltaY: Sint32 = bitStream.readSint32Bits(nBits);
+  const anchorX: Sint32 = bitStream.readSint32Bits(nBits);
+  const anchorY: Sint32 = bitStream.readSint32Bits(nBits);
   return {
-    type: ShapeRecordType.CurvedEdge,
+    type: ShapeRecordType.Edge,
     controlDelta: {x: controlX, y: controlY},
-    anchorDelta: {x: deltaX, y: deltaY},
+    delta: {x: controlX + anchorX, y: controlY + anchorY},
   };
 }
 
-export function parseStraightEdgeBits(bitStream: ReadableBitStream): shapeRecords.StraightEdge {
+export function parseStraightEdgeBits(bitStream: ReadableBitStream): shapeRecords.Edge {
   const nBits: UintSize = bitStream.readUint16Bits(4) + 2;
   const isDiagonal: boolean = bitStream.readBoolBits();
   const isVertical: boolean = !isDiagonal && bitStream.readBoolBits();
   const deltaX: Sint32 = isDiagonal || !isVertical ? bitStream.readSint32Bits(nBits) : 0;
   const deltaY: Sint32 = isDiagonal || isVertical ? bitStream.readSint32Bits(nBits) : 0;
   return {
-    type: ShapeRecordType.StraightEdge,
+    type: ShapeRecordType.Edge,
     delta: {x: deltaX, y: deltaY},
   };
 }

@@ -1,5 +1,7 @@
 use nom::{IResult as NomResult, Needed};
 use nom::{le_u16 as parse_le_u16, le_u8 as parse_u8};
+use swf_tree as ast;
+
 use crate::parsers::basic_data_types::{
   parse_bool_bits,
   parse_i32_bits,
@@ -11,7 +13,6 @@ use crate::parsers::basic_data_types::{
 };
 use crate::parsers::gradient::parse_morph_gradient;
 use crate::parsers::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits};
-use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum MorphShapeVersion {
@@ -76,8 +77,7 @@ pub fn parse_morph_shape_styles_bits(input: (&[u8], usize), version: MorphShapeV
 }
 
 enum MixedShapeRecord {
-  StraightEdge(ast::shape_records::StraightEdge),
-  CurvedEdge(ast::shape_records::CurvedEdge),
+  Edge(ast::shape_records::Edge),
   MorphStyleChange(ast::shape_records::MorphStyleChange),
 }
 
@@ -113,15 +113,13 @@ fn parse_morph_shape_start_record_string_bits(input: (&[u8], usize), mut fill_bi
         Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
         Err(e) => return Err(e),
       };
-      if is_straight_edge {
-        let (next_input, straight_edge) = parse_straight_edge_bits(current_input)?;
-        current_input = next_input;
-        result.push(MixedShapeRecord::StraightEdge(straight_edge));
+      let (next_input, edge) = if is_straight_edge {
+        parse_straight_edge_bits(current_input)?
       } else {
-        let (next_input, curved_edge) = parse_curved_edge_bits(current_input)?;
-        current_input = next_input;
-        result.push(MixedShapeRecord::CurvedEdge(curved_edge));
-      }
+        parse_curved_edge_bits(current_input)?
+      };
+      current_input = next_input;
+      result.push(MixedShapeRecord::Edge(edge));
     } else {
       let (next_input, (style_change, style_bits)) = parse_morph_style_change_bits(current_input, fill_bits, line_bits, version)?;
       fill_bits = style_bits.0;
@@ -134,47 +132,16 @@ fn parse_morph_shape_start_record_string_bits(input: (&[u8], usize), mut fill_bi
   Ok((current_input, result))
 }
 
-fn to_curved_edge(straight: ast::shape_records::StraightEdge) -> ast::shape_records::CurvedEdge {
-  ast::shape_records::CurvedEdge {
-    control_delta: ast::Vector2D { x: straight.delta.x / 2, y: straight.delta.y / 2 },
-    anchor_delta: ast::Vector2D { x: straight.delta.x / 2, y: straight.delta.y / 2 },
-  }
-}
-
 fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> ast::MorphShapeRecord {
   match (start, end) {
-    (MixedShapeRecord::StraightEdge(s), MixedShapeRecord::StraightEdge(e)) => {
-      ast::MorphShapeRecord::StraightEdge(ast::shape_records::MorphStraightEdge {
+    (MixedShapeRecord::Edge(s), MixedShapeRecord::Edge(e)) => {
+      ast::MorphShapeRecord::Edge(ast::shape_records::MorphEdge {
         delta: s.delta,
         morph_delta: e.delta,
-      })
-    },
-    (MixedShapeRecord::StraightEdge(s), MixedShapeRecord::CurvedEdge(e)) => {
-      let s = to_curved_edge(s);
-      ast::MorphShapeRecord::CurvedEdge(ast::shape_records::MorphCurvedEdge {
         control_delta: s.control_delta,
-        anchor_delta: s.anchor_delta,
         morph_control_delta: e.control_delta,
-        morph_anchor_delta: e.anchor_delta,
       })
-    },
-    (MixedShapeRecord::CurvedEdge(s), MixedShapeRecord::StraightEdge(e)) => {
-      let e = to_curved_edge(e);
-      ast::MorphShapeRecord::CurvedEdge(ast::shape_records::MorphCurvedEdge {
-        control_delta: s.control_delta,
-        anchor_delta: s.anchor_delta,
-        morph_control_delta: e.control_delta,
-        morph_anchor_delta: e.anchor_delta,
-      })
-    },
-    (MixedShapeRecord::CurvedEdge(s), MixedShapeRecord::CurvedEdge(e)) => {
-      ast::MorphShapeRecord::CurvedEdge(ast::shape_records::MorphCurvedEdge {
-        control_delta: s.control_delta,
-        anchor_delta: s.anchor_delta,
-        morph_control_delta: e.control_delta,
-        morph_anchor_delta: e.anchor_delta,
-      })
-    },
+    }
     (MixedShapeRecord::MorphStyleChange(s), MixedShapeRecord::MorphStyleChange(e)) => {
       ast::MorphShapeRecord::StyleChange(ast::shape_records::MorphStyleChange {
         move_to: s.move_to,
@@ -184,7 +151,7 @@ fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> ast:
         line_style: s.line_style,
         new_styles: s.new_styles,
       })
-    },
+    }
     _ => panic!("NonMatchingEdges")
   }
 }
@@ -215,7 +182,7 @@ fn parse_morph_shape_end_record_string_bits(
 
     match parse_u16_bits(current_input, 6) {
       Ok((_, 0)) => panic!("MissingMorphShapeEndRecords"),
-      Ok((_, _)) => {},
+      Ok((_, _)) => {}
       Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
       Err(e) => return Err(e),
     };
@@ -238,15 +205,13 @@ fn parse_morph_shape_end_record_string_bits(
         Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
         Err(e) => return Err(e),
       };
-      if is_straight_edge {
-        let (next_input, straight_edge) = parse_straight_edge_bits(current_input)?;
-        current_input = next_input;
-        MixedShapeRecord::StraightEdge(straight_edge)
+      let (next_input, edge) = if is_straight_edge {
+        parse_straight_edge_bits(current_input)?
       } else {
-        let (next_input, curved_edge) = parse_curved_edge_bits(current_input)?;
-        current_input = next_input;
-        MixedShapeRecord::CurvedEdge(curved_edge)
-      }
+        parse_curved_edge_bits(current_input)?
+      };
+      current_input = next_input;
+      MixedShapeRecord::Edge(edge)
     } else {
       let (next_input, (style_change, style_bits)) = parse_morph_style_change_bits(current_input, fill_bits, line_bits, version)?;
       fill_bits = style_bits.0;

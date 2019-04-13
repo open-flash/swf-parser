@@ -12,10 +12,9 @@ import { MorphLineStyle } from "swf-tree/morph-line-style";
 import { MorphShape } from "swf-tree/morph-shape";
 import { MorphShapeRecord } from "swf-tree/morph-shape-record";
 import { MorphShapeStyles } from "swf-tree/morph-shape-styles";
-import { MorphCurvedEdge, MorphStraightEdge, MorphStyleChange } from "swf-tree/shape-records";
+import { MorphEdge, MorphStyleChange } from "swf-tree/shape-records";
 import { ShapeRecordType } from "swf-tree/shape-records/_type";
-import { CurvedEdge } from "swf-tree/shape-records/curved-edge";
-import { StraightEdge } from "swf-tree/shape-records/straight-edge";
+import { Edge } from "swf-tree/shape-records/edge";
 import { StraightSRgba8 } from "swf-tree/straight-s-rgba8";
 import { Vector2D } from "swf-tree/vector-2d";
 import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types";
@@ -84,7 +83,7 @@ export function parseMorphShapeStylesBits(
 // TODO: Replace by a more reliable type: the discriminant property `type` does not have the same base type
 // (ShapeRecordType and MorphShapeRecordType)
 // It works here because they have corresponding keys defined in the same order
-export type MixedShapeRecord = StraightEdge | CurvedEdge | MorphStyleChange;
+export type MixedShapeRecord = Edge | MorphStyleChange;
 
 export function parseMorphShapeStartRecordStringBits(
   bitStream: ReadableBitStream,
@@ -123,36 +122,13 @@ export function parseMorphShapeStartRecordStringBits(
   return result;
 }
 
-function asCurvedEdge(edge: StraightEdge | CurvedEdge): CurvedEdge {
-  if (edge.type === ShapeRecordType.CurvedEdge) {
-    return edge;
-  }
+function asMorphEdge(startEdge: Edge, endEdge: Edge): MorphEdge {
   return {
-    type: ShapeRecordType.CurvedEdge,
-    controlDelta: {x: edge.delta.x / 2, y: edge.delta.y / 2},
-    anchorDelta: {x: edge.delta.x / 2, y: edge.delta.y / 2},
-  };
-}
-
-function asMorphEdge(
-  startEdge: StraightEdge | CurvedEdge,
-  endEdge: StraightEdge | CurvedEdge,
-): MorphStraightEdge | MorphCurvedEdge {
-  if (startEdge.type === ShapeRecordType.StraightEdge && endEdge.type === ShapeRecordType.StraightEdge) {
-    return {
-      type: ShapeRecordType.StraightEdge,
-      delta: startEdge.delta,
-      morphDelta: endEdge.delta,
-    };
-  }
-  const startCurve: CurvedEdge = asCurvedEdge(startEdge);
-  const endCurve: CurvedEdge = asCurvedEdge(endEdge);
-  return {
-    type: ShapeRecordType.CurvedEdge,
-    controlDelta: startCurve.controlDelta,
-    anchorDelta: startCurve.anchorDelta,
-    morphControlDelta: endCurve.controlDelta,
-    morphAnchorDelta: endCurve.anchorDelta,
+    type: ShapeRecordType.Edge,
+    delta: startEdge.delta,
+    morphDelta: endEdge.delta,
+    controlDelta: startEdge.controlDelta,
+    morphControlDelta: endEdge.controlDelta,
   };
 }
 
@@ -184,13 +160,13 @@ export function parseMorphShapeEndRecordStringBits(
 
     const isEdge: boolean = bitStream.readBoolBits();
     if (isEdge) {
-      if (startRecord.type !== ShapeRecordType.StraightEdge && startRecord.type !== ShapeRecordType.CurvedEdge) {
+      if (startRecord.type !== ShapeRecordType.Edge) {
         throw new Incident("UnexpectedEdge");
       }
-      const startEdge: StraightEdge | CurvedEdge = startRecord;
+      const startEdge: Edge = startRecord;
       const isStraightEdge: boolean = bitStream.readBoolBits();
       // tslint:disable-next-line:max-line-length
-      const endEdge: StraightEdge | CurvedEdge = isStraightEdge ? parseStraightEdgeBits(bitStream) : parseCurvedEdgeBits(bitStream);
+      const endEdge: Edge = isStraightEdge ? parseStraightEdgeBits(bitStream) : parseCurvedEdgeBits(bitStream);
       result.push(asMorphEdge(startEdge, endEdge));
     } else {
       if (startRecord.type !== ShapeRecordType.StyleChange) {

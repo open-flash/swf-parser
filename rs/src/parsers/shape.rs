@@ -113,15 +113,13 @@ pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usiz
         Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
         Err(e) => return Err(e),
       };
-      if is_straight_edge {
-        let (next_input, straight_edge) = parse_straight_edge_bits(current_input)?;
-        current_input = next_input;
-        result.push(ast::ShapeRecord::StraightEdge(straight_edge));
+      let (next_input, edge) = if is_straight_edge {
+        parse_straight_edge_bits(current_input)?
       } else {
-        let (next_input, curved_edge) = parse_curved_edge_bits(current_input)?;
-        current_input = next_input;
-        result.push(ast::ShapeRecord::CurvedEdge(curved_edge));
-      }
+         parse_curved_edge_bits(current_input)?
+      };
+      current_input = next_input;
+      result.push(ast::ShapeRecord::Edge(edge));
     } else {
       let (next_input, (style_change, style_bits)) = parse_style_change_bits(current_input, fill_bits, line_bits, version)?;
       fill_bits = style_bits.0;
@@ -134,22 +132,23 @@ pub fn parse_shape_record_string_bits(input: (&[u8], usize), mut fill_bits: usiz
   Ok((current_input, result))
 }
 
-pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::shape_records::CurvedEdge> {
+
+pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::shape_records::Edge> {
   do_parse!(
     input,
     n_bits: map!(apply!(parse_u16_bits, 4), |x| (x as usize) + 2) >>
     control_x: apply!(parse_i32_bits, n_bits) >>
     control_y: apply!(parse_i32_bits, n_bits) >>
-    delta_x: apply!(parse_i32_bits, n_bits) >>
-    delta_y: apply!(parse_i32_bits, n_bits) >>
-    (ast::shape_records::CurvedEdge {
-      control_delta: ast::Vector2D {x: control_x, y: control_y},
-      anchor_delta: ast::Vector2D {x: delta_x, y: delta_y},
+    anchor_x: apply!(parse_i32_bits, n_bits) >>
+    anchor_y: apply!(parse_i32_bits, n_bits) >>
+    (ast::shape_records::Edge {
+      delta: ast::Vector2D { x: control_x + anchor_x, y: control_y + anchor_y },
+      control_delta: Option::Some(ast::Vector2D {x: control_x, y: control_y}),
     })
   )
 }
 
-pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::shape_records::StraightEdge> {
+pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::shape_records::Edge> {
   do_parse!(
     input,
     n_bits: map!(apply!(parse_u16_bits, 4), |x| (x as usize) + 2) >>
@@ -157,8 +156,9 @@ pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usiz
     is_vertical: map!(cond!(!is_diagonal, call!(parse_bool_bits)), |opt: Option<bool>| opt.unwrap_or_default()) >>
     delta_x: cond!(is_diagonal || !is_vertical, apply!(parse_i32_bits, n_bits)) >>
     delta_y: cond!(is_diagonal || is_vertical, apply!(parse_i32_bits, n_bits)) >>
-    (ast::shape_records::StraightEdge {
-      delta: ast::Vector2D {x: delta_x.unwrap_or_default(), y: delta_y.unwrap_or_default()},
+    (ast::shape_records::Edge {
+      delta: ast::Vector2D { x: delta_x.unwrap_or_default(), y: delta_y.unwrap_or_default() },
+      control_delta: Option::None,
     })
   )
 }
