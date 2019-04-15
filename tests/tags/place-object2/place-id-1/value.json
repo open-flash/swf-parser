@@ -1,0 +1,14 @@
+{
+  "type": "place-object",
+  "is_update": false,
+  "depth": 2,
+  "character_id": 1,
+  "matrix": {
+    "scale_x": 65536,
+    "scale_y": 65536,
+    "rotate_skew0": 0,
+    "rotate_skew1": 0,
+    "translate_x": 0,
+    "translate_y": 0
+  }
+}

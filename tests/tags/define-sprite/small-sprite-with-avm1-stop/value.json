@@ -1,0 +1,125 @@
+{
+  "type": "define-sprite",
+  "id": 12,
+  "frame_count": 12,
+  "tags": [
+    {
+      "type": "place-object",
+      "is_update": false,
+      "depth": 2,
+      "character_id": 1,
+      "matrix": {
+        "scale_x": 65536,
+        "scale_y": 65536,
+        "rotate_skew0": 0,
+        "rotate_skew1": 0,
+        "translate_x": 0,
+        "translate_y": 0
+      }
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 2
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 3
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 4
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 5
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 6
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 7
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 8
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 9
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 10
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "place-object",
+      "is_update": true,
+      "depth": 2,
+      "character_id": 11
+    },
+    {
+      "type": "show-frame"
+    },
+    {
+      "type": "remove-object",
+      "depth": 2
+    },
+    {
+      "type": "do-action",
+      "actions": "0700"
+    },
+    {
+      "type": "show-frame"
+    }
+  ]
+}

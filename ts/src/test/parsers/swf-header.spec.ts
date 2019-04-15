@@ -3,7 +3,7 @@ import chai from "chai";
 import { JsonValueReader } from "kryo/readers/json-value";
 import { $Header, Header } from "swf-tree/header";
 import { parseHeader } from "../../lib/parsers/header";
-import { readTestJson } from "../_utils";
+import { readTestJson } from "../utils";
 import { readStreamJson, StreamJson } from "./_utils";
 
 const JSON_VALUE_READER: JsonValueReader = new JsonValueReader();
