@@ -65,21 +65,27 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           4 => map!(record_data, parse_place_object, |t| ast::Tag::PlaceObject(t)),
           5 => map!(record_data, parse_remove_object, |t| ast::Tag::RemoveObject(t)),
           6 => map!(record_data, apply!(parse_define_bits, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
+          7 => map!(record_data, parse_define_button, |t| ast::Tag::DefineButton(t)),
           8 => map!(record_data, apply!(parse_define_jpeg_tables, state.get_swf_version()), |t| ast::Tag::DefineJpegTables(t)),
           9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
+          10 => map!(record_data, parse_define_font, |t| ast::Tag::DefineFont(t)),
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
-          // TODO: Ignore DoAction if version >= 9 && use_as3
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
+          13 => map!(record_data, parse_define_font_info, |t| ast::Tag::DefineFontInfo(t)),
           14 => map!(record_data, parse_define_sound, |t| ast::Tag::DefineSound(t)),
           15 => map!(record_data, parse_start_sound, |t| ast::Tag::StartSound(t)),
+          17 => map!(record_data, parse_define_button_sound, |_t| unimplemented!()),
           18 => map!(record_data, parse_sound_stream_head, |t| ast::Tag::SoundStreamHead(t)),
           19 => map!(record_data, parse_sound_stream_block, |t| ast::Tag::SoundStreamBlock(t)),
           20 => map!(record_data, parse_define_bits_lossless, |t| ast::Tag::DefineBitmap(t)),
           21 => map!(record_data, apply!(parse_define_bits_jpeg2, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
           22 => map!(record_data, parse_define_shape2, |t| ast::Tag::DefineShape(t)),
+          23 => map!(record_data, parse_define_button_cxform, |_t| unimplemented!()),
+          24 => map!(record_data, parse_protect, |_t| unimplemented!()),
           26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version() >= 6), |t| ast::Tag::PlaceObject(t)),
           28 => map!(record_data, parse_remove_object2, |t| ast::Tag::RemoveObject(t)),
           32 => map!(record_data, parse_define_shape3, |t| ast::Tag::DefineShape(t)),
+          33 => map!(record_data, parse_define_text2, |t| ast::Tag::DefineText(t)),
           34 => map!(record_data, parse_define_button2, |t| ast::Tag::DefineButton(t)),
           35 => map!(record_data, apply!(parse_define_bits_jpeg3, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
           36 => map!(record_data, parse_define_bits_lossless2, |t| ast::Tag::DefineBitmap(t)),
@@ -88,10 +94,17 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           43 => map!(record_data, parse_frame_label, |t| ast::Tag::FrameLabel(t)),
           45 => map!(record_data, parse_sound_stream_head2, |t| ast::Tag::SoundStreamHead(t)),
           46 => map!(record_data, parse_define_morph_shape, |t| ast::Tag::DefineMorphShape(t)),
+          48 => map!(record_data, parse_define_font2, |t| ast::Tag::DefineFont(t)),
           56 => map!(record_data, parse_export_assets, |t| ast::Tag::ExportAssets(t)),
           57 => map!(record_data, parse_import_assets, |t| ast::Tag::ImportAssets(t)),
+          58 => map!(record_data, parse_enable_debugger, |t| ast::Tag::EnableDebugger(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
+          60 => map!(record_data, parse_define_video_stream, |_t| unimplemented!()),
+          61 => map!(record_data, parse_video_frame, |_t| unimplemented!()),
+          62 => map!(record_data, parse_define_font_info2, |t| ast::Tag::DefineFontInfo(t)),
+          64 => map!(record_data, parse_enable_debugger2, |t| ast::Tag::EnableDebugger(t)),
           65 => map!(record_data, parse_script_limits, |t| ast::Tag::ScriptLimits(t)),
+          66 => map!(record_data, parse_set_tab_index, |_t| unimplemented!()),
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
           70 => map!(record_data, apply!(parse_place_object3, state.get_swf_version() >= 6), |t| ast::Tag::PlaceObject(t)),
           71 => map!(record_data, parse_import_assets2, |t| ast::Tag::ImportAssets(t)),
@@ -100,12 +113,17 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont(t)),
           76 => map!(record_data, parse_symbol_class, |t| ast::Tag::SymbolClass(t)),
           77 => map!(record_data, parse_metadata, |t| ast::Tag::Metadata(t)),
+          78 => map!(record_data, parse_define_scaling_grid, |_t| unimplemented!()),
           82 => map!(record_data, parse_do_abc, |t| ast::Tag::DoAbc(t)),
           83 => map!(record_data, parse_define_shape4, |t| ast::Tag::DefineShape(t)),
           84 => map!(record_data, parse_define_morph_shape2, |t| ast::Tag::DefineMorphShape(t)),
           86 => map!(record_data, parse_define_scene_and_frame_label_data_tag, |t| ast::Tag::DefineSceneAndFrameLabelData(t)),
+          87 => map!(record_data, parse_define_binary_data, |t| ast::Tag::DefineBinaryData(t)),
           88 => map!(record_data, parse_define_font_name, |t| ast::Tag::DefineFontName(t)),
           89 => map!(record_data, parse_start_sound2, |t| ast::Tag::StartSound2(t)),
+          90 => map!(record_data, parse_define_bits_jpeg4, |t| ast::Tag::DefineBitmap(t)),
+          91 => map!(record_data, parse_define_font4, |t| ast::Tag::DefineFont(t)),
+          93 => map!(record_data, parse_enable_telemetry, |_t| unimplemented!()),
           _ => {
             Ok((&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() })))
           }
@@ -154,6 +172,10 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
   )
 }
 
+pub fn parse_define_binary_data(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineBinaryData> {
+  unimplemented!()
+}
+
 pub fn parse_define_bits(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
   let (input, id) = parse_le_u16(input)?;
   let data: Vec<u8> = input.to_vec();
@@ -172,6 +194,10 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::t
   } else {
     panic!("UnknownBitmapType");
   }
+}
+
+pub fn parse_define_button(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
+  unimplemented!()
 }
 
 pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
@@ -195,6 +221,14 @@ pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBut
       actions,
     })
   )
+}
+
+pub fn parse_define_button_cxform(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
+}
+
+pub fn parse_define_button_sound(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
 }
 
 pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
@@ -251,6 +285,10 @@ pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> IResult<&[u8], 
     media_type,
     data,
   }))
+}
+
+pub fn parse_define_bits_jpeg4(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  unimplemented!()
 }
 
 pub fn parse_define_bits_lossless(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
@@ -345,6 +383,14 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
   )
 }
 
+pub fn parse_define_font(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+  unimplemented!()
+}
+
+pub fn parse_define_font2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+  unimplemented!()
+}
+
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
 pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
   do_parse!(
@@ -397,6 +443,10 @@ pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont>
   )
 }
 
+pub fn parse_define_font4(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+  unimplemented!()
+}
+
 pub fn parse_define_font_align_zones<P>(input: &[u8], glyph_count_provider: P) -> IResult<&[u8], ast::tags::DefineFontAlignZones>
   where P: Fn(usize) -> Option<usize> {
   do_parse!(
@@ -412,6 +462,14 @@ pub fn parse_define_font_align_zones<P>(input: &[u8], glyph_count_provider: P) -
       zones: zones,
     })
   )
+}
+
+pub fn parse_define_font_info(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+  unimplemented!()
+}
+
+pub fn parse_define_font_info2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+  unimplemented!()
 }
 
 pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontName> {
@@ -476,6 +534,9 @@ fn parse_define_morph_shape_any(input: &[u8], version: MorphShapeVersion) -> IRe
   )
 }
 
+pub fn parse_define_scaling_grid(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
+}
 
 pub fn parse_define_scene_and_frame_label_data_tag(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSceneAndFrameLabelData> {
   do_parse!(
@@ -618,6 +679,14 @@ pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> 
   )
 }
 
+pub fn parse_define_text2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
+  unimplemented!()
+}
+
+pub fn parse_define_video_stream(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
+}
+
 pub fn parse_do_abc(input: &[u8]) -> IResult<&[u8], ast::tags::DoAbc> {
   let (input, flags) = parse_le_u32(input)?;
   let (input, name) = parse_c_string(input)?;
@@ -635,6 +704,18 @@ pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAct
   let (input, actions) = (&[][..], input.to_vec());
   let tag = ast::tags::DoInitAction { sprite_id, actions };
   Ok((input, tag))
+}
+
+pub fn parse_enable_debugger(_input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
+  unimplemented!()
+}
+
+pub fn parse_enable_debugger2(_input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
+  unimplemented!()
+}
+
+pub fn parse_enable_telemetry(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
 }
 
 pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAssets> {
@@ -867,6 +948,10 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
   )
 }
 
+pub fn parse_protect(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
+}
+
 pub fn parse_remove_object(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObject> {
   do_parse!(
     input,
@@ -910,6 +995,10 @@ pub fn parse_set_background_color_tag(input: &[u8]) -> IResult<&[u8], ast::tags:
       color: color,
     })
   )
+}
+
+pub fn parse_set_tab_index(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
 }
 
 fn parse_sound_stream_block(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamBlock> {
@@ -1002,4 +1091,8 @@ pub fn parse_symbol_class(input: &[u8]) -> IResult<&[u8], ast::tags::SymbolClass
       symbols,
     })
   )
+}
+
+pub fn parse_video_frame(_input: &[u8]) -> IResult<&[u8], ()> {
+  unimplemented!()
 }

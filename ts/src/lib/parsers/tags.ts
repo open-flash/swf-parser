@@ -145,19 +145,26 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseRemoveObject(byteStream);
     case 6:
       return parseDefineBits(byteStream, context.getVersion());
+    case 7:
+      return parseDefineButton(byteStream);
     case 8:
       return parseDefineJpegTables(byteStream, context.getVersion());
     case 9:
       return parseSetBackgroundColor(byteStream);
+    case 10:
+      return parseDefineFont(byteStream);
     case 11:
       return parseDefineText(byteStream);
     case 12:
-      // TODO: Ignore DoAction if version >= 9 && use_as3
       return parseDoAction(byteStream);
+    case 13:
+      return parseDefineFontInfo(byteStream);
     case 14:
       return parseDefineSound(byteStream);
     case 15:
       return parseStartSound(byteStream);
+    case 17:
+      return parseDefineButtonSound(byteStream);
     case 18:
       return parseSoundStreamHead(byteStream);
     case 19:
@@ -168,12 +175,18 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseDefineBitsJpeg2(byteStream, context.getVersion());
     case 22:
       return parseDefineShape2(byteStream);
+    case 23:
+      return parseDefineButtonCxform(byteStream);
+    case 24:
+      return parseProtect(byteStream);
     case 26:
       return parsePlaceObject2(byteStream, context.getVersion());
     case 28:
       return parseRemoveObject2(byteStream);
     case 32:
       return parseDefineShape3(byteStream);
+    case 33:
+      return parseDefineText2(byteStream);
     case 34:
       return parseDefineButton2(byteStream);
     case 35:
@@ -190,14 +203,28 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseSoundStreamHead2(byteStream);
     case 46:
       return parseDefineMorphShape(byteStream);
+    case 48:
+      return parseDefineFont2(byteStream);
     case 56:
       return parseExportAssets(byteStream);
     case 57:
       return parseImportAssets(byteStream);
+    case 58:
+      return parseEnableDebugger(byteStream);
     case 59:
       return parseDoInitAction(byteStream);
+    case 60:
+      return parseDefineVideoStream(byteStream);
+    case 61:
+      return parseVideoFrame(byteStream);
+    case 62:
+      return parseDefineFontInfo2(byteStream);
+    case 64:
+      return parseEnableDebugger2(byteStream);
     case 65:
       return parseScriptLimits(byteStream);
+    case 66:
+      return parseSetTabIndex(byteStream);
     case 69:
       return parseFileAttributes(byteStream);
     case 70:
@@ -214,6 +241,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseSymbolClass(byteStream);
     case 77:
       return parseMetadata(byteStream);
+    case 78:
+      return parseDefineScalingGrid(byteStream);
     case 82:
       return parseDoAbc(byteStream);
     case 83:
@@ -222,12 +251,18 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseDefineMorphShape2(byteStream);
     case 86:
       return parseDefineSceneAndFrameLabelData(byteStream);
+    case 87:
+      return parseDefineBinaryData(byteStream);
     case 88:
       return parseDefineFontName(byteStream);
     case 89:
       return parseStartSound2(byteStream);
     case 90:
       return parseDefineBitsJpeg4(byteStream, context.getVersion());
+    case 91:
+      return parseDefineFont4(byteStream);
+    case 93:
+      return parseEnableTelemetry(byteStream);
     default:
       console.warn(`UnknownTagType: Code ${tagCode}`);
       return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.tailBytes())};
@@ -244,6 +279,10 @@ export function parseCsmTextSettings(byteStream: ReadableByteStream): tags.CsmTe
   const sharpness: Float32 = byteStream.readFloat32LE();
   byteStream.skip(1);
   return {type: TagType.CsmTextSettings, textId, renderer, fitting, thickness, sharpness};
+}
+
+export function parseDefineBinaryData(_byteStream: ReadableByteStream): tags.DefineBinaryData {
+  throw new Incident("NotImplemented", "parseDefineBinaryData");
 }
 
 export function parseDefineBits(byteStream: ReadableByteStream, swfVersion: Uint8): tags.DefineBitmap {
@@ -344,6 +383,10 @@ function parseDefineBitsLosslessAny(
   return {type: TagType.DefineBitmap, id, width, height, mediaType, data};
 }
 
+export function parseDefineButton(_byteStream: ReadableByteStream): tags.DefineButton {
+  throw new Incident("NotImplemented", "parseDefineButton");
+}
+
 export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineButton {
   const id: Uint16 = byteStream.readUint16LE();
   const flags: Uint8 = byteStream.readUint8();
@@ -363,6 +406,14 @@ export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineB
     actions = parseButton2CondActionString(byteStream);
   }
   return {type: TagType.DefineButton, id, trackAsMenu, characters, actions};
+}
+
+export function parseDefineButtonCxform(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseDefineButtonCxform");
+}
+
+export function parseDefineButtonSound(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseButtonSound");
 }
 
 export function parseDefineEditText(byteStream: ReadableByteStream): tags.DefineDynamicText {
@@ -431,6 +482,14 @@ export function parseDefineEditText(byteStream: ReadableByteStream): tags.Define
   };
 }
 
+export function parseDefineFont(_byteStream: ReadableByteStream): tags.DefineFont {
+  throw new Incident("NotImplemented", "parseDefineFont");
+}
+
+export function parseDefineFont2(_byteStream: ReadableByteStream): tags.DefineFont {
+  throw new Incident("NotImplemented", "parseDefineFont2");
+}
+
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
 export function parseDefineFont3(byteStream: ReadableByteStream): tags.DefineFont {
   const id: Uint16 = byteStream.readUint16LE();
@@ -496,6 +555,10 @@ export function parseDefineFont3(byteStream: ReadableByteStream): tags.DefineFon
   };
 }
 
+export function parseDefineFont4(_byteStream: ReadableByteStream): tags.DefineFont {
+  throw new Incident("NotImplemented", "parseDefineFont4");
+}
+
 export function parseDefineFontAlignZones(
   byteStream: ReadableByteStream,
   glyphCountProvider: GlyphCountProvider,
@@ -513,6 +576,14 @@ export function parseDefineFontAlignZones(
     zones.push(parseFontAlignmentZone(byteStream));
   }
   return {type: TagType.DefineFontAlignZones, fontId, csmTableHint, zones};
+}
+
+export function parseDefineFontInfo(_byteStream: ReadableByteStream): tags.DefineFontInfo {
+  throw new Incident("NotImplemented", "parseDefineFontInfo");
+}
+
+export function parseDefineFontInfo2(_byteStream: ReadableByteStream): tags.DefineFontInfo {
+  throw new Incident("NotImplemented", "parseDefineFontInfo2");
 }
 
 export function parseDefineFontName(byteStream: ReadableByteStream): tags.DefineFontName {
@@ -572,6 +643,10 @@ export function parseDefineMorphShapeAny(
     hasNonScalingStrokes,
     shape,
   };
+}
+
+export function parseDefineScalingGrid(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseDefineScalingGrid");
 }
 
 export function parseDefineSceneAndFrameLabelData(byteStream: ReadableByteStream): tags.DefineSceneAndFrameLabelData {
@@ -678,6 +753,14 @@ export function parseDefineText(byteStream: ReadableByteStream): tags.DefineText
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 
+export function parseDefineText2(_byteStream: ReadableByteStream): tags.DefineText {
+  throw new Incident("NotImplemented", "parseDefineText2");
+}
+
+export function parseDefineVideoStream(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseDefineVideoStream");
+}
+
 export function parseDoAbc(byteStream: ReadableByteStream): tags.DoAbc {
   const flags: Uint32 = byteStream.readUint32LE();
   const name: string = byteStream.readCString();
@@ -694,6 +777,18 @@ export function parseDoInitAction(byteStream: ReadableByteStream): tags.DoInitAc
   const spriteId: Uint16 = byteStream.readUint16LE();
   const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
   return {type: TagType.DoInitAction, spriteId, actions};
+}
+
+export function parseEnableDebugger(_byteStream: ReadableByteStream): tags.EnableDebugger {
+  throw new Incident("NotImplemented", "parseEnableDebugger");
+}
+
+export function parseEnableDebugger2(_byteStream: ReadableByteStream): tags.EnableDebugger {
+  throw new Incident("NotImplemented", "parseEnableDebugger2");
+}
+
+export function parseEnableTelemetry(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseEnableTelemetry");
 }
 
 export function parseExportAssets(byteStream: ReadableByteStream): tags.ExportAssets {
@@ -908,6 +1003,10 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
   };
 }
 
+export function parseProtect(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseProtect");
+}
+
 export function parseRemoveObject(byteStream: ReadableByteStream): tags.RemoveObject {
   const characterId: Uint16 = byteStream.readUint16LE();
   const depth: Uint16 = byteStream.readUint16LE();
@@ -927,6 +1026,10 @@ export function parseScriptLimits(byteStream: ReadableByteStream): tags.ScriptLi
 
 export function parseSetBackgroundColor(byteStream: ReadableByteStream): tags.SetBackgroundColor {
   return {type: TagType.SetBackgroundColor, color: parseSRgb8(byteStream)};
+}
+
+export function parseSetTabIndex(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseSetTabIndex");
 }
 
 export function parseSoundStreamBlock(byteStream: ReadableByteStream): tags.SoundStreamBlock {
@@ -1000,4 +1103,8 @@ export function parseSymbolClass(byteStream: ReadableByteStream): tags.SymbolCla
     type: TagType.SymbolClass,
     symbols,
   };
+}
+
+export function parseVideoFrame(_byteStream: ReadableByteStream): never {
+  throw new Incident("NotImplemented", "parseVideoFrame");
 }
