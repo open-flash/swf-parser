@@ -56,7 +56,7 @@ function bytesFromSource(text /* string */) /* Uint8Array */ {
 
 function bytesFromHexSource(text /* string */) /* Uint8Array */ {
   const clean /* string */ = text
-    .replace(/#[\S\s]*(?:\n:$)/g, "")
+    .replace(/#[\S\s]*?(?:\n|$)/g, "")
     .replace(/[^0-9a-f]/g, "");
   if (clean.length % 2 !== 0) {
     throw new Error("InvalidHexSource: symbol count must be a multiple of 2");
@@ -66,7 +66,7 @@ function bytesFromHexSource(text /* string */) /* Uint8Array */ {
 
 function bytesFromBinSource(text /* string */) /* Uint8Array */ {
   const clean /* string */ = text
-    .replace(/#[\S\s]*(?:\n:$)/g, "")
+    .replace(/#[\S\s]*?(?:\n|$)/g, "")
     .replace(/[^01]/g, "");
   if (clean.length % 8 !== 0) {
     throw new Error("InvalidBinSource: symbol count must be a multiple of 8");
