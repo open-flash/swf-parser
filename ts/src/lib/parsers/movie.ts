@@ -1,8 +1,8 @@
 import { ReadableStream } from "@open-flash/stream";
 import { Incident } from "incident";
+import { inflate } from "pako";
 import { Uint8 } from "semantic-types";
 import { CompressionMethod, Header, Movie, SwfSignature, Tag } from "swf-tree";
-import * as zlib from "zlib";
 import { DefaultParseContext, ParseContext } from "../parse-context";
 import { parseHeader, parseSwfSignature } from "./header";
 import { parseTagBlockString } from "./tags";
@@ -14,9 +14,8 @@ export function parseMovie(byteStream: ReadableStream): Movie {
       return parsePayload(byteStream, signature.swfVersion);
     case CompressionMethod.Deflate:
       const tail: Uint8Array = byteStream.tailBytes();
-      const tailBuffer: Buffer = Buffer.from(tail);
-      const deflated: Buffer = zlib.inflateSync(tailBuffer);
-      const payloadStream: ReadableStream = new ReadableStream(deflated);
+      const payload: Uint8Array = inflate(tail);
+      const payloadStream: ReadableStream = new ReadableStream(payload);
       return parsePayload(payloadStream, signature.swfVersion);
     case CompressionMethod.Lzma:
       throw new Incident("NotImplemented", "Support for LZMA compression is not implemented yet");
