@@ -1,0 +1,41 @@
+# The matrix is different because it makes better use of sign extension to
+# reduce its size.
+
+bf11                                    # 70 * 64 + 63 = 0x11bf
+62000000                                # 98 = 0x00000062
+
+0501                                    # flags(is_update, has_matrix, has_filters)
+0100                                    # depth
+
+c6000100 00bd5830 0002baa0                 # matrix
+# c6         00       01        00
+# 1(10001:10_00000000_0000000,1_00000000_  # has_scale(17:-65536,-65536_
+# 00        bd
+# 00000000) 1(01111:01_01011000_00110,000  # _)has_skew(15:11014,0_
+# 00       02        ba         a0
+# 00000000_0000)0010_1:01110,10_101;00000  # _)5:14,-11;
+
+01 [                                    # filters
+  06 {                                  # color-matrix
+    05ee16bf
+    1bb7ae3f
+    3cff653e
+    00000000
+    00000000
+    0614e03e
+    6af6e23e
+    3ed6f33d
+    00000000
+    00000000
+    0494b63e
+    11abbe3f
+    24a058bf
+    00000000
+    00000000
+    00000000
+    00000000
+    00000000
+    0000803f
+    00000000
+  }
+]

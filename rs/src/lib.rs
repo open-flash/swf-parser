@@ -38,7 +38,7 @@ mod lib_tests {
   use crate::parsers::tags::parse_swf_tag;
   use crate::state::ParseState;
 
-  test_expand_paths! { test_parse_movie; "../tests/standalone-movies/*/" }
+  test_expand_paths! { test_parse_movie; "../tests/movies/*/" }
   fn test_parse_movie(path: &str) {
     let path: &Path = Path::new(path);
     let _name = path.components().last().unwrap().as_os_str().to_str().expect("Failed to retrieve sample name");
@@ -49,7 +49,7 @@ mod lib_tests {
 
     let (_remaining_input, actual_movie) = parse_movie(&movie_bytes).expect("Failed to parse movie");
 
-    let actual_ast_path = path.join("tmp-ast.rs.json");
+    let actual_ast_path = path.join("local-ast.rs.json");
     let actual_ast_file = ::std::fs::File::create(actual_ast_path).expect("Failed to create actual AST file");
     let actual_ast_writer = ::std::io::BufWriter::new(actual_ast_file);
     serde_json::to_writer_pretty(actual_ast_writer, &actual_movie).expect("Failed to write actual AST");

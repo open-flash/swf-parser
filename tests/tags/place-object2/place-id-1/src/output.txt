@@ -1,0 +1,7 @@
+# This tag is emitted as `PlaceObject1` because it does not use any of the
+# extra-fields added in `PlaceObject2`.
+0501                                    # 4 * 64 + 5 = 0x0105
+
+0100                                    # character_id
+0200                                    # depth
+00                                      # matrix

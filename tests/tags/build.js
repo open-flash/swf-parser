@@ -20,22 +20,24 @@ function buildAll() {
       }
       const testName = dirEnt.name;
       const testPath = sysPath.join(groupPath, testName);
-      const srcPath = sysPath.join(testPath, "src", "input.txt");
-      const dstPath = sysPath.join(testPath, "input.bytes");
-      try {
-        const stats = fs.statSync(srcPath);
-        if (!stats.isFile()) {
-          continue;
+      for (const f of ["input", "output"]) {
+        const srcPath = sysPath.join(testPath, "src", `${f}.txt`);
+        const dstPath = sysPath.join(testPath, `${f}.bytes`);
+        try {
+          const stats = fs.statSync(srcPath);
+          if (!stats.isFile()) {
+            continue;
+          }
+        } catch (err) {
+          if (err.code === "ENOENT") {
+            continue;
+          } else {
+            throw err;
+          }
         }
-      } catch (err) {
-        if (err.code === "ENOENT") {
-          continue;
-        } else {
-          throw err;
-        }
+        console.log(`${groupName}/${testName}/${f}`);
+        build(srcPath, dstPath);
       }
-      console.log(`${groupName}/${testName}`);
-      build(srcPath, dstPath);
     }
   }
 }

@@ -8,7 +8,7 @@ import meta from "./meta.js";
 import { readFile, readTextFile, writeTextFile } from "./utils";
 
 const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..", "..", "..");
-const MOVIE_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "standalone-movies");
+const MOVIE_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "movies");
 
 const JSON_READER: JsonReader = new JsonReader();
 const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
@@ -28,7 +28,7 @@ describe("movieFromBytes", function () {
         throw err;
       }
       const actualJson: string = JSON.stringify($Movie.write(JSON_VALUE_WRITER, actualMovie), null, 2);
-      await writeTextFile(sysPath.join(MOVIE_SAMPLES_ROOT, sample.name, "tmp-ast.ts.json"), `${actualJson}\n`);
+      await writeTextFile(sysPath.join(MOVIE_SAMPLES_ROOT, sample.name, "local-ast.ts.json"), `${actualJson}\n`);
       const expectedJson: string = await readTextFile(sysPath.join(MOVIE_SAMPLES_ROOT, sample.name, "ast.json"));
       const expectedMovie: Movie = $Movie.read(JSON_READER, expectedJson);
       try {

@@ -1,0 +1,4 @@
+**/SymDepend.cache
+.idea
+local/
+local-*
