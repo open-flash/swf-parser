@@ -6,8 +6,8 @@ use crate::parsers::basic_data_types::{
   parse_bool_bits,
   parse_c_string,
   parse_color_transform_with_alpha,
-  parse_encoded_le_u32,
   parse_language_code,
+  parse_leb128_u32,
   parse_matrix,
   parse_named_id,
   parse_rect,
@@ -541,22 +541,22 @@ pub fn parse_define_scaling_grid(_input: &[u8]) -> IResult<&[u8], ()> {
 pub fn parse_define_scene_and_frame_label_data_tag(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSceneAndFrameLabelData> {
   do_parse!(
     input,
-    scene_count: parse_encoded_le_u32 >>
+    scene_count: parse_leb128_u32 >>
     scenes: fold_many_m_n!(
       scene_count as usize,
       scene_count as usize,
-      pair!(parse_encoded_le_u32, parse_c_string),
+      pair!(parse_leb128_u32, parse_c_string),
       Vec::new(),
       |mut acc: Vec<_>, (offset, name)| {
         acc.push(ast::tags::Scene {offset: offset, name: name});
         acc
       }
     ) >>
-    label_count: parse_encoded_le_u32 >>
+    label_count: parse_leb128_u32 >>
     labels: fold_many_m_n!(
       label_count as usize,
       label_count as usize,
-      pair!(parse_encoded_le_u32, parse_c_string),
+      pair!(parse_leb128_u32, parse_c_string),
       Vec::new(),
       |mut acc: Vec<_>, (frame, name)| {
         acc.push(ast::tags::Label {frame: frame, name: name});

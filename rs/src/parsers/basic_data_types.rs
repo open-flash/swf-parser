@@ -5,17 +5,6 @@ use nom::{IResult, Needed};
 use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16};
 use num_traits::Float;
 
-pub fn parse_straight_s_argb8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba8> {
-  do_parse!(
-    input,
-    a: parse_u8 >>
-    r: parse_u8 >>
-    g: parse_u8 >>
-    b: parse_u8 >>
-    (ast::StraightSRgba8 {r: r, g: g, b: b, a: a})
-  )
-}
-
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8], usize), bool> {
   if input_slice.len() < 1 {
@@ -37,7 +26,7 @@ pub fn parse_c_string(input: &[u8]) -> IResult<&[u8], String> {
 }
 
 /// Parse the variable-length encoded little-endian representation of an unsigned 32-bit integer
-pub fn parse_encoded_le_u32(input: &[u8]) -> IResult<&[u8], u32> {
+pub fn parse_leb128_u32(input: &[u8]) -> IResult<&[u8], u32> {
   let mut result: u32 = 0;
   let mut current_input: &[u8] = input;
   for i in 0..5 {
@@ -371,57 +360,57 @@ mod tests {
   #[test]
   fn test_parse_encoded_le_u32() {
     {
-      assert_eq!(parse_encoded_le_u32(&[][..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
+      assert_eq!(parse_leb128_u32(&[][..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
     }
     {
       let input = vec![0x00];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 0)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[1..], 0)));
     }
     {
       let input = vec![0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 1)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[1..], 1)));
     }
     {
       let input = vec![0x10];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 16)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[1..], 16)));
     }
     {
       let input = vec![0x7f];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[1..], 127)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[1..], 127)));
     }
     {
       let input = vec![0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
+      assert_eq!(parse_leb128_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
     }
     {
       let input = vec![0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[2..], 1 << 7)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[2..], 1 << 7)));
     }
     {
       let input = vec![0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[3..], 1 << 14)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[3..], 1 << 14)));
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[4..], 1 << 21)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[4..], 1 << 21)));
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
+      assert_eq!(parse_leb128_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[5..], 1 << 28)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[5..], 1 << 28)));
     }
     {
       // Do not extend past 5 bytes
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x80];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[5..], 0)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[5..], 0)));
     }
     {
       // Do not extend past 5 bytes
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x80, 0x01];
-      assert_eq!(parse_encoded_le_u32(&input[..]), Ok((&input[5..], 0)));
+      assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[5..], 0)));
     }
   }
 

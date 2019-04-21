@@ -29,6 +29,7 @@ mod lib_tests {
   use std::path::Path;
 
   use ::swf_tree::Movie;
+  use nom::IResult as NomResult;
   use swf_tree::Tag;
 
   use ::test_generator::test_expand_paths;
@@ -104,10 +105,22 @@ mod lib_tests {
     }
   }
 
+  use crate::parsers::header::parse_header;
+  use swf_tree::Header;
+  test_various_parser_impl!(test_parse_header, "../tests/various/header/*/", parse_header34, Header);
+
+  fn parse_header34(input: &[u8]) -> NomResult<&[u8], Header> {
+    parse_header(input, 34)
+  }
+
   use crate::parsers::basic_data_types::parse_rect;
   use swf_tree::Rect;
   test_various_parser_impl!(test_parse_rect, "../tests/various/rect/*/", parse_rect, Rect);
 
-  use crate::parsers::basic_data_types::parse_encoded_le_u32;
-  test_various_parser_impl!(test_parse_u32_leb128, "../tests/various/uint32-leb128/*/", parse_encoded_le_u32, u32);
+  use crate::parsers::header::parse_swf_signature;
+  use swf_tree::SwfSignature;
+  test_various_parser_impl!(test_parse_swf_signature, "../tests/various/swf-signature/*/", parse_swf_signature, SwfSignature);
+
+  use crate::parsers::basic_data_types::parse_leb128_u32;
+  test_various_parser_impl!(test_parse_leb128_u32, "../tests/various/uint32-leb128/*/", parse_leb128_u32, u32);
 }

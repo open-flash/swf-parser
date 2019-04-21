@@ -6,8 +6,12 @@ import { IoType } from "kryo/core";
 import { JsonReader } from "kryo/readers/json";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import sysPath from "path";
+import { $Header } from "swf-tree/header";
+import { $Matrix } from "swf-tree/matrix";
 import { $Rect } from "swf-tree/rect";
-import { parseRect } from "../lib/parsers/basic-data-types";
+import { $SwfSignature } from "swf-tree/swf-signature";
+import { parseMatrix, parseRect } from "../lib/parsers/basic-data-types";
+import { parseHeader, parseSwfSignature } from "../lib/parsers/header";
 import meta from "./meta.js";
 import { readFile, readTextFile } from "./utils";
 
@@ -55,8 +59,20 @@ function* getSampleGroups(): IterableIterator<SampleGroup<any>> {
     }
     const name: string = dirEnt.name;
     switch (name) {
+      case "header": {
+        yield {name, parser: (stream: ReadableByteStream) => parseHeader(stream, 34), type: $Header};
+        break;
+      }
+      case "matrix": {
+        yield {name, parser: parseMatrix, type: $Matrix};
+        break;
+      }
       case "rect": {
         yield {name, parser: parseRect, type: $Rect};
+        break;
+      }
+      case "swf-signature": {
+        yield {name, parser: parseSwfSignature, type: $SwfSignature};
         break;
       }
       case "uint32-leb128": {
