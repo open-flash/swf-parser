@@ -1,9 +1,10 @@
 use std::f32;
-use swf_tree as ast;
-use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
+
+use half::f16;
 use nom::{IResult, Needed};
-use nom::{be_u16 as parse_be_u16, le_u8 as parse_u8, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16};
-use num_traits::Float;
+use nom::{be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16, le_u8 as parse_u8};
+use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
+use swf_tree as ast;
 
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8], usize), bool> {
@@ -100,17 +101,8 @@ pub fn parse_le_f16(input: &[u8]) -> IResult<&[u8], f32> {
   map!(input, parse_le_u16, transmute_u16_to_f16)
 }
 
-fn transmute_u16_to_f16(base: u16) -> f32 {
-  let sign: f32 = if (base & (1 << 15)) != 0 {-1.0} else {1.0};
-  let exponent: i32 = ((base & 0x7c00) >> 10) as i32; // 0x7c00: bits 10 to 14 (inclusive)
-  let fraction: f32 = (base & 0x03ff) as f32; // 0x03ff: bits 0 to 9 (inclusive)
-  if exponent == 0 {
-    sign * (2.0).powi(-14) * (fraction / 1024.0)
-  } else if exponent == 0x1f { // 0x1f: bits 0 to 4 (inclusive)
-    if fraction == 0.0 {sign * f32::INFINITY} else {f32::NAN}
-  } else {
-    sign * (2.0).powi(exponent - 15) * (1.0 + (fraction / 1024.0))
-  }
+fn transmute_u16_to_f16(bits: u16) -> f32 {
+  f16::from_bits(bits).to_f32()
 }
 
 /// Parse the little-endian representation of an unsigned fixed-point 8.8-bit number
@@ -355,6 +347,7 @@ pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(
 #[cfg(test)]
 mod tests {
   use nom::Needed;
+
   use super::*;
 
   #[test]

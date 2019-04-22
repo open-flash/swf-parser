@@ -1,6 +1,0 @@
-8606                                    # 26 * 64 + 6 = 0x0686
-
-06                                      # flags (has_matrix)
-0200                                    # depth
-0100                                    # character_id
-00                                      # matrix

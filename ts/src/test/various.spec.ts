@@ -4,6 +4,7 @@ import fs from "fs";
 import { $Uint32 } from "kryo/builtins/uint32";
 import { IoType } from "kryo/core";
 import { JsonReader } from "kryo/readers/json";
+import { Float64Type } from "kryo/types/float64";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import sysPath from "path";
 import { $Header } from "swf-tree/header";
@@ -59,6 +60,14 @@ function* getSampleGroups(): IterableIterator<SampleGroup<any>> {
     }
     const name: string = dirEnt.name;
     switch (name) {
+      case "float16-le": {
+        yield {
+          name,
+          parser: (stream: ReadableByteStream) => stream.readFloat16LE(),
+          type: new Float64Type(),
+        };
+        break;
+      }
       case "header": {
         yield {name, parser: (stream: ReadableByteStream) => parseHeader(stream, 34), type: $Header};
         break;

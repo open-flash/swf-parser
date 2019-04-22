@@ -57,9 +57,11 @@ function* getSampleGroups(): IterableIterator<SampleGroup> {
       continue;
     }
     const name: string = dirEnt.name;
+    const ctx: DefaultParseContext = new DefaultParseContext(10);
+    ctx.setGlyphCount(1, 11);
     yield {
       name,
-      parser: (stream: ReadableByteStream) => parseTag(stream, new DefaultParseContext(10)),
+      parser: (stream: ReadableByteStream) => parseTag(stream, ctx),
       type: $Tag,
     };
   }
