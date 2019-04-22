@@ -45,7 +45,7 @@ fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   }
 }
 
-pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::Tag> {
+pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::Tag> {
   use std::convert::TryInto;
 
   match parse_tag_header(input) {

@@ -35,7 +35,7 @@ mod lib_tests {
   use ::test_generator::test_expand_paths;
 
   use crate::parsers::movie::parse_movie;
-  use crate::parsers::tags::parse_swf_tag;
+  use crate::parsers::tags::parse_tag;
   use crate::state::ParseState;
 
   test_expand_paths! { test_parse_movie; "../tests/movies/*/" }
@@ -78,7 +78,7 @@ mod lib_tests {
 
     let mut state = ParseState::new(10);
     state.set_glyph_count(1, 11);
-    let (remaining_bytes, actual_value) = parse_swf_tag(&input_bytes, &mut state).expect("Failed to parse");
+    let (remaining_bytes, actual_value) = parse_tag(&input_bytes, &mut state).expect("Failed to parse");
 
     let expected_path = path.join("value.json");
     let expected_file = ::std::fs::File::open(expected_path).expect("Failed to open expected value file");

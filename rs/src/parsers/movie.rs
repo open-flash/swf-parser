@@ -1,6 +1,6 @@
 use nom::{IResult as NomResult, Needed};
 use crate::parsers::header::{parse_header, parse_swf_signature};
-use crate::parsers::tags::parse_swf_tag;
+use crate::parsers::tags::parse_tag;
 use crate::state::ParseState;
 use swf_tree as ast;
 
@@ -13,7 +13,7 @@ pub fn parse_tag_block_string<'a>(input: &'a [u8], state: &mut ParseState) -> No
       current_input = &current_input[1..];
       break;
     }
-    match parse_swf_tag(current_input, state) {
+    match parse_tag(current_input, state) {
       Ok((next_input, swf_tag)) => {
         current_input = next_input;
         result.push(swf_tag);
