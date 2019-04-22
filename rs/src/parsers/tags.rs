@@ -29,21 +29,16 @@ use crate::parsers::sound::{audio_coding_format_from_id, is_uncompressed_audio_c
 use crate::parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
 use crate::state::ParseState;
 
-pub struct SwfTagHeader {
-  pub tag_code: u16,
-  pub length: usize,
-}
-
-fn parse_swf_tag_header(input: &[u8]) -> IResult<&[u8], SwfTagHeader> {
+fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   match parse_le_u16(input) {
     Ok((remaining_input, code_and_length)) => {
       let code = code_and_length >> 6;
       let max_length = (1 << 6) - 1;
       let length = code_and_length & max_length;
       if length < max_length {
-        Ok((remaining_input, SwfTagHeader { tag_code: code, length: length as usize }))
+        Ok((remaining_input, ast::TagHeader { code, length: length.into() }))
       } else {
-        map!(remaining_input, parse_le_u32, |long_length| SwfTagHeader { tag_code: code, length: long_length as usize })
+        map!(remaining_input, parse_le_u32, |length| ast::TagHeader { code, length })
       }
     }
     Err(e) => Err(e),
@@ -51,15 +46,18 @@ fn parse_swf_tag_header(input: &[u8]) -> IResult<&[u8], SwfTagHeader> {
 }
 
 pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::Tag> {
-  match parse_swf_tag_header(input) {
+  use std::convert::TryInto;
+
+  match parse_tag_header(input) {
     Ok((remaining_input, rh)) => {
-      if remaining_input.len() < rh.length {
+      let tag_length: usize = rh.length.try_into().unwrap();
+      if remaining_input.len() < tag_length {
         let record_header_length = input.len() - remaining_input.len();
-        Err(::nom::Err::Incomplete(Needed::Size(record_header_length + rh.length)))
+        Err(::nom::Err::Incomplete(Needed::Size(record_header_length + tag_length)))
       } else {
-        let record_data: &[u8] = &remaining_input[..rh.length];
-        let remaining_input: &[u8] = &remaining_input[rh.length..];
-        let record_result = match rh.tag_code {
+        let record_data: &[u8] = &remaining_input[..tag_length];
+        let remaining_input: &[u8] = &remaining_input[tag_length..];
+        let record_result = match rh.code {
           1 => Ok((&[][..], ast::Tag::ShowFrame)),
           2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
           4 => map!(record_data, parse_place_object, |t| ast::Tag::PlaceObject(t)),
@@ -125,7 +123,7 @@ pub fn parse_swf_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a
           91 => map!(record_data, parse_define_font4, |t| ast::Tag::DefineFont(t)),
           93 => map!(record_data, parse_enable_telemetry, |_t| unimplemented!()),
           _ => {
-            Ok((&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.tag_code, data: record_data.to_vec() })))
+            Ok((&[][..], ast::Tag::Unknown(ast::tags::Unknown { code: rh.code, data: record_data.to_vec() })))
           }
         };
         match record_result {

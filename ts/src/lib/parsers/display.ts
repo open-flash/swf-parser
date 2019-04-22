@@ -3,7 +3,7 @@ import { Incident } from "incident";
 import { Float32, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
 import {
   BlendMode,
-  ClipActions,
+  ClipAction,
   ClipEventFlags,
   ColorStop,
   Filter,
@@ -51,10 +51,10 @@ export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {
   }
 }
 
-export function parseClipActionsString(byteStream: ReadableByteStream, extendedEvents: boolean): ClipActions[] {
+export function parseClipActionString(byteStream: ReadableByteStream, extendedEvents: boolean): ClipAction[] {
   byteStream.skip(2); // Reserved
   byteStream.skip(4); // All events (union of the events)
-  const result: ClipActions[] = [];
+  const result: ClipAction[] = [];
   while (true) {
     const savedPos: UintSize = byteStream.bytePos;
     const peek: Uint32 = extendedEvents ? byteStream.readUint32BE() : byteStream.readUint32BE();
@@ -63,7 +63,7 @@ export function parseClipActionsString(byteStream: ReadableByteStream, extendedE
     } else {
       byteStream.bytePos = savedPos;
     }
-    result.push(parseClipActions(byteStream, extendedEvents));
+    result.push(parseClipAction(byteStream, extendedEvents));
   }
 
   return result;
@@ -115,7 +115,7 @@ export function parseClipEventFlags(byteStream: ReadableByteStream, extendedEven
   };
 }
 
-export function parseClipActions(byteStream: ReadableByteStream, extendedEvents: boolean): ClipActions {
+export function parseClipAction(byteStream: ReadableByteStream, extendedEvents: boolean): ClipAction {
   const events: ClipEventFlags = parseClipEventFlags(byteStream, extendedEvents);
   let actionsSize: UintSize = byteStream.readUint32LE();
   let keyCode: Uint8 | undefined = undefined;

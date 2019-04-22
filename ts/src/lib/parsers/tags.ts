@@ -3,7 +3,7 @@ import { Incident } from "incident";
 import { Float32, Sint16, Uint16, Uint2, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
 import {
   BlendMode,
-  ClipActions,
+  ClipAction,
   ColorTransformWithAlpha,
   Filter,
   Glyph,
@@ -31,6 +31,7 @@ import { SoundRate } from "swf-tree/sound/sound-rate";
 import { SoundSize } from "swf-tree/sound/sound-size";
 import { SoundType } from "swf-tree/sound/sound-type";
 import { SpriteTag } from "swf-tree/sprite-tag";
+import { TagHeader } from "swf-tree/tag-header";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import {
   parseColorTransform,
@@ -41,7 +42,7 @@ import {
   parseStraightSRgba8,
 } from "./basic-data-types";
 import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString } from "./button";
-import { parseBlendMode, parseClipActionsString, parseFilterList } from "./display";
+import { parseBlendMode, parseClipActionString, parseFilterList } from "./display";
 import {
   ERRONEOUS_JPEG_START,
   getGifImageDimensions,
@@ -112,11 +113,6 @@ export function parseTag(byteStream: ReadableByteStream, context: ParseContext):
       break;
   }
   return tag;
-}
-
-interface TagHeader {
-  code: Uint16;
-  length: Uint32;
 }
 
 function parseTagHeader(byteStream: ReadableByteStream): TagHeader {
@@ -917,8 +913,8 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
   const name: string | undefined = hasName ? byteStream.readCString() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
-  const clipActions: ClipActions[] | undefined = hasClipActions
-    ? parseClipActionsString(byteStream, swfVersion >= 6)
+  const clipActions: ClipAction[] | undefined = hasClipActions
+    ? parseClipActionString(byteStream, swfVersion >= 6)
     : undefined;
 
   return {
@@ -979,8 +975,8 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
   // TODO(demurgos): Check if it is RGBA or ARGB
   const backgroundColor: StraightSRgba8 | undefined = hasBackgroundColor ? parseStraightSRgba8(byteStream) : undefined;
 
-  const clipActions: ClipActions[] | undefined = hasClipActions
-    ? parseClipActionsString(byteStream, swfVersion >= 6)
+  const clipActions: ClipAction[] | undefined = hasClipActions
+    ? parseClipActionString(byteStream, swfVersion >= 6)
     : undefined;
 
   return {
