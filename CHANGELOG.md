@@ -1,4 +1,4 @@
-# Next
+# 0.5.0 (2019-04-22)
 
 - **[Breaking change]** Update to `swf-tree@0.6.0`.
 - **[Internal]** Refactor tests.
@@ -12,7 +12,7 @@
 
 - **[Breaking change]** Rename `parse_swf_tag` to `parse_tag`.
 
-# 0.4.0 (2019-01-14)
+# 0.4.0 (2019-04-14)
 
 - **[Breaking change]** Update to `swf-tree@0.5.0`.
 
