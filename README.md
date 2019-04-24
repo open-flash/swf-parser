@@ -5,10 +5,10 @@
 
 # SWF Parser
 
-[![npm](https://img.shields.io/npm/v/swf-parser.svg?maxAge=86400)](https://www.npmjs.com/package/swf-parser)
-[![crates.io](https://img.shields.io/crates/v/swf-parser.svg?maxAge=86400)](https://crates.io/crates/swf-parser)
-[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg?maxAge=86400)](https://github.com/open-flash/swf-parser)
-[![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg?maxAge=86400)](https://travis-ci.org/open-flash/swf-parser)
+[![npm](https://img.shields.io/npm/v/swf-parser.svg)](https://www.npmjs.com/package/swf-parser)
+[![crates.io](https://img.shields.io/crates/v/swf-parser.svg)](https://crates.io/crates/swf-parser)
+[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
+[![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg)](https://travis-ci.org/open-flash/swf-parser)
 
 SWF parser implemented in Rust and Typescript (Node and browser).
 Converts bytes to [`swf-tree` movies][swf-tree].

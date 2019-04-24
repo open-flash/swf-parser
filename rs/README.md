@@ -5,9 +5,9 @@
 
 # SWF Parser
 
-[![crates.io](https://img.shields.io/crates/v/swf-parser.svg?maxAge=86400)](https://crates.io/crates/swf-parser)
-[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg?maxAge=86400)](https://github.com/open-flash/swf-parser)
-[![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg?maxAge=86400)](https://travis-ci.org/open-flash/swf-parser)
+[![crates.io](https://img.shields.io/crates/v/swf-parser.svg)](https://crates.io/crates/swf-parser)
+[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
+[![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg)](https://travis-ci.org/open-flash/swf-parser)
 
 SWF parser implemented in Rust.
 Converts bytes to [`swf-tree` movies][swf-tree].
@@ -21,7 +21,7 @@ use swf_tree;
 fn main() {
   let bytes: &[u8] = ...;
   let (_, movie): (_, swf_tree::Movie) = swf_parser::parsers::movie::parse_movie(&bytes[..])
-  .expect("Failed to parse movie");
+    .expect("Failed to parse movie");
 }
 ```
 
@@ -33,7 +33,7 @@ This repo uses Git submodules for its test samples:
 # Clone with submodules
 git clone --recurse-submodules git://github.com/open-flash/swf-parser.git
 # Update submodules for an already-cloned repo
-git submodule update --recursive --remote
+git submodule update --init --recursive --remote
 ```
 
 This library is a standard Cargo project. You can test your changes with
