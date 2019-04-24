@@ -1,4 +1,4 @@
-# Next
+# 0.5.1 (2019-04-24)
 
 - **[Fix]** Fix `TextRecord` flags parsing.
 
