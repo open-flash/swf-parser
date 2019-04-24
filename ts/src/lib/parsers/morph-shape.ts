@@ -1,6 +1,6 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
-import { Sint32, Uint16, Uint2, UintSize } from "semantic-types";
+import { Sint32, Uint16, Uint2, Uint5, UintSize } from "semantic-types";
 import { fillStyles, FillStyleType, Sfixed8P8 } from "swf-tree";
 import { CapStyle } from "swf-tree/cap-style";
 import { JoinStyle } from "swf-tree/join-style";
@@ -195,11 +195,12 @@ export function parseMorphStyleChangeBits(
   lineBits: UintSize,
   morphShapeVersion: MorphShapeVersion,
 ): [MorphStyleChange, [UintSize, UintSize]] {
-  const hasNewStyles: boolean = bitStream.readBoolBits();
-  const changeLineStyle: boolean = bitStream.readBoolBits();
-  const changeRightFill: boolean = bitStream.readBoolBits();
-  const changeLeftFill: boolean = bitStream.readBoolBits();
-  const hasMoveTo: boolean = bitStream.readBoolBits();
+  const flags: Uint5 = bitStream.readUint32Bits(5);
+  const hasMoveTo: boolean = ((flags & (1 << 0)) !== 0);
+  const changeLeftFill: boolean = ((flags & (1 << 1)) !== 0);
+  const changeRightFill: boolean = ((flags & (1 << 2)) !== 0);
+  const changeLineStyle: boolean = ((flags & (1 << 3)) !== 0);
+  const hasNewStyles: boolean = ((flags & (1 << 4)) !== 0);
 
   let moveTo: Vector2D | undefined = undefined;
   if (hasMoveTo) {

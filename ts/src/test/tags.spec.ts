@@ -17,6 +17,15 @@ const TAG_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "tags
 
 const JSON_READER: JsonReader = new JsonReader();
 const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
+// `BLACKLIST` can be used to forcefully skip some tests.
+const BLACKLIST: ReadonlySet<string> = new Set([
+  // "define-shape/shape1-squares",
+]);
+// `WHITELIST` can be used to only enable a few tests.
+const WHITELIST: ReadonlySet<string> = new Set([
+  // "place-object2/place-id-1",
+  // "place-object3/update-depth-1",
+]);
 
 describe("tags", function () {
   for (const group of getSampleGroups()) {
@@ -81,6 +90,12 @@ function* getSamplesFromGroup(group: string): IterableIterator<Sample> {
     }
     const testName: string = dirEnt.name;
     const testPath: string = sysPath.join(groupPath, testName);
+
+    if (BLACKLIST.has(`${group}/${testName}`)) {
+      continue;
+    } else if (WHITELIST.size > 0 && !WHITELIST.has(`${group}/${testName}`)) {
+      continue;
+    }
 
     const inputPath: string = sysPath.join(testPath, "input.bytes");
     const valuePath: string = sysPath.join(testPath, "value.json");

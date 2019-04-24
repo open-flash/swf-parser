@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Fix `TextRecord` flags parsing.
+
 # 0.5.0 (2019-04-22)
 
 - **[Breaking change]** Update to `swf-tree@0.6.0`.

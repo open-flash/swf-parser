@@ -93,10 +93,11 @@ pub fn parse_text_record(input: &[u8], has_alpha: bool, index_bits: usize, advan
   do_parse!(
     input,
     flags: parse_u8 >>
-    has_font: value!((flags & (1 << 3)) != 0) >>
+    has_offset_x: value!((flags & (1 << 0)) !=  0) >>
+    has_offset_y: value!((flags & (1 << 1)) != 0) >>
     has_color: value!((flags & (1 << 2)) != 0) >>
-    has_offset_x: value!((flags & (1 << 1)) != 0) >>
-    has_offset_y: value!((flags & (1 << 0)) !=  0) >>
+    has_font: value!((flags & (1 << 3)) != 0) >>
+    // Skips bits [4, 7]
     font_id: cond!(has_font, parse_le_u16) >>
     color: cond!(has_color, switch!(value!(has_alpha),
       true => call!(parse_straight_s_rgba8) |
