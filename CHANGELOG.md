@@ -1,6 +1,7 @@
 # Next
 
 - **[Fix]** Ensure `align` is always defined in `DefineDynamicText`.
+- **[Internal]** Update test samples.
 
 ### Rust
 
