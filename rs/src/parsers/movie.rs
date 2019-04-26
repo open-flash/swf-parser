@@ -8,7 +8,8 @@ pub fn parse_tag_block_string<'a>(input: &'a [u8], state: &mut ParseState) -> No
   let mut result: Vec<ast::Tag> = Vec::new();
   let mut current_input: &[u8] = input;
   while current_input.len() > 0 {
-    // A null byte indicates the end of the string of actions
+    // TODO: Check two bytes ahead
+    // A null byte indicates the end of the string of tags
     if current_input[0] == 0 {
       current_input = &current_input[1..];
       break;

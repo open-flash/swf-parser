@@ -5,6 +5,7 @@ use swf_tree as ast;
 use crate::parsers::basic_data_types::{
   parse_bool_bits,
   parse_c_string,
+  parse_color_transform,
   parse_color_transform_with_alpha,
   parse_language_code,
   parse_leb128_u32,
@@ -816,12 +817,12 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
     color_transform: cond!(
       has_color_transform,
       map!(
-        parse_color_transform_with_alpha,
+        parse_color_transform,
         |color_transform| ast::ColorTransformWithAlpha {
           red_mult: color_transform.red_mult,
           green_mult: color_transform.green_mult,
           blue_mult: color_transform.blue_mult,
-          alpha_mult: ::swf_fixed::Sfixed8P8::from_epsilons(1 << 8),
+          alpha_mult: ::swf_fixed::Sfixed8P8::ONE,
           red_add: color_transform.red_add,
           green_add: color_transform.green_add,
           blue_add: color_transform.blue_add,

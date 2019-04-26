@@ -2,6 +2,10 @@
 
 - **[Fix]** Ensure `align` is always defined in `DefineDynamicText`.
 
+### Rust
+
+- **[Fix]** Fix support for `PlaceObject1` with `ColorTransform`.
+
 # 0.5.1 (2019-04-24)
 
 - **[Fix]** Fix `TextRecord` flags parsing.

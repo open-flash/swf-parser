@@ -22,9 +22,8 @@ pub mod parsers {
 
 pub mod state;
 
-
 #[cfg(test)]
-mod lib_tests {
+mod tests {
   use std::io::{Read, Write};
   use std::path::Path;
 
@@ -116,6 +115,7 @@ mod lib_tests {
 
   use crate::parsers::header::parse_header;
   use swf_tree::Header;
+
   fn parse_header34(input: &[u8]) -> NomResult<&[u8], Header> {
     parse_header(input, 34)
   }
