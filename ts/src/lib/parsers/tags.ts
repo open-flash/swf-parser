@@ -32,6 +32,7 @@ import { SoundSize } from "swf-tree/sound/sound-size";
 import { SoundType } from "swf-tree/sound/sound-type";
 import { SpriteTag } from "swf-tree/sprite-tag";
 import { TagHeader } from "swf-tree/tag-header";
+import { TextAlignment } from "swf-tree/text";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import {
   parseColorTransform,
@@ -440,7 +441,7 @@ export function parseDefineEditText(byteStream: ReadableByteStream): tags.Define
   const fontSize: Uint16 | undefined = (hasFont || hasFontClass) ? byteStream.readUint16LE() : undefined;
   const color: StraightSRgba8 | undefined = hasColor ? parseStraightSRgba8(byteStream) : undefined;
   const maxLength: UintSize | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
-  const align: text.TextAlignment | undefined = hasLayout ? parseTextAlignment(byteStream) : undefined;
+  const align: text.TextAlignment = hasLayout ? parseTextAlignment(byteStream) : TextAlignment.Left;
   const marginLeft: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const marginRight: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const indent: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;

@@ -38,3 +38,7 @@ test-generator = "^0.2.2"
 
 # [replace]
 # "swf-tree:0.4.1" = { path = '../../swf-tree/rs' }
+
+# When testing larger files, increasing `opt-level` provides a significant speed-up.
+# [profile.test]
+# opt-level = 2

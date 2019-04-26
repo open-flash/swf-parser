@@ -344,7 +344,7 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
     font_size: cond!(has_font, parse_le_u16) >>
     color: cond!(has_color, parse_straight_s_rgba8) >>
     max_length: cond!(has_max_length, map!(parse_le_u16, |x| x as usize)) >>
-    align: cond!(has_layout, parse_text_alignment) >>
+    align: map!(cond!(has_layout, parse_text_alignment), |x| x.unwrap_or(ast::text::TextAlignment::Left)) >>
     margin_left: map!(cond!(has_layout, parse_le_u16), |x| x.unwrap_or_default()) >>
     margin_right: map!(cond!(has_layout, parse_le_u16), |x| x.unwrap_or_default()) >>
     indent: map!(cond!(has_layout, parse_le_u16), |x| x.unwrap_or_default()) >>
@@ -370,7 +370,7 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
       font_size: font_size,
       color: color,
       max_length: max_length,
-      align: align,
+      align: Some(align),
       margin_left: margin_left,
       margin_right: margin_right,
       indent: indent,

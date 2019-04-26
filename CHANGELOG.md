@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Ensure `align` is always defined in `DefineDynamicText`.
+
 # 0.5.1 (2019-04-24)
 
 - **[Fix]** Fix `TextRecord` flags parsing.

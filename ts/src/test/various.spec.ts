@@ -7,11 +7,12 @@ import { JsonReader } from "kryo/readers/json";
 import { Float64Type } from "kryo/types/float64";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import sysPath from "path";
+import { $ColorTransformWithAlpha } from "swf-tree/color-transform-with-alpha";
 import { $Header } from "swf-tree/header";
 import { $Matrix } from "swf-tree/matrix";
 import { $Rect } from "swf-tree/rect";
 import { $SwfSignature } from "swf-tree/swf-signature";
-import { parseMatrix, parseRect } from "../lib/parsers/basic-data-types";
+import { parseColorTransformWithAlpha, parseMatrix, parseRect } from "../lib/parsers/basic-data-types";
 import { parseHeader, parseSwfSignature } from "../lib/parsers/header";
 import meta from "./meta.js";
 import { readFile, readTextFile } from "./utils";
@@ -50,6 +51,7 @@ for (const group of getSampleGroups()) {
 interface SampleGroup<T> {
   name: string;
   type: IoType<T>;
+
   parser(byteStream: ReadableByteStream): T;
 }
 
@@ -60,6 +62,10 @@ function* getSampleGroups(): IterableIterator<SampleGroup<any>> {
     }
     const name: string = dirEnt.name;
     switch (name) {
+      case "color-transform-with-alpha": {
+        yield {name, parser: parseColorTransformWithAlpha, type: $ColorTransformWithAlpha};
+        break;
+      }
       case "float16-le": {
         yield {
           name,
