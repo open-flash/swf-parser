@@ -29,8 +29,8 @@ export function getPngImageDimensions(byteStream: ReadableByteStream): ImageDime
   if (chunkType !== IHDR_CHUNK_TYPE) {
     throw new Incident("InvalidPngFile", {byteStream}, "Expected first chunk to be `IHDR`");
   }
-  const width: Uint32 = byteStream.readUint32LE();
-  const height: Uint32 = byteStream.readUint32LE();
+  const width: Uint32 = byteStream.readUint32BE();
+  const height: Uint32 = byteStream.readUint32BE();
   return {width, height};
 }
 

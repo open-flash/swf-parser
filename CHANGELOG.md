@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Parse PNG integers as big endians.
+
 # 0.5.2 (2019-04-26)
 
 - **[Fix]** Ensure `align` is always defined in `DefineDynamicText`.

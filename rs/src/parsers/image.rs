@@ -1,4 +1,4 @@
-use nom::{be_u16 as parse_be_u16, le_u32 as parse_le_u32};
+use nom::{be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u32 as parse_le_u32};
 
 pub struct ImageDimensions {
   pub width: usize,
@@ -21,12 +21,12 @@ const PNG_IHDR_CHUNK_TYPE: u32 = 0x49484452;
 /// @see https://www.w3.org/TR/PNG/#11IHDR
 pub fn get_png_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
   let input = &input[12..];
-  let (input, chunk_type) = parse_le_u32(input).unwrap();
+  let (input, chunk_type) = parse_be_u32(input).unwrap();
   if chunk_type != PNG_IHDR_CHUNK_TYPE {
     panic!("InvalidPngFile");
   }
-  let (input, width) = parse_le_u32(input).unwrap();
-  let (_, height) = parse_le_u32(input).unwrap();
+  let (input, width) = parse_be_u32(input).unwrap();
+  let (_, height) = parse_be_u32(input).unwrap();
 
   Ok(ImageDimensions { width: width as usize, height: height as usize })
 }
