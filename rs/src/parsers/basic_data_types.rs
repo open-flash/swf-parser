@@ -20,7 +20,17 @@ pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8]
   }
 }
 
-/// Parse a null-terminated sequence of bytes. The null byte is consumed but not included in the
+/// Parse a sequence of bytes up to the end of input or first nul-byte. If there
+/// is a nul-byte, it is consumed but not included in the result.
+pub fn parse_block_c_string(input: &[u8]) -> IResult<&[u8], String> {
+  let input = match memchr::memchr(0, input) {
+    Some(idx) => &input[0..idx],
+    None => input,
+  };
+  Ok((&[], String::from_utf8(input.to_vec()).unwrap()))
+}
+
+/// Parse a null-terminated sequence of bytes. The nul-byte is consumed but not included in the
 /// result.
 pub fn parse_c_string(input: &[u8]) -> IResult<&[u8], String> {
   map!(input, take_until_and_consume!("\x00"), |str: &[u8]| String::from_utf8(str.to_vec()).unwrap())

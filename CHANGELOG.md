@@ -2,6 +2,10 @@
 
 - **[Fix]** Parse PNG integers as big endians.
 
+### Rust
+
+- **[Fix]** Stop at end of block or nul byte (whichever comes first) when parsing `DefineFont3`.
+
 # 0.5.2 (2019-04-26)
 
 - **[Fix]** Ensure `align` is always defined in `DefineDynamicText`.

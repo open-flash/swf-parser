@@ -4,6 +4,7 @@ use swf_tree as ast;
 
 use crate::parsers::basic_data_types::{
   parse_bool_bits,
+  parse_block_c_string,
   parse_c_string,
   parse_color_transform,
   parse_color_transform_with_alpha,
@@ -405,10 +406,11 @@ pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont>
     is_shift_jis: value!((flags & (1 << 6)) != 0) >>
     has_layout: value!((flags & (1 << 7)) != 0) >>
     language: parse_language_code >>
-    font_name: length_value!(parse_u8, parse_c_string) >>
+    font_name: length_value!(parse_u8, parse_block_c_string) >>
     glyph_count: map!(parse_le_u16, |x| x as usize) >>
     // According to Shumway:
     // > The SWF format docs doesn't say that, but the DefineFont{2,3} tag ends here for device fonts.
+    // See the sample `open-flash-db/tags/define-font-df3-system-font-verdana`.
     result: switch!(value!(glyph_count == 0),
       true => value!(ast::tags::DefineFont {
         id, font_name,

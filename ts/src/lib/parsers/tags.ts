@@ -35,6 +35,7 @@ import { TagHeader } from "swf-tree/tag-header";
 import { TextAlignment } from "swf-tree/text";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import {
+  parseBlockCString,
   parseColorTransform,
   parseColorTransformWithAlpha,
   parseMatrix,
@@ -79,6 +80,7 @@ import {
  * Read tags until the end of the stream or "end-of-tags".
  */
 export function parseTagBlockString(byteStream: ReadableByteStream, context: ParseContext): Tag[] {
+  let old: UintSize = byteStream.bytePos;
   const tags: Tag[] = [];
   while (byteStream.available() >= 2) {
     // A null byte indicates the end-of-tags
@@ -93,7 +95,12 @@ export function parseTagBlockString(byteStream: ReadableByteStream, context: Par
         byteStream.bytePos = oldBytePos;
       }
     }
-    tags.push(parseTag(byteStream, context));
+    const tag: Tag = parseTag(byteStream, context);
+    if (tag.type === TagType.DefineFont && tags.length === 3850) {
+      console.log(old, byteStream.bytePos);
+    }
+    old = byteStream.bytePos;
+    tags.push(tag);
   }
   return tags;
 }
@@ -503,18 +510,13 @@ export function parseDefineFont3(byteStream: ReadableByteStream): tags.DefineFon
 
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
-  // TODO: Check for `NUL` terminators in font name
-  let fontName: string = byteStream.readString(fontNameLength);
-  const nulIndex: number = fontName.indexOf("\0");
-  if (nulIndex >= 0) {
-    fontName = fontName.substr(0, nulIndex);
-  }
+  const fontName: string = parseBlockCString(byteStream, fontNameLength);
 
   const glyphCount: UintSize = byteStream.readUint16LE();
   if (glyphCount === 0) {
     // According to Shumway:
     // > The SWF format docs doesn't say that, but the DefineFont{2,3} tag ends here for device fonts.
-    // Counter-example: mt/hammerfest/game.swf, has still 2 bytes for Verdana
+    // See the sample `open-flash-db/tags/define-font-df3-system-font-verdana`.
 
     // System font
     return {

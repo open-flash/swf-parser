@@ -29,9 +29,9 @@ fn main() {
   match swf_file_parse_result {
     Ok((_, parsed)) => {
       println!("{}", serde_json::to_string_pretty(&parsed).unwrap());
-    },
+    }
     Err(error) => {
       println!("Error:\n{:?}", error);
-    },
+    }
   }
 }

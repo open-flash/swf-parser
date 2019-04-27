@@ -11,6 +11,17 @@ import {
   StraightSRgba8,
 } from "swf-tree";
 
+/// Parse a sequence of bytes up to the end of input or first nul-byte. If there
+/// is a nul-byte, it is consumed but not included in the result.
+export function parseBlockCString(byteStream: ReadableByteStream, blockSize: UintSize): string {
+  let value: string = byteStream.readString(blockSize);
+  const nulIndex: number = value.indexOf("\0");
+  if (nulIndex >= 0) {
+    value = value.substr(0, nulIndex);
+  }
+  return value;
+}
+
 export function parseRect(byteStream: ReadableByteStream): Rect {
   const bitStream: ReadableBitStream = byteStream.asBitStream();
   const result: Rect = parseRectBits(bitStream);
