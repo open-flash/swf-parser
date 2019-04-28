@@ -1,5 +1,6 @@
 # Next
 
+- **[Feature]** Implement parser for `DefineBinaryData` (thanks [@dmarcuse](https://github.com/dmarcuse)).
 - **[Fix]** Parse PNG integers as big endians.
 
 ### Rust

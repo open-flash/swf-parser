@@ -285,8 +285,11 @@ export function parseCsmTextSettings(byteStream: ReadableByteStream): tags.CsmTe
   return {type: TagType.CsmTextSettings, textId, renderer, fitting, thickness, sharpness};
 }
 
-export function parseDefineBinaryData(_byteStream: ReadableByteStream): tags.DefineBinaryData {
-  throw new Incident("NotImplemented", "parseDefineBinaryData");
+export function parseDefineBinaryData(byteStream: ReadableByteStream): tags.DefineBinaryData {
+  const id: Uint16 = byteStream.readUint16LE();
+  byteStream.readUint32LE(); // TODO: assert == 0
+  const data: Uint8Array = byteStream.tailBytes();
+  return {type: TagType.DefineBinaryData, id, data};
 }
 
 export function parseDefineBits(byteStream: ReadableByteStream, swfVersion: Uint8): tags.DefineBitmap {

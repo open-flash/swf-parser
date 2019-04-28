@@ -172,8 +172,12 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
   )
 }
 
-pub fn parse_define_binary_data(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineBinaryData> {
-  unimplemented!()
+pub fn parse_define_binary_data(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBinaryData> {
+  let (input, id) = parse_le_u16(input)?;
+  let (input, _reserved) = parse_le_u32(input)?; // TODO: assert reserved == 0
+  let data = input.to_vec();
+  let input = &[][..];
+  Ok((input, ast::tags::DefineBinaryData { id, data }))
 }
 
 pub fn parse_define_bits(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
