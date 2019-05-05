@@ -27,6 +27,7 @@ const project: buildTools.Project = {
       rules: {
         "max-file-line-count": false,
         "no-submodule-imports": false,
+        "whitespace": false,
       },
     },
   },
