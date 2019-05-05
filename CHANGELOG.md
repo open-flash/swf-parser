@@ -1,4 +1,4 @@
-# Next
+# 0.5.3 (2019-05-05)
 
 - **[Feature]** Implement parser for `DefineBinaryData` (thanks [@dmarcuse](https://github.com/dmarcuse)).
 - **[Fix]** Parse PNG integers as big endians.
