@@ -1,3 +1,5 @@
+// tslint:disable:max-file-line-count
+
 import { ReadableBitStream, ReadableByteStream, ReadableStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Float32, Sint16, Uint16, Uint2, Uint32, Uint4, Uint8, UintSize } from "semantic-types";

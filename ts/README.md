@@ -52,4 +52,6 @@ Prefer non-`master` branches when sending a PR so your changes can be rebased if
 needed. All the commits must be made on top of `master` (fast-forward merge).
 CI must pass for changes to be accepted.
 
+**[Documentation for the available Gulp tasks](https://github.com/demurgos/turbo-gulp/blob/master/docs/usage.md#main-tasks)**
+
 [swf-tree]: https://github.com/open-flash/swf-tree

@@ -16,12 +16,18 @@
     }
   ],
   "scripts": {
-    "prepare": "gulp all:tsconfig.json && gulp :tslint.json && gulp dist",
-    "test": "gulp :lint && gulp test",
+    "build": "gulp lib:build",
+    "watch": "gulp lib:watch",
+    "test": "gulp test",
+    "lint": "gulp lint",
+    "format": "gulp format",
+    "typedoc": "gulp lib:typedoc",
+    "dist": "gulp lib:dist",
+    "prepare": "gulp all:tsconfig.json && gulp tslint.json && gulp dist",
+    "pretest": "gulp lint",
+    "prepublishOnly": "echo \"Use \\`gulp lib:publish\\`\" && exit 1",
     "prestart": "gulp main:build",
-    "start": "node build/main/main/main.js",
-    "prepublishOnly": "npm test",
-    "lint": "gulp :lint:fix"
+    "start": "node build/main/main/main.js"
   },
   "dependencies": {
     "@open-flash/stream": "^0.1.1",
@@ -45,7 +51,7 @@
     "minimist": "^1.2.0",
     "ts-node": "^8.1.0",
     "tslint": "^5.16.0",
-    "turbo-gulp": "^0.19.0",
+    "turbo-gulp": "^0.20.1",
     "typescript": "^3.4.5"
   },
   "c88": {
