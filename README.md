@@ -43,6 +43,11 @@ Help is welcome to complete the parser.
 
 ## Contributing
 
+Each implementation lives in its own directory (`rs` or `ts`). The commands
+must be executed from these "project roots", not from the "repo root".
+
+Check the implementation-specific guides:
+
 - [Rust](./rs/README.md#contributing)
 - [Typescript](./ts/README.md#contributing)
 

@@ -40,9 +40,10 @@ git submodule update --init --recursive --remote
 ```
 
 This library uses Gulp and npm for its builds, yarn is recommended for the
-dependencies.
+dependencies. **The commands must be run from the `ts` directory.**
 
 ```
+cd ts
 npm install
 # work your changes...
 npm test
