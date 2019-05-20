@@ -495,12 +495,18 @@ export function parseDefineFont(_byteStream: ReadableByteStream): tags.DefineFon
   throw new Incident("NotImplemented", "parseDefineFont");
 }
 
-export function parseDefineFont2(_byteStream: ReadableByteStream): tags.DefineFont {
-  throw new Incident("NotImplemented", "parseDefineFont2");
+export function parseDefineFont2(byteStream: ReadableByteStream): tags.DefineFont {
+  // TODO: Add a flag to signal that this defineFont comes from `DefineFont2` (to support proper glyph scaling)
+  return parseDefineFontAny(byteStream);
+}
+
+export function parseDefineFont3(byteStream: ReadableByteStream): tags.DefineFont {
+  // TODO: Add a flag to signal that this defineFont comes from `DefineFont3` (to support proper glyph scaling)
+  return parseDefineFontAny(byteStream);
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
-export function parseDefineFont3(byteStream: ReadableByteStream): tags.DefineFont {
+export function parseDefineFontAny(byteStream: ReadableByteStream): tags.DefineFont {
   const id: Uint16 = byteStream.readUint16LE();
 
   const flags: Uint8 = byteStream.readUint8();

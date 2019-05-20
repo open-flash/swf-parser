@@ -37,6 +37,8 @@ describe("tags", function () {
           const actualValue: Tag = group.parser(stream);
           const actualJson: string = `${JSON.stringify(group.type.write(JSON_VALUE_WRITER, actualValue), null, 2)}\n`;
 
+          // await writeTextFile(sample.valuePath, actualJson);
+
           chai.assert.isUndefined(group.type.testError!(actualValue));
 
           const expectedJson: string = await readTextFile(sample.valuePath);

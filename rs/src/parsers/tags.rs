@@ -391,12 +391,18 @@ pub fn parse_define_font(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont>
   unimplemented!()
 }
 
-pub fn parse_define_font2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
-  unimplemented!()
+pub fn parse_define_font2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+  // TODO: Add a flag to signal that this defineFont comes from `DefineFont2` (to support proper glyph scaling)
+  parse_define_font_any(input)
+}
+
+pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+  // TODO: Add a flag to signal that this defineFont comes from `DefineFont3` (to support proper glyph scaling)
+  parse_define_font_any(input)
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
-pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+pub fn parse_define_font_any(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
   do_parse!(
     input,
     id: parse_le_u16 >>

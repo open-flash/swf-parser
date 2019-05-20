@@ -1,5 +1,7 @@
 # Next
 
+- **[Feature]** Implement parser for `DefineFont2` ([#38](https://github.com/open-flash/swf-parser/issues/38)).
+
 ### Typescript
 
 - **[Internal]** Update build tools.
