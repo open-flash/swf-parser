@@ -28,7 +28,7 @@ use crate::parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
 use crate::parsers::movie::parse_tag_block_string;
 use crate::parsers::shape::{parse_shape, ShapeVersion};
 use crate::parsers::sound::{audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id};
-use crate::parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits};
+use crate::parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits, FontVersion};
 use crate::state::ParseState;
 
 fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
@@ -376,7 +376,7 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
       font_size: font_size,
       color: color,
       max_length: max_length,
-      align: Some(align),
+      align: align,
       margin_left: margin_left,
       margin_right: margin_right,
       indent: indent,
@@ -392,17 +392,15 @@ pub fn parse_define_font(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont>
 }
 
 pub fn parse_define_font2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
-  // TODO: Add a flag to signal that this defineFont comes from `DefineFont2` (to support proper glyph scaling)
-  parse_define_font_any(input)
+  parse_define_font_any(input, FontVersion::Font2)
 }
 
 pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
-  // TODO: Add a flag to signal that this defineFont comes from `DefineFont3` (to support proper glyph scaling)
-  parse_define_font_any(input)
+  parse_define_font_any(input, FontVersion::Font3)
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
-pub fn parse_define_font_any(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+fn parse_define_font_any(input: &[u8], version: FontVersion) -> IResult<&[u8], ast::tags::DefineFont> {
   do_parse!(
     input,
     id: parse_le_u16 >>
@@ -415,6 +413,13 @@ pub fn parse_define_font_any(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFo
     is_small: value!((flags & (1 << 5)) != 0) >>
     is_shift_jis: value!((flags & (1 << 6)) != 0) >>
     has_layout: value!((flags & (1 << 7)) != 0) >>
+    em_square_size: value!(
+      if version >= FontVersion::Font3 {
+        ast::text::EmSquareSize::EmSquareSize20480
+      } else {
+        ast::text::EmSquareSize::EmSquareSize1024
+      }
+    ) >>
     language: parse_language_code >>
     font_name: length_value!(parse_u8, parse_block_c_string) >>
     glyph_count: map!(parse_le_u16, |x| x as usize) >>
@@ -425,6 +430,7 @@ pub fn parse_define_font_any(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFo
       true => value!(ast::tags::DefineFont {
         id, font_name,
         is_bold, is_italic, is_ansi, is_small, is_shift_jis,
+        em_square_size,
         language,
         glyphs: Option::None,
         code_units: Option::None,
@@ -443,6 +449,7 @@ pub fn parse_define_font_any(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFo
         (ast::tags::DefineFont {
           id, font_name,
           is_bold, is_italic, is_ansi, is_small, is_shift_jis,
+          em_square_size,
           language,
           glyphs: Option::Some(glyphs),
           code_units: Option::Some(code_units),

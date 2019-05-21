@@ -11,6 +11,14 @@ use crate::parsers::basic_data_types::{
 };
 use crate::parsers::shape::parse_glyph;
 
+#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
+pub enum FontVersion {
+  Font1,
+  Font2,
+  Font3,
+  Font4,
+}
+
 pub fn parse_grid_fitting_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::GridFitting> {
   switch!(
     input,

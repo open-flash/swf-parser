@@ -52,10 +52,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@babel/parser@^7.4.4":
-  version "7.4.4"
-  resolved "https://registry.yarnpkg.com/@babel/parser/-/parser-7.4.4.tgz#5977129431b8fe33471730d255ce8654ae1250b6"
-  integrity sha512-5pCS4mOsL+ANsFZGdvNLybx4wtqAZJ0MJjMHxvzI3bvIsz6sQvzW8XX92EYIkiPtIvcfG3Aj+Ir5VNyjnZhP7w==
+"@babel/parser@^7.4.4", "@babel/parser@^7.4.5":
+  version "7.4.5"
+  resolved "https://registry.yarnpkg.com/@babel/parser/-/parser-7.4.5.tgz#04af8d5d5a2b044a2a1bffacc1e5e6673544e872"
+  integrity sha512-9mUqkL1FF5T7f0WDFfAoDdiMVPWsdD1gZYzSnaXsxUCUqzuch/8of9G3VUSNiZmMBoRxT3neyVsqeiL/ZPcjew==
 
 "@babel/template@^7.1.0":
   version "7.4.4"
@@ -67,15 +67,15 @@
     "@babel/types" "^7.4.4"
 
 "@babel/traverse@^7.4.4":
-  version "7.4.4"
-  resolved "https://registry.yarnpkg.com/@babel/traverse/-/traverse-7.4.4.tgz#0776f038f6d78361860b6823887d4f3937133fe8"
-  integrity sha512-Gw6qqkw/e6AGzlyj9KnkabJX7VcubqPtkUQVAwkc0wUMldr3A/hezNB3Rc5eIvId95iSGkGIOe5hh1kMKf951A==
+  version "7.4.5"
+  resolved "https://registry.yarnpkg.com/@babel/traverse/-/traverse-7.4.5.tgz#4e92d1728fd2f1897dafdd321efbff92156c3216"
+  integrity sha512-Vc+qjynwkjRmIFGxy0KYoPj4FdVDxLej89kMHFsWScq999uX+pwcX4v9mWRjW0KcAYTPAuVQl2LKP1wEVLsp+A==
   dependencies:
     "@babel/code-frame" "^7.0.0"
     "@babel/generator" "^7.4.4"
     "@babel/helper-function-name" "^7.1.0"
     "@babel/helper-split-export-declaration" "^7.4.4"
-    "@babel/parser" "^7.4.4"
+    "@babel/parser" "^7.4.5"
     "@babel/types" "^7.4.4"
     debug "^4.1.0"
     globals "^11.1.0"
@@ -1958,7 +1958,7 @@ gulp-typescript@^5.0.1:
     vinyl "^2.1.0"
     vinyl-fs "^3.0.3"
 
-gulp@^4.0.1:
+gulp@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/gulp/-/gulp-4.0.2.tgz#543651070fd0f6ab0a0650c6a3e6ff5a7cb09caa"
   integrity sha512-dvEs27SCZt2ibF29xYgmnwwCYZxdxhQ/+LFWlbAW8y7jt68L/65402Lz3+CKy0Ov4rOs+NERmDq7YlZaDqUIfA==
@@ -3999,10 +3999,10 @@ sver-compat@^1.5.0:
     es6-iterator "^2.0.1"
     es6-symbol "^3.1.1"
 
-swf-tree@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.6.0.tgz#57362bdc070d4be1dd71ee6b43753fe33b1c275f"
-  integrity sha512-5ZAGao4LhVHQ74NieRZAYsMeabSpDkRQNLLQDCalmVMvzlCIAYQWzijm2DX9VZp8V4cjW97gEZxfPGpQ1N1ToQ==
+swf-tree@^0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.7.0.tgz#76db2876b83832a761cfdf62130c3b764f0a82b1"
+  integrity sha512-kYOimbeZKTW6Bt/cfzLx1HnclWZjtgR5MCa+ulU1nQiXiFKRBNDQK0kr96OOTtbrI6DgzgG50+eE99qkr1DA5A==
   dependencies:
     incident "^3.2.0"
     kryo "^0.8.1"
@@ -4304,9 +4304,9 @@ typescript@^3.5.0-dev.20190430:
   integrity sha512-8Os3bqTeHc6bf+bkPFL3O/pb09j8SbDa2LUBxTXWpZlcHUW9ziGuiEFiqMcArkbAjGLqEzshkl4zvxhb0gVPuQ==
 
 uglify-js@^3.1.4:
-  version "3.5.14"
-  resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.5.14.tgz#edf2a322c37fd7173a954fb35af199b52fb10946"
-  integrity sha512-dgyjIw8KFK6AyVl5vm2tEqPewv5TKGEiiVFLI1LbF+oHua/Njd8tZk3lIbF1AWU1rNdEg7scaceADb4zqCcWXg==
+  version "3.5.15"
+  resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-3.5.15.tgz#fe2b5378fd0b09e116864041437bff889105ce24"
+  integrity sha512-fe7aYFotptIddkwcm6YuA0HmknBZ52ZzOsUxZEdhhkSsz7RfjHDX2QDxwKTiv4JQ5t5NhfmpgAK+J7LiDhKSqg==
   dependencies:
     commander "~2.20.0"
     source-map "~0.6.1"

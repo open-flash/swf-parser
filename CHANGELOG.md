@@ -1,3 +1,7 @@
+# Next
+
+- **[Breaking change]** Update to `swf-tree@0.7`.
+
 # 0.5.4 (2019-05-20)
 
 - **[Feature]** Implement parser for `DefineFont2` ([#38](https://github.com/open-flash/swf-parser/issues/38)).

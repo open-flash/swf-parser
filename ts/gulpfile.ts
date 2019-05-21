@@ -25,9 +25,9 @@ const project: Project = {
     configuration: {
       rules: {
         "whitespace": false,
-      }
-    }
-  }
+      },
+    },
+  },
 };
 
 const lib: LibTarget = {

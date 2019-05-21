@@ -35,7 +35,7 @@
     "incident": "^3.2.0",
     "pako": "^1.0.10",
     "semantic-types": "^0.1.1",
-    "swf-tree": "^0.6.0"
+    "swf-tree": "^0.7.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
@@ -45,7 +45,7 @@
     "@types/node": "^11.13.10",
     "bson": "^4.0.1",
     "chai": "^4.2.0",
-    "gulp": "^4.0.1",
+    "gulp": "^4.0.2",
     "gulp-cli": "^2.2.0",
     "kryo": "^0.8.1",
     "minimist": "^1.2.0",

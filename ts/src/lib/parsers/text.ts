@@ -5,6 +5,13 @@ import { Glyph, LanguageCode, Rect, StraightSRgba8, text } from "swf-tree";
 import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGlyph } from "./shape";
 
+export enum FontVersion {
+  Font1 = 1,
+  Font2 = 2,
+  Font3 = 3,
+  Font4 = 4,
+}
+
 export function parseGridFittingBits(bitStream: ReadableBitStream): text.GridFitting {
   const code: UintSize = bitStream.readUint32Bits(3);
   switch (code) {

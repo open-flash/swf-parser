@@ -35,6 +35,7 @@ import { SoundType } from "swf-tree/sound/sound-type";
 import { SpriteTag } from "swf-tree/sprite-tag";
 import { TagHeader } from "swf-tree/tag-header";
 import { TextAlignment } from "swf-tree/text";
+import { EmSquareSize } from "swf-tree/text/em-square-size";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import {
   parseBlockCString,
@@ -67,6 +68,7 @@ import {
   parseSoundInfo,
 } from "./sound";
 import {
+  FontVersion,
   parseCsmTableHintBits,
   parseFontAlignmentZone,
   parseFontLayout,
@@ -82,7 +84,6 @@ import {
  * Read tags until the end of the stream or "end-of-tags".
  */
 export function parseTagBlockString(byteStream: ReadableByteStream, context: ParseContext): Tag[] {
-  let old: UintSize = byteStream.bytePos;
   const tags: Tag[] = [];
   while (byteStream.available() >= 2) {
     // A null byte indicates the end-of-tags
@@ -98,10 +99,6 @@ export function parseTagBlockString(byteStream: ReadableByteStream, context: Par
       }
     }
     const tag: Tag = parseTag(byteStream, context);
-    if (tag.type === TagType.DefineFont && tags.length === 3850) {
-      console.log(old, byteStream.bytePos);
-    }
-    old = byteStream.bytePos;
     tags.push(tag);
   }
   return tags;
@@ -496,17 +493,15 @@ export function parseDefineFont(_byteStream: ReadableByteStream): tags.DefineFon
 }
 
 export function parseDefineFont2(byteStream: ReadableByteStream): tags.DefineFont {
-  // TODO: Add a flag to signal that this defineFont comes from `DefineFont2` (to support proper glyph scaling)
-  return parseDefineFontAny(byteStream);
+  return parseDefineFontAny(byteStream, FontVersion.Font2);
 }
 
 export function parseDefineFont3(byteStream: ReadableByteStream): tags.DefineFont {
-  // TODO: Add a flag to signal that this defineFont comes from `DefineFont3` (to support proper glyph scaling)
-  return parseDefineFontAny(byteStream);
+  return parseDefineFontAny(byteStream, FontVersion.Font3);
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
-export function parseDefineFontAny(byteStream: ReadableByteStream): tags.DefineFont {
+function parseDefineFontAny(byteStream: ReadableByteStream, version: FontVersion): tags.DefineFont {
   const id: Uint16 = byteStream.readUint16LE();
 
   const flags: Uint8 = byteStream.readUint8();
@@ -518,6 +513,8 @@ export function parseDefineFontAny(byteStream: ReadableByteStream): tags.DefineF
   const isSmall: boolean = (flags & (1 << 5)) !== 0;
   const isShiftJis: boolean = (flags & (1 << 6)) !== 0;
   const hasLayout: boolean = (flags & (1 << 7)) !== 0;
+
+  const emSquareSize: EmSquareSize = version >= FontVersion.Font3 ? 20480 : 1024;
 
   const language: LanguageCode = parseLanguageCode(byteStream);
   const fontNameLength: UintSize = byteStream.readUint8();
@@ -539,6 +536,7 @@ export function parseDefineFontAny(byteStream: ReadableByteStream): tags.DefineF
       isAnsi,
       isSmall,
       isShiftJis,
+      emSquareSize,
       language,
     };
   }
@@ -558,6 +556,7 @@ export function parseDefineFontAny(byteStream: ReadableByteStream): tags.DefineF
     isAnsi,
     isSmall,
     isShiftJis,
+    emSquareSize,
     language,
     glyphs,
     codeUnits,
