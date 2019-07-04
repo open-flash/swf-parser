@@ -1012,8 +1012,9 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
   };
 }
 
-export function parseProtect(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseProtect");
+export function parseProtect(byteStream: ReadableByteStream): tags.Protect {
+  const password: string = parseBlockCString(byteStream, byteStream.available());
+  return {type: TagType.Protect, password};
 }
 
 export function parseRemoveObject(byteStream: ReadableByteStream): tags.RemoveObject {

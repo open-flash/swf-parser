@@ -81,7 +81,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8
           21 => map!(record_data, apply!(parse_define_bits_jpeg2, state.get_swf_version()), |t| ast::Tag::DefineBitmap(t)),
           22 => map!(record_data, parse_define_shape2, |t| ast::Tag::DefineShape(t)),
           23 => map!(record_data, parse_define_button_cxform, |_t| unimplemented!()),
-          24 => map!(record_data, parse_protect, |_t| unimplemented!()),
+          24 => map!(record_data, parse_protect, |t| ast::Tag::Protect(t)),
           26 => map!(record_data, apply!(parse_place_object2, state.get_swf_version() >= 6), |t| ast::Tag::PlaceObject(t)),
           28 => map!(record_data, parse_remove_object2, |t| ast::Tag::RemoveObject(t)),
           32 => map!(record_data, parse_define_shape3, |t| ast::Tag::DefineShape(t)),
@@ -966,8 +966,14 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
   )
 }
 
-pub fn parse_protect(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+fn parse_protect(input: &[u8]) -> IResult<&[u8], ast::tags::Protect> {
+  do_parse!(
+    input,
+    password: parse_block_c_string >>
+    (ast::tags::Protect {
+      password,
+    })
+  )
 }
 
 pub fn parse_remove_object(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObject> {

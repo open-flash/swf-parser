@@ -1,3 +1,7 @@
+# Next
+
+- **[Feature]** Implement parser for `Protect` ([#36](https://github.com/open-flash/swf-parser/issues/36)).
+
 # 0.7.0 (2019-05-21)
 
 - **[Breaking change]** Update to `swf-tree@0.7`.
