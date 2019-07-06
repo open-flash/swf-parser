@@ -20,7 +20,9 @@ matrix:
 #        - stable
       before_script:
         - cd rs
+        - rustup component add rustfmt
       script:
+        - cargo fmt --all -- --check
         - cargo build
         - cargo test
 

@@ -5,6 +5,10 @@
 - **[Feature]** Implement parser for `DefineFontInfo` ([#33](https://github.com/open-flash/swf-parser/issues/33)).
 - **[Fix]** Fix support for non-extended (SWF version < 6) clip actions in `PlaceObject2`.
 
+### Rust
+
+- **[Internal]** Add `rustfmt` support (thanks [@pheki](https://github.com/pheki)) ([#25](https://github.com/open-flash/swf-parser/issues/25))
+
 # 0.7.0 (2019-05-21)
 
 - **[Breaking change]** Update to `swf-tree@0.7`.
