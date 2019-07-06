@@ -1,3 +1,7 @@
+# Next
+
+- **[Fix]** Update to `nom@5`.
+
 # 0.7.1 (2019-07-06)
 
 - **[Feature]** Implement parser for `Protect` ([#36](https://github.com/open-flash/swf-parser/issues/36)).

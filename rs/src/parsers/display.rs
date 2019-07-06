@@ -1,6 +1,8 @@
 use crate::parsers::basic_data_types::{parse_le_fixed16_p16, parse_le_fixed8_p8, parse_straight_s_rgba8};
+use nom::number::streaming::{
+  le_f32 as parse_le_f32, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
+};
 use nom::IResult;
-use nom::{le_f32 as parse_le_f32, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use swf_tree as ast;
 
 #[allow(unused_variables)]
@@ -95,20 +97,26 @@ pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> IResult<&[
 }
 
 pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::ClipAction> {
-  do_parse!(
+  use nom::combinator::map;
+
+  let (input, events) = parse_clip_event_flags(input, extended_events)?;
+  let (input, actions_size) = map(parse_le_u32, |x| x as usize)(input)?;
+  let (input, (actions_size, key_code)) = if events.key_press {
+    let (input, key_code) = parse_u8(input)?;
+    (input, (actions_size.saturating_sub(1), Some(key_code)))
+  } else {
+    (input, (actions_size, None))
+  };
+  let (input, actions) = nom::bytes::streaming::take(actions_size)(input)?;
+
+  Ok((
     input,
-    events: apply!(parse_clip_event_flags, extended_events)
-      >> actions_size:
-        map!(parse_le_u32, |x| if events.key_press && x > 0 { x - 1 } else { x }
-          as usize)
-      >> key_code: cond!(events.key_press, parse_u8)
-      >> actions: take!(actions_size)
-      >> (ast::ClipAction {
-        events: events,
-        key_code: key_code,
-        actions: actions.to_vec(),
-      })
-  )
+    ast::ClipAction {
+      events,
+      key_code,
+      actions: actions.to_vec(),
+    },
+  ))
 }
 
 pub fn parse_filter_list(input: &[u8]) -> IResult<&[u8], Vec<ast::Filter>> {
@@ -292,65 +300,73 @@ fn parse_filter_gradient(input: &[u8], color_count: usize) -> IResult<&[u8], Vec
 }
 
 pub fn parse_gradient_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters::GradientBevel> {
-  do_parse!(
+  use nom::combinator::map;
+
+  let (input, color_count) = map(parse_u8, |x| x as usize)(input)?;
+  let (input, gradient) = parse_filter_gradient(input, color_count)?;
+  let (input, blur_x) = parse_le_fixed16_p16(input)?;
+  let (input, blur_y) = parse_le_fixed16_p16(input)?;
+  let (input, angle) = parse_le_fixed16_p16(input)?;
+  let (input, distance) = parse_le_fixed16_p16(input)?;
+  let (input, strength) = parse_le_fixed8_p8(input)?;
+
+  let (input, flags) = parse_u8(input)?;
+  let passes = flags & ((1 << 4) - 1);
+  let on_top = (flags & (1 << 4)) != 0;
+  let composite_source = (flags & (1 << 5)) != 0;
+  let knockout = (flags & (1 << 6)) != 0;
+  let inner = (flags & (1 << 7)) != 0;
+
+  Ok((
     input,
-    color_count: map!(parse_u8, |x| x as usize)
-      >> gradient: apply!(parse_filter_gradient, color_count)
-      >> blur_x: parse_le_fixed16_p16
-      >> blur_y: parse_le_fixed16_p16
-      >> angle: parse_le_fixed16_p16
-      >> distance: parse_le_fixed16_p16
-      >> strength: parse_le_fixed8_p8
-      >> flags: parse_u8
-      >> passes: value!(flags & ((1 << 4) - 1))
-      >> on_top: value!((flags & (1 << 4)) != 0)
-      >> composite_source: value!((flags & (1 << 5)) != 0)
-      >> knockout: value!((flags & (1 << 6)) != 0)
-      >> inner: value!((flags & (1 << 7)) != 0)
-      >> (ast::filters::GradientBevel {
-        gradient: gradient,
-        blur_x: blur_x,
-        blur_y: blur_y,
-        angle: angle,
-        distance: distance,
-        strength: strength,
-        inner: inner,
-        knockout: knockout,
-        composite_source: composite_source,
-        on_top: on_top,
-        passes: passes,
-      })
-  )
+    ast::filters::GradientBevel {
+      gradient: gradient,
+      blur_x: blur_x,
+      blur_y: blur_y,
+      angle: angle,
+      distance: distance,
+      strength: strength,
+      inner: inner,
+      knockout: knockout,
+      composite_source: composite_source,
+      on_top: on_top,
+      passes: passes,
+    },
+  ))
 }
 
 pub fn parse_gradient_glow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::GradientGlow> {
-  do_parse!(
+  use nom::combinator::map;
+
+  let (input, color_count) = map(parse_u8, |x| x as usize)(input)?;
+  let (input, gradient) = parse_filter_gradient(input, color_count)?;
+  let (input, blur_x) = parse_le_fixed16_p16(input)?;
+  let (input, blur_y) = parse_le_fixed16_p16(input)?;
+  let (input, angle) = parse_le_fixed16_p16(input)?;
+  let (input, distance) = parse_le_fixed16_p16(input)?;
+  let (input, strength) = parse_le_fixed8_p8(input)?;
+
+  let (input, flags) = parse_u8(input)?;
+  let passes = flags & ((1 << 4) - 1);
+  let on_top = (flags & (1 << 4)) != 0;
+  let composite_source = (flags & (1 << 5)) != 0;
+  let knockout = (flags & (1 << 6)) != 0;
+  let inner = (flags & (1 << 7)) != 0;
+
+  Ok((
     input,
-    color_count: map!(parse_u8, |x| x as usize)
-      >> gradient: apply!(parse_filter_gradient, color_count)
-      >> blur_x: parse_le_fixed16_p16
-      >> blur_y: parse_le_fixed16_p16
-      >> angle: parse_le_fixed16_p16
-      >> distance: parse_le_fixed16_p16
-      >> strength: parse_le_fixed8_p8
-      >> flags: parse_u8
-      >> passes: value!(flags & ((1 << 4) - 1))
-      >> on_top: value!((flags & (1 << 4)) != 0)
-      >> composite_source: value!((flags & (1 << 5)) != 0)
-      >> knockout: value!((flags & (1 << 6)) != 0)
-      >> inner: value!((flags & (1 << 7)) != 0)
-      >> (ast::filters::GradientGlow {
-        gradient: gradient,
-        blur_x: blur_x,
-        blur_y: blur_y,
-        angle: angle,
-        distance: distance,
-        strength: strength,
-        inner: inner,
-        knockout: knockout,
-        composite_source: composite_source,
-        on_top: on_top,
-        passes: passes,
-      })
-  )
+    ast::filters::GradientGlow {
+      gradient: gradient,
+      blur_x: blur_x,
+      blur_y: blur_y,
+      angle: angle,
+      distance: distance,
+      strength: strength,
+      inner: inner,
+      knockout: knockout,
+      composite_source: composite_source,
+      on_top: on_top,
+      passes: passes,
+    },
+  ))
 }

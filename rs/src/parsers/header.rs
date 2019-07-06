@@ -1,6 +1,6 @@
 use crate::parsers::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
+use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::IResult;
-use nom::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use swf_tree as ast;
 
 pub fn parse_compression_method(input: &[u8]) -> IResult<&[u8], ast::CompressionMethod> {

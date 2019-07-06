@@ -1,4 +1,5 @@
-use nom::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8, IResult as NomResult};
+use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
+use nom::IResult as NomResult;
 use swf_tree as ast;
 
 pub fn sound_rate_from_id(sound_rate_id: u8) -> ast::SoundRate {

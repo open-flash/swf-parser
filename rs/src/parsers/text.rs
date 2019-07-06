@@ -1,9 +1,11 @@
 use crate::parsers::basic_data_types::{
-  parse_i32_bits, parse_le_f16, parse_rect, parse_s_rgb8, parse_straight_s_rgba8, parse_u32_bits,
+  do_parse_u32_bits, parse_i32_bits, parse_le_f16, parse_rect, parse_s_rgb8, parse_straight_s_rgba8, parse_u32_bits,
 };
 use crate::parsers::shape::parse_glyph;
+use nom::number::streaming::{
+  le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
+};
 use nom::IResult;
-use nom::{le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
@@ -15,35 +17,41 @@ pub enum FontVersion {
 }
 
 pub fn parse_grid_fitting_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::GridFitting> {
-  switch!(
-    input,
-    apply!(parse_u32_bits, 3),
-    0 => value!(ast::text::GridFitting::None) |
-    1 => value!(ast::text::GridFitting::Pixel) |
-    2 => value!(ast::text::GridFitting::SubPixel)
-    // TODO(demurgos): Throw error
-  )
+  fn grid_fitting_from_id(grid_fitting_id: u32) -> ast::text::GridFitting {
+    match grid_fitting_id {
+      0 => ast::text::GridFitting::None,
+      1 => ast::text::GridFitting::Pixel,
+      2 => ast::text::GridFitting::SubPixel,
+      _ => panic!("UnexpectedGridFittingId: {}", grid_fitting_id),
+    }
+  }
+
+  nom::combinator::map(|i| parse_u32_bits(i, 3), grid_fitting_from_id)(input)
 }
 
 pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::CsmTableHint> {
-  switch!(
-    input,
-    apply!(parse_u32_bits, 2),
-    0 => value!(ast::text::CsmTableHint::Thin) |
-    1 => value!(ast::text::CsmTableHint::Medium) |
-    2 => value!(ast::text::CsmTableHint::Thick)
-    // TODO(demurgos): Throw error
-  )
+  fn csm_table_hint_from_id(csm_table_hint_id: u32) -> ast::text::CsmTableHint {
+    match csm_table_hint_id {
+      0 => ast::text::CsmTableHint::Thin,
+      1 => ast::text::CsmTableHint::Medium,
+      2 => ast::text::CsmTableHint::Thick,
+      _ => panic!("UnexpectedCsmTableHintId: {}", csm_table_hint_id),
+    }
+  }
+
+  nom::combinator::map(|i| parse_u32_bits(i, 2), csm_table_hint_from_id)(input)
 }
 
 pub fn parse_text_renderer_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::TextRenderer> {
-  switch!(
-    input,
-    apply!(parse_u32_bits, 2),
-    0 => value!(ast::text::TextRenderer::Normal) |
-    1 => value!(ast::text::TextRenderer::Advanced)
-    // TODO(demurgos): Throw error
-  )
+  fn text_renderer_from_id(text_renderer_id: u32) -> ast::text::TextRenderer {
+    match text_renderer_id {
+      0 => ast::text::TextRenderer::Normal,
+      1 => ast::text::TextRenderer::Advanced,
+      _ => panic!("UnexpectedTextRendererId: {}", text_renderer_id),
+    }
+  }
+
+  nom::combinator::map(|i| parse_u32_bits(i, 2), text_renderer_from_id)(input)
 }
 
 pub fn parse_font_alignment_zone(input: &[u8]) -> IResult<&[u8], ast::text::FontAlignmentZone> {
@@ -98,33 +106,48 @@ pub fn parse_text_record(
   index_bits: usize,
   advance_bits: usize,
 ) -> IResult<&[u8], ast::text::TextRecord> {
-  do_parse!(
+  use nom::combinator::{cond, map};
+
+  let (input, flags) = parse_u8(input)?;
+  let has_offset_x = (flags & (1 << 0)) != 0;
+  let has_offset_y = (flags & (1 << 1)) != 0;
+  let has_color = (flags & (1 << 2)) != 0;
+  let has_font = (flags & (1 << 3)) != 0;
+  // Skips bits [4, 7]
+  let (input, font_id) = cond(has_font, parse_le_u16)(input)?;
+  let (input, color) = if has_color {
+    if has_alpha {
+      map(parse_straight_s_rgba8, Some)(input)?
+    } else {
+      map(parse_s_rgb8, |c| {
+        Some(ast::StraightSRgba8 {
+          r: c.r,
+          g: c.g,
+          b: c.b,
+          a: 255,
+        })
+      })(input)?
+    }
+  } else {
+    (input, None)
+  };
+  let (input, offset_x) = cond(has_offset_x, parse_le_i16)(input)?;
+  let (input, offset_y) = cond(has_offset_y, parse_le_i16)(input)?;
+  let (input, font_size) = cond(has_font, parse_le_u16)(input)?;
+  let (input, entry_count) = parse_u8(input)?;
+  let (input, entries) = bits!(input, |i| parse_glyph_entries(i, entry_count, index_bits, advance_bits))?;
+
+  Ok((
     input,
-    flags: parse_u8 >>
-    has_offset_x: value!((flags & (1 << 0)) !=  0) >>
-    has_offset_y: value!((flags & (1 << 1)) != 0) >>
-    has_color: value!((flags & (1 << 2)) != 0) >>
-    has_font: value!((flags & (1 << 3)) != 0) >>
-    // Skips bits [4, 7]
-    font_id: cond!(has_font, parse_le_u16) >>
-    color: cond!(has_color, switch!(value!(has_alpha),
-      true => call!(parse_straight_s_rgba8) |
-      false => map!(parse_s_rgb8, |c| ast::StraightSRgba8 {r: c.r, g: c.g, b: c.b, a: 255})
-    )) >>
-    offset_x: cond!(has_offset_x, parse_le_i16) >>
-    offset_y: cond!(has_offset_y, parse_le_i16) >>
-    font_size: cond!(has_font, parse_le_u16) >>
-    entry_count: parse_u8 >>
-    entries: bits!(apply!(parse_glyph_entries, entry_count, index_bits, advance_bits)) >>
-    (ast::text::TextRecord {
+    ast::text::TextRecord {
       font_id: font_id,
       color: color,
       offset_x: offset_x.unwrap_or_default(),
       offset_y: offset_y.unwrap_or_default(),
       font_size: font_size,
       entries: entries,
-    })
-  )
+    },
+  ))
 }
 
 pub fn parse_glyph_entries(
@@ -133,11 +156,7 @@ pub fn parse_glyph_entries(
   index_bits: usize,
   advance_bits: usize,
 ) -> IResult<(&[u8], usize), Vec<ast::text::GlyphEntry>> {
-  length_count!(
-    input,
-    value!(entry_count),
-    apply!(parse_glyph_entry, index_bits, advance_bits)
-  )
+  nom::multi::count(|i| parse_glyph_entry(i, index_bits, advance_bits), entry_count as usize)(input)
 }
 
 pub fn parse_glyph_entry(
@@ -145,15 +164,11 @@ pub fn parse_glyph_entry(
   index_bits: usize,
   advance_bits: usize,
 ) -> IResult<(&[u8], usize), ast::text::GlyphEntry> {
-  do_parse!(
-    input,
-    index: map!(apply!(parse_u32_bits, index_bits), |x| x as usize)
-      >> advance: apply!(parse_i32_bits, advance_bits)
-      >> (ast::text::GlyphEntry {
-        index: index,
-        advance: advance,
-      })
-  )
+  use nom::combinator::map;
+  let (input, index) = map(do_parse_u32_bits(index_bits), |x| x as usize)(input)?;
+  let (input, advance) = parse_i32_bits(input, advance_bits)?;
+
+  Ok((input, ast::text::GlyphEntry { index, advance }))
 }
 
 pub fn parse_offset_glyphs(

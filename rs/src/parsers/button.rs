@@ -1,7 +1,7 @@
 use crate::parsers::basic_data_types::{parse_color_transform_with_alpha, parse_matrix};
 use crate::parsers::display::{parse_blend_mode, parse_filter_list};
+use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::IResult as NomResult;
-use nom::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
@@ -35,34 +35,34 @@ pub fn parse_button_record_string(input: &[u8], version: ButtonVersion) -> NomRe
 }
 
 pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[u8], ast::ButtonRecord> {
-  do_parse!(
+  use nom::combinator::cond;
+
+  let (input, flags) = parse_u8(input)?;
+  let state_up = (flags & (1 << 0)) != 0;
+  let state_over = (flags & (1 << 1)) != 0;
+  let state_down = (flags & (1 << 2)) != 0;
+  let state_hit_test = (flags & (1 << 3)) != 0;
+  let has_filter_list = (flags & (1 << 4)) != 0;
+  let has_blend_mode = (flags & (1 << 5)) != 0;
+  // (Skip bits [6, 7])
+  let (input, character_id) = parse_le_u16(input)?;
+  let (input, depth) = parse_le_u16(input)?;
+  let (input, matrix) = parse_matrix(input)?;
+  let (input, color_transform) = cond(version >= ButtonVersion::Button2, parse_color_transform_with_alpha)(input)?;
+  let (input, filters) = if version >= ButtonVersion::Button2 && has_filter_list {
+    parse_filter_list(input)?
+  } else {
+    (input, Vec::new())
+  };
+  let (input, blend_mode) = if version >= ButtonVersion::Button2 && has_blend_mode {
+    parse_blend_mode(input)?
+  } else {
+    (input, ast::BlendMode::Normal)
+  };
+
+  Ok((
     input,
-    flags: parse_u8 >>
-    state_up: value!((flags & (1 << 0)) != 0) >>
-    state_over: value!((flags & (1 << 1)) != 0) >>
-    state_down: value!((flags & (1 << 2)) != 0) >>
-    state_hit_test: value!((flags & (1 << 3)) != 0) >>
-    has_filter_list: value!((flags & (1 << 4)) != 0) >>
-    has_blend_mode: value!((flags & (1 << 5)) != 0) >>
-    // (Skip bits [6, 7])
-    character_id: parse_le_u16 >>
-    depth: parse_le_u16 >>
-    matrix: parse_matrix >>
-    color_transform: cond!(
-      version >= ButtonVersion::Button2,
-      parse_color_transform_with_alpha
-    ) >>
-    filters: switch!(
-      value!(version >= ButtonVersion::Button2 && has_filter_list),
-      true => call!(parse_filter_list) |
-      false => value!(Vec::new())
-    )  >>
-    blend_mode: switch!(
-      value!(version >= ButtonVersion::Button2 && has_blend_mode),
-      true => call!(parse_blend_mode) |
-      false => value!(ast::BlendMode::Normal)
-    )  >>
-    (ast::ButtonRecord {
+    ast::ButtonRecord {
       state_up,
       state_over,
       state_down,
@@ -73,8 +73,8 @@ pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[
       color_transform,
       filters,
       blend_mode,
-    })
-  )
+    },
+  ))
 }
 
 pub fn parse_button2_cond_action_string(input: &[u8]) -> NomResult<&[u8], Vec<ast::ButtonCondAction>> {

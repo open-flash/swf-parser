@@ -1,7 +1,6 @@
 use crate::parsers::basic_data_types::{
-  parse_block_c_string, parse_bool_bits, parse_c_string, parse_color_transform, parse_color_transform_with_alpha,
-  parse_language_code, parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8,
-  parse_straight_s_rgba8, skip_bits,
+  parse_block_c_string, parse_c_string, parse_color_transform, parse_color_transform_with_alpha, parse_language_code,
+  parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8, parse_straight_s_rgba8,
 };
 use crate::parsers::button::{parse_button2_cond_action_string, parse_button_record_string, ButtonVersion};
 use crate::parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
@@ -21,7 +20,7 @@ use crate::parsers::text::{
   parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits, FontVersion,
 };
 use crate::state::ParseState;
-use nom::{
+use nom::number::streaming::{
   be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16,
   le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
@@ -51,7 +50,7 @@ fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   }
 }
 
-pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::Tag> {
+pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], ast::Tag> {
   use std::convert::TryInto;
 
   match parse_tag_header(input) {
@@ -68,13 +67,13 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8
           2 => map!(record_data, parse_define_shape, |t| ast::Tag::DefineShape(t)),
           4 => map!(record_data, parse_place_object, |t| ast::Tag::PlaceObject(t)),
           5 => map!(record_data, parse_remove_object, |t| ast::Tag::RemoveObject(t)),
-          6 => map!(record_data, apply!(parse_define_bits, state.get_swf_version()), |t| {
+          6 => map!(record_data, |i| parse_define_bits(i, state.get_swf_version()), |t| {
             ast::Tag::DefineBitmap(t)
           }),
           7 => map!(record_data, parse_define_button, |t| ast::Tag::DefineButton(t)),
           8 => map!(
             record_data,
-            apply!(parse_define_jpeg_tables, state.get_swf_version()),
+            |i| parse_define_jpeg_tables(i, state.get_swf_version()),
             |t| ast::Tag::DefineJpegTables(t)
           ),
           9 => map!(record_data, parse_set_background_color_tag, |t| {
@@ -92,7 +91,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8
           20 => map!(record_data, parse_define_bits_lossless, |t| ast::Tag::DefineBitmap(t)),
           21 => map!(
             record_data,
-            apply!(parse_define_bits_jpeg2, state.get_swf_version()),
+            |i| parse_define_bits_jpeg2(i, state.get_swf_version()),
             |t| ast::Tag::DefineBitmap(t)
           ),
           22 => map!(record_data, parse_define_shape2, |t| ast::Tag::DefineShape(t)),
@@ -100,7 +99,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8
           24 => map!(record_data, parse_protect, |t| ast::Tag::Protect(t)),
           26 => map!(
             record_data,
-            apply!(parse_place_object2, state.get_swf_version() >= 6),
+            |i| parse_place_object2(i, state.get_swf_version() >= 6),
             |t| ast::Tag::PlaceObject(t)
           ),
           28 => map!(record_data, parse_remove_object2, |t| ast::Tag::RemoveObject(t)),
@@ -109,12 +108,12 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8
           34 => map!(record_data, parse_define_button2, |t| ast::Tag::DefineButton(t)),
           35 => map!(
             record_data,
-            apply!(parse_define_bits_jpeg3, state.get_swf_version()),
+            |i| parse_define_bits_jpeg3(i, state.get_swf_version()),
             |t| ast::Tag::DefineBitmap(t)
           ),
           36 => map!(record_data, parse_define_bits_lossless2, |t| ast::Tag::DefineBitmap(t)),
           37 => map!(record_data, parse_define_edit_text, |t| ast::Tag::DefineDynamicText(t)),
-          39 => map!(record_data, apply!(parse_define_sprite, state), |t| {
+          39 => map!(record_data, |i| parse_define_sprite(i, state), |t| {
             ast::Tag::DefineSprite(t)
           }),
           43 => map!(record_data, parse_frame_label, |t| ast::Tag::FrameLabel(t)),
@@ -134,13 +133,13 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
           70 => map!(
             record_data,
-            apply!(parse_place_object3, state.get_swf_version() >= 6),
+            |i| parse_place_object3(i, state.get_swf_version() >= 6),
             |t| ast::Tag::PlaceObject(t)
           ),
           71 => map!(record_data, parse_import_assets2, |t| ast::Tag::ImportAssets(t)),
           73 => map!(
             record_data,
-            apply!(parse_define_font_align_zones, |font_id| state.get_glyph_count(font_id)),
+            |i| parse_define_font_align_zones(i, |font_id| state.get_glyph_count(font_id)),
             |t| ast::Tag::DefineFontAlignZones(t)
           ),
           74 => map!(record_data, parse_csm_text_settings, |t| ast::Tag::CsmTextSettings(t)),
@@ -250,26 +249,30 @@ pub fn parse_define_button(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineBut
 }
 
 pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
-  do_parse!(
+  use nom::combinator::map;
+
+  let (input, id) = parse_le_u16(input)?;
+  let (input, flags) = parse_u8(input)?;
+  let track_as_menu = (flags & (1 << 0)) != 0;
+  // Skip bits [1, 7]
+  // TODO: Assert action offset matches
+  let (input, action_offset) = map(parse_le_u16, |x| x as usize)(input)?;
+  let (input, characters) = parse_button_record_string(input, ButtonVersion::Button2)?;
+  let (input, actions) = if action_offset != 0 {
+    parse_button2_cond_action_string(input)?
+  } else {
+    (input, Vec::new())
+  };
+
+  Ok((
     input,
-    id: parse_le_u16 >>
-    flags: parse_u8 >>
-    track_as_menu: value!((flags & (1 << 0)) != 0) >>
-    // Skip bits [1, 7]
-    // TODO: Assert action offset matches
-    action_offset: map!(parse_le_u16, |x| x as usize) >>
-    characters: apply!(parse_button_record_string, ButtonVersion::Button2) >>
-    actions: switch!(value!(action_offset != 0),
-      true => call!(parse_button2_cond_action_string) |
-      false => value!(Vec::new())
-    )  >>
-    (ast::tags::DefineButton {
+    ast::tags::DefineButton {
       id,
       track_as_menu,
       characters,
       actions,
-    })
-  )
+    },
+  ))
 }
 
 pub fn parse_define_button_cxform(_input: &[u8]) -> IResult<&[u8], ()> {
@@ -498,64 +501,78 @@ pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont>
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
 fn parse_define_font_any(input: &[u8], version: FontVersion) -> IResult<&[u8], ast::tags::DefineFont> {
-  do_parse!(
-    input,
-    id: parse_le_u16 >>
-    flags: parse_u8 >>
-    is_bold: value!((flags & (1 << 0)) != 0) >>
-    is_italic: value!((flags & (1 << 1)) != 0) >>
-    use_wide_codes: value!((flags & (1 << 2)) != 0) >>
-    use_wide_offsets: value!((flags & (1 << 3)) != 0) >>
-    is_ansi: value!((flags & (1 << 4)) != 0) >>
-    is_small: value!((flags & (1 << 5)) != 0) >>
-    is_shift_jis: value!((flags & (1 << 6)) != 0) >>
-    has_layout: value!((flags & (1 << 7)) != 0) >>
-    em_square_size: value!(
-      if version >= FontVersion::Font3 {
-        ast::text::EmSquareSize::EmSquareSize20480
-      } else {
-        ast::text::EmSquareSize::EmSquareSize1024
-      }
-    ) >>
-    language: parse_language_code >>
-    font_name: length_value!(parse_u8, parse_block_c_string) >>
-    glyph_count: map!(parse_le_u16, |x| x as usize) >>
-    // According to Shumway:
-    // > The SWF format docs doesn't say that, but the DefineFont{2,3} tag ends here for device fonts.
-    // See the sample `open-flash-db/tags/define-font-df3-system-font-verdana`.
-    result: switch!(value!(glyph_count == 0),
-      true => value!(ast::tags::DefineFont {
-        id, font_name,
-        is_bold, is_italic, is_ansi, is_small, is_shift_jis,
+  use nom::combinator::{cond, map};
+  use nom::multi::count;
+
+  let (input, id) = parse_le_u16(input)?;
+
+  let (input, flags) = parse_u8(input)?;
+  let is_bold = (flags & (1 << 0)) != 0;
+  let is_italic = (flags & (1 << 1)) != 0;
+  let use_wide_codes = (flags & (1 << 2)) != 0;
+  let use_wide_offsets = (flags & (1 << 3)) != 0;
+  let is_ansi = (flags & (1 << 4)) != 0;
+  let is_small = (flags & (1 << 5)) != 0;
+  let is_shift_jis = (flags & (1 << 6)) != 0;
+  let has_layout = (flags & (1 << 7)) != 0;
+
+  let em_square_size = if version >= FontVersion::Font3 {
+    ast::text::EmSquareSize::EmSquareSize20480
+  } else {
+    ast::text::EmSquareSize::EmSquareSize1024
+  };
+
+  let (input, language) = parse_language_code(input)?;
+  let (input, font_name) = length_value!(input, parse_u8, parse_block_c_string)?;
+  let (input, glyph_count) = map(parse_le_u16, |x| x as usize)(input)?;
+
+  // According to Shumway:
+  // > The SWF format docs doesn't say that, but the DefineFont{2,3} tag ends here for device fonts.
+  // See the sample `open-flash-db/tags/define-font-df3-system-font-verdana`.
+  if glyph_count == 0 {
+    Ok((
+      input,
+      ast::tags::DefineFont {
+        id,
+        font_name,
+        is_bold,
+        is_italic,
+        is_ansi,
+        is_small,
+        is_shift_jis,
         em_square_size,
         language,
-        glyphs: Option::None,
-        code_units: Option::None,
-        layout: Option::None,
-      }) |
-      false => do_parse!(
-        glyphs: apply!(parse_offset_glyphs, glyph_count, use_wide_offsets) >>
-        code_units: length_count!(
-          value!(glyph_count),
-          switch!(value!(use_wide_codes),
-            true => call!(parse_le_u16) |
-            false => map!(parse_u8, |x| x as u16)
-          )
-        )  >>
-        layout: cond!(has_layout, apply!(parse_font_layout, glyph_count)) >>
-        (ast::tags::DefineFont {
-          id, font_name,
-          is_bold, is_italic, is_ansi, is_small, is_shift_jis,
-          em_square_size,
-          language,
-          glyphs: Option::Some(glyphs),
-          code_units: Option::Some(code_units),
-          layout,
-        })
-      )
-    )  >>
-    (result)
-  )
+        glyphs: None,
+        code_units: None,
+        layout: None,
+      },
+    ))
+  } else {
+    let (input, glyphs) = parse_offset_glyphs(input, glyph_count, use_wide_offsets)?;
+    let (input, code_units) = if use_wide_codes {
+      count(parse_le_u16, glyph_count)(input)?
+    } else {
+      count(map(parse_u8, u16::from), glyph_count)(input)?
+    };
+    let (input, layout) = cond(has_layout, |i| parse_font_layout(i, glyph_count))(input)?;
+    Ok((
+      input,
+      ast::tags::DefineFont {
+        id,
+        font_name,
+        is_bold,
+        is_italic,
+        is_ansi,
+        is_small,
+        is_shift_jis,
+        em_square_size,
+        language,
+        glyphs: Option::Some(glyphs),
+        code_units: Option::Some(code_units),
+        layout,
+      },
+    ))
+  }
 }
 
 pub fn parse_define_font4(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
@@ -604,31 +621,32 @@ pub fn parse_define_font_info(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
     }
   }
 
-  do_parse!(
+  let (input, font_id) = parse_le_u16(input)?;
+  let (input, font_name) = length_value!(input, parse_u8, parse_block_c_string)?;
+  let (input, flags) = parse_u8(input)?;
+  let use_wide_codes = (flags & (1 << 0)) != 0;
+  let is_bold = (flags & (1 << 1)) != 0;
+  let is_italic = (flags & (1 << 2)) != 0;
+  let is_ansi = (flags & (1 << 3)) != 0;
+  let is_shift_jis = (flags & (1 << 4)) != 0;
+  let is_small = (flags & (1 << 5)) != 0;
+  let language = ast::LanguageCode::Auto;
+  let (input, code_units) = parse_code_units(input, use_wide_codes)?;
+
+  Ok((
     input,
-    font_id: parse_le_u16
-      >> font_name: length_value!(parse_u8, parse_block_c_string)
-      >> flags: parse_u8
-      >> use_wide_codes: value!((flags & (1 << 0)) != 0)
-      >> is_bold: value!((flags & (1 << 1)) != 0)
-      >> is_italic: value!((flags & (1 << 2)) != 0)
-      >> is_ansi: value!((flags & (1 << 3)) != 0)
-      >> is_shift_jis: value!((flags & (1 << 4)) != 0)
-      >> is_small: value!((flags & (1 << 5)) != 0)
-      >> language: value!(ast::LanguageCode::Auto)
-      >> code_units: apply!(parse_code_units, use_wide_codes)
-      >> (ast::tags::DefineFontInfo {
-        font_id,
-        font_name,
-        is_bold,
-        is_italic,
-        is_ansi,
-        is_shift_jis,
-        is_small,
-        language: Some(language),
-        code_units,
-      })
-  )
+    ast::tags::DefineFontInfo {
+      font_id,
+      font_name,
+      is_bold,
+      is_italic,
+      is_ansi,
+      is_shift_jis,
+      is_small,
+      language: Some(language),
+      code_units,
+    },
+  ))
 }
 
 pub fn parse_define_font_info2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
@@ -672,32 +690,35 @@ fn parse_define_morph_shape_any(
   input: &[u8],
   version: MorphShapeVersion,
 ) -> IResult<&[u8], ast::tags::DefineMorphShape> {
-  do_parse!(
+  use nom::combinator::cond;
+
+  let (input, id) = parse_le_u16(input)?;
+  let (input, bounds) = parse_rect(input)?;
+  let (input, morph_bounds) = parse_rect(input)?;
+  let (input, edge_bounds) = cond(version >= MorphShapeVersion::MorphShape2, parse_rect)(input)?;
+  let (input, morph_edge_bounds) = cond(version >= MorphShapeVersion::MorphShape2, parse_rect)(input)?;
+
+  let (input, flags) = cond(version >= MorphShapeVersion::MorphShape2, parse_u8)(input)?;
+  let flags = flags.unwrap_or(0);
+  let has_scaling_strokes = (flags & (1 << 0)) != 0;
+  let has_non_scaling_strokes = (flags & (1 << 1)) != 0;
+  // (Skip bits [2, 7])
+
+  let (input, shape) = parse_morph_shape(input, version)?;
+
+  Ok((
     input,
-    id: parse_le_u16
-      >> bounds: parse_rect
-      >> morph_bounds: parse_rect
-      >> edge_bounds: cond!(version >= MorphShapeVersion::MorphShape2, parse_rect)
-      >> morph_edge_bounds: cond!(version >= MorphShapeVersion::MorphShape2, parse_rect)
-      >> flags:
-        switch!(value!(version >= MorphShapeVersion::MorphShape2),
-          true => call!(parse_u8) |
-          false => value!(0u8)
-        )
-      >> has_scaling_strokes: value!((flags & (1 << 0)) != 0)
-      >> has_non_scaling_strokes: value!((flags & (1 << 1)) != 0)
-      >> shape: apply!(parse_morph_shape, version)
-      >> (ast::tags::DefineMorphShape {
-        id,
-        bounds,
-        morph_bounds,
-        edge_bounds,
-        morph_edge_bounds,
-        has_scaling_strokes,
-        has_non_scaling_strokes,
-        shape,
-      })
-  )
+    ast::tags::DefineMorphShape {
+      id,
+      bounds,
+      morph_bounds,
+      edge_bounds,
+      morph_edge_bounds,
+      has_scaling_strokes,
+      has_non_scaling_strokes,
+      shape,
+    },
+  ))
 }
 
 pub fn parse_define_scaling_grid(_input: &[u8]) -> IResult<&[u8], ()> {
@@ -763,21 +784,24 @@ pub fn parse_define_shape4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShap
 }
 
 fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> IResult<&[u8], ast::tags::DefineShape> {
-  do_parse!(
+  use nom::combinator::cond;
+
+  let (input, id) = parse_le_u16(input)?;
+  let (input, bounds) = parse_rect(input)?;
+  let (input, edge_bounds) = cond(version >= ShapeVersion::Shape4, parse_rect)(input)?;
+
+  let (input, flags) = cond(version >= ShapeVersion::Shape4, parse_u8)(input)?;
+  let flags = flags.unwrap_or(0);
+  let has_scaling_strokes = (flags & (1 << 0)) != 0;
+  let has_non_scaling_strokes = (flags & (1 << 1)) != 0;
+  let has_fill_winding = (flags & (1 << 2)) != 0;
+  // (Skip bits [3, 7])
+
+  let (input, shape) = parse_shape(input, version)?;
+
+  Ok((
     input,
-    id: parse_le_u16 >>
-    bounds: parse_rect >>
-    edge_bounds: cond!(version >= ShapeVersion::Shape4, parse_rect) >>
-    flags: switch!(value!(version >= ShapeVersion::Shape4),
-      true => call!(parse_u8) |
-      false => value!(0u8)
-    )  >>
-    has_scaling_strokes: value!((flags & (1 << 0)) != 0) >>
-    has_non_scaling_strokes: value!((flags & (1 << 1)) != 0) >>
-    has_fill_winding: value!((flags & (1 << 2)) != 0) >>
-    // (Skip bits [3, 7])
-    shape: apply!(parse_shape, version) >>
-    (ast::tags::DefineShape {
+    ast::tags::DefineShape {
       id,
       bounds,
       edge_bounds,
@@ -785,8 +809,8 @@ fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> IResult<&[u8],
       has_non_scaling_strokes,
       has_fill_winding,
       shape,
-    })
-  )
+    },
+  ))
 }
 
 fn parse_bytes(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
@@ -829,36 +853,39 @@ fn parse_define_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSound> {
 }
 
 // TODO: Readonly `state`?
-pub fn parse_define_sprite<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8], ast::tags::DefineSprite> {
-  do_parse!(
+pub fn parse_define_sprite<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], ast::tags::DefineSprite> {
+  let (input, id) = parse_le_u16(input)?;
+  let (input, frame_count) = parse_le_u16(input)?;
+  let (input, tags) = parse_tag_block_string(input, state)?;
+  Ok((
     input,
-    id: parse_le_u16
-      >> frame_count: parse_le_u16
-      >> tags: apply!(parse_tag_block_string, state)
-      >> (ast::tags::DefineSprite {
-        id: id,
-        frame_count: frame_count as usize,
-        tags: tags,
-      })
-  )
+    ast::tags::DefineSprite {
+      id: id,
+      frame_count: frame_count as usize,
+      tags: tags,
+    },
+  ))
 }
 
 pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
-  do_parse!(
+  use nom::combinator::map;
+
+  let (input, id) = parse_le_u16(input)?;
+  let (input, bounds) = parse_rect(input)?;
+  let (input, matrix) = parse_matrix(input)?;
+  let (input, index_bits) = map(parse_u8, |x| x as usize)(input)?;
+  let (input, advance_bits) = map(parse_u8, |x| x as usize)(input)?;
+  let (input, records) = parse_text_record_string(input, false, index_bits, advance_bits)?;
+
+  Ok((
     input,
-    id: parse_le_u16
-      >> bounds: parse_rect
-      >> matrix: parse_matrix
-      >> index_bits: map!(parse_u8, |x| x as usize)
-      >> advance_bits: map!(parse_u8, |x| x as usize)
-      >> records: apply!(parse_text_record_string, false, index_bits, advance_bits)
-      >> (ast::tags::DefineText {
-        id: id,
-        bounds: bounds,
-        matrix: matrix,
-        records: records,
-      })
-  )
+    ast::tags::DefineText {
+      id: id,
+      bounds: bounds,
+      matrix: matrix,
+      records: records,
+    },
+  ))
 }
 
 pub fn parse_define_text2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
@@ -913,29 +940,27 @@ pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAsse
 }
 
 pub fn parse_file_attributes_tag(input: &[u8]) -> IResult<&[u8], ast::tags::FileAttributes> {
-  bits!(
+  let (input, flags) = parse_le_u32(input)?;
+  let use_network = (flags & (1 << 0)) != 0;
+  let use_relative_urls = (flags & (1 << 1)) != 0;
+  let no_cross_domain_caching = (flags & (1 << 2)) != 0;
+  let use_as3 = (flags & (1 << 3)) != 0;
+  let has_metadata = (flags & (1 << 4)) != 0;
+  let use_gpu = (flags & (1 << 5)) != 0;
+  let use_direct_blit = (flags & (1 << 6)) != 0;
+
+  Ok((
     input,
-    do_parse!(
-      apply!(skip_bits, 1) >>
-      use_direct_blit: call!(parse_bool_bits) >>
-      use_gpu: call!(parse_bool_bits) >>
-      has_metadata: call!(parse_bool_bits) >>
-      use_as3: call!(parse_bool_bits) >>
-      no_cross_domain_caching: call!(parse_bool_bits) >> // Not in the spec, found in Shumway
-      use_relative_urls: call!(parse_bool_bits) >> // Not in the spec, found in Shumway
-      use_network: call!(parse_bool_bits) >>
-      apply!(skip_bits, 24) >>
-      (ast::tags::FileAttributes {
-        use_direct_blit: use_direct_blit,
-        use_gpu: use_gpu,
-        has_metadata: has_metadata,
-        use_as3: use_as3,
-        no_cross_domain_caching: no_cross_domain_caching,
-        use_relative_urls: use_relative_urls,
-        use_network: use_network,
-      })
-    )
-  )
+    ast::tags::FileAttributes {
+      use_network: use_network,
+      use_relative_urls: use_relative_urls,
+      no_cross_domain_caching: no_cross_domain_caching,
+      use_as3: use_as3,
+      has_metadata: has_metadata,
+      use_gpu: use_gpu,
+      use_direct_blit: use_direct_blit,
+    },
+  ))
 }
 
 pub fn parse_frame_label(input: &[u8]) -> IResult<&[u8], ast::tags::FrameLabel> {
@@ -1032,82 +1057,89 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
 
 /// `extended_events` corresponds to `swf_version >= 6`
 pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
-  do_parse!(
+  use nom::combinator::cond;
+
+  let (input, flags) = parse_u8(input)?;
+  let is_update = (flags & (1 << 0)) != 0;
+  let has_character_id = (flags & (1 << 1)) != 0;
+  let has_matrix = (flags & (1 << 2)) != 0;
+  let has_color_transform = (flags & (1 << 3)) != 0;
+  let has_ratio = (flags & (1 << 4)) != 0;
+  let has_name = (flags & (1 << 5)) != 0;
+  let has_clip_depth = (flags & (1 << 6)) != 0;
+  let has_clip_actions = (flags & (1 << 7)) != 0;
+  let (input, depth) = parse_le_u16(input)?;
+  let (input, character_id) = cond(has_character_id, parse_le_u16)(input)?;
+  let (input, matrix) = cond(has_matrix, parse_matrix)(input)?;
+  let (input, color_transform) = cond(has_color_transform, parse_color_transform_with_alpha)(input)?;
+  let (input, ratio) = cond(has_ratio, parse_le_u16)(input)?;
+  let (input, name) = cond(has_name, parse_c_string)(input)?;
+  let (input, clip_depth) = cond(has_clip_depth, parse_le_u16)(input)?;
+  let (input, clip_actions) = cond(has_clip_actions, |i| parse_clip_actions_string(i, extended_events))(input)?;
+
+  Ok((
     input,
-    flags: parse_u8
-      >> is_update: value!((flags & (1 << 0)) != 0)
-      >> has_character_id: value!((flags & (1 << 1)) != 0)
-      >> has_matrix: value!((flags & (1 << 2)) != 0)
-      >> has_color_transform: value!((flags & (1 << 3)) != 0)
-      >> has_ratio: value!((flags & (1 << 4)) != 0)
-      >> has_name: value!((flags & (1 << 5)) != 0)
-      >> has_clip_depth: value!((flags & (1 << 6)) != 0)
-      >> has_clip_actions: value!((flags & (1 << 7)) != 0)
-      >> depth: parse_le_u16
-      >> character_id: cond!(has_character_id, parse_le_u16)
-      >> matrix: cond!(has_matrix, parse_matrix)
-      >> color_transform: cond!(has_color_transform, parse_color_transform_with_alpha)
-      >> ratio: cond!(has_ratio, parse_le_u16)
-      >> name: cond!(has_name, parse_c_string)
-      >> clip_depth: cond!(has_clip_depth, parse_le_u16)
-      >> clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events))
-      >> (ast::tags::PlaceObject {
-        is_update: is_update,
-        depth: depth,
-        character_id: character_id,
-        matrix: matrix,
-        color_transform: color_transform,
-        ratio: ratio,
-        name: name,
-        class_name: Option::None,
-        clip_depth: clip_depth,
-        filters: Option::None,
-        blend_mode: Option::None,
-        bitmap_cache: Option::None,
-        visible: Option::None,
-        background_color: Option::None,
-        clip_actions: clip_actions,
-      })
-  )
+    ast::tags::PlaceObject {
+      is_update: is_update,
+      depth: depth,
+      character_id: character_id,
+      matrix: matrix,
+      color_transform: color_transform,
+      ratio: ratio,
+      name: name,
+      class_name: None,
+      clip_depth: clip_depth,
+      filters: None,
+      blend_mode: None,
+      bitmap_cache: None,
+      visible: None,
+      background_color: None,
+      clip_actions: clip_actions,
+    },
+  ))
 }
 
 /// `extended_events` corresponds to `swf_version >= 6`
 pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
-  do_parse!(
+  use nom::combinator::{cond, map};
+
+  let (input, flags) = parse_le_u16(input)?;
+  let is_update = (flags & (1 << 0)) != 0;
+  let has_character_id = (flags & (1 << 1)) != 0;
+  let has_matrix = (flags & (1 << 2)) != 0;
+  let has_color_transform = (flags & (1 << 3)) != 0;
+  let has_ratio = (flags & (1 << 4)) != 0;
+  let has_name = (flags & (1 << 5)) != 0;
+  let has_clip_depth = (flags & (1 << 6)) != 0;
+  let has_clip_actions = (flags & (1 << 7)) != 0;
+  let has_filters = (flags & (1 << 8)) != 0;
+  let has_blend_mode = (flags & (1 << 9)) != 0;
+  let has_cache_hint = (flags & (1 << 10)) != 0;
+  let has_class_name = (flags & (1 << 11)) != 0;
+  let has_image = (flags & (1 << 12)) != 0;
+  let has_visibility = (flags & (1 << 13)) != 0;
+  let has_background_color = (flags & (1 << 14)) != 0;
+  // Skip bit 15
+
+  let (input, depth) = parse_le_u16(input)?;
+  let (input, class_name) = cond(has_class_name || (has_image && has_character_id), parse_c_string)(input)?;
+  let (input, character_id) = cond(has_character_id, parse_le_u16)(input)?;
+  let (input, matrix) = cond(has_matrix, parse_matrix)(input)?;
+  let (input, color_transform) = cond(has_color_transform, parse_color_transform_with_alpha)(input)?;
+  let (input, ratio) = cond(has_ratio, parse_le_u16)(input)?;
+  let (input, name) = cond(has_name, parse_c_string)(input)?;
+  let (input, clip_depth) = cond(has_clip_depth, parse_le_u16)(input)?;
+  let (input, filters) = cond(has_filters, parse_filter_list)(input)?;
+  let (input, blend_mode) = cond(has_blend_mode, parse_blend_mode)(input)?;
+  let (input, use_bitmap_cache) = cond(has_cache_hint, map(parse_u8, |x| x != 0))(input)?;
+  let (input, is_visible) = cond(has_visibility, map(parse_u8, |x| x != 0))(input)?;
+  // TODO(demurgos): Check if it is RGBA or ARGB
+  let (input, background_color) = cond(has_background_color, parse_straight_s_rgba8)(input)?;
+  let (input, clip_actions) = cond(has_clip_actions, |i| parse_clip_actions_string(i, extended_events))(input)?;
+
+  Ok((
     input,
-    flags: parse_le_u16 >>
-    is_update: value!((flags & (1 << 0)) != 0) >>
-    has_character_id: value!((flags & (1 << 1)) != 0) >>
-    has_matrix: value!((flags & (1 << 2)) != 0) >>
-    has_color_transform: value!((flags & (1 << 3)) != 0) >>
-    has_ratio: value!((flags & (1 << 4)) != 0) >>
-    has_name: value!((flags & (1 << 5)) != 0) >>
-    has_clip_depth: value!((flags & (1 << 6)) != 0) >>
-    has_clip_actions: value!((flags & (1 << 7)) != 0) >>
-    has_filters: value!((flags & (1 << 8)) != 0) >>
-    has_blend_mode: value!((flags & (1 << 9)) != 0) >>
-    has_cache_hint: value!((flags & (1 << 10)) != 0) >>
-    has_class_name: value!((flags & (1 << 11)) != 0) >>
-    has_image: value!((flags & (1 << 12)) != 0) >>
-    has_visibility: value!((flags & (1 << 13)) != 0) >>
-    has_background_color: value!((flags & (1 << 14)) != 0) >>
-    // Skip bit 15
-    depth: parse_le_u16 >>
-    class_name: cond!(has_class_name || (has_image && has_character_id), parse_c_string) >>
-    character_id: cond!(has_character_id, parse_le_u16) >>
-    matrix: cond!(has_matrix, parse_matrix) >>
-    color_transform: cond!(has_color_transform, parse_color_transform_with_alpha) >>
-    ratio: cond!(has_ratio, parse_le_u16) >>
-    name: cond!(has_name, parse_c_string) >>
-    clip_depth: cond!(has_clip_depth, parse_le_u16) >>
-    filters: cond!(has_filters, parse_filter_list)  >>
-    blend_mode: cond!(has_blend_mode, parse_blend_mode)  >>
-    use_bitmap_cache: cond!(has_cache_hint, map!(parse_u8, |x| x != 0)) >>
-    is_visible: cond!(has_visibility, map!(parse_u8, |x| x != 0))  >>
-    // TODO(demurgos): Check if it is RGBA or ARGB
-    background_color: cond!(has_background_color, parse_straight_s_rgba8) >>
-    clip_actions: cond!(has_clip_actions, apply!(parse_clip_actions_string, extended_events)) >>
-    (ast::tags::PlaceObject {
+    ast::tags::PlaceObject {
       is_update: is_update,
       depth: depth,
       character_id: character_id,
@@ -1123,8 +1155,8 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
       visible: is_visible,
       background_color: background_color,
       clip_actions: clip_actions,
-    })
-  )
+    },
+  ))
 }
 
 fn parse_protect(input: &[u8]) -> IResult<&[u8], ast::tags::Protect> {

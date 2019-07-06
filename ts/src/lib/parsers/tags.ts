@@ -886,17 +886,17 @@ export function parseExportAssets(byteStream: ReadableByteStream): tags.ExportAs
 }
 
 export function parseFileAttributes(byteStream: ReadableByteStream): tags.FileAttributes {
-  const flags: Uint8 = byteStream.readUint8();
+  const flags: Uint8 = byteStream.readUint32LE();
 
   return {
     type: TagType.FileAttributes,
-    useDirectBlit: (flags & (1 << 6)) !== 0,
-    useGpu: (flags & (1 << 5)) !== 0,
-    hasMetadata: (flags & (1 << 4)) !== 0,
-    useAs3: (flags & (1 << 3)) !== 0,
-    noCrossDomainCaching: (flags & (1 << 2)) !== 0,
-    useRelativeUrls: (flags & (1 << 1)) !== 0,
     useNetwork: (flags & (1 << 0)) !== 0,
+    useRelativeUrls: (flags & (1 << 1)) !== 0,
+    noCrossDomainCaching: (flags & (1 << 2)) !== 0,
+    useAs3: (flags & (1 << 3)) !== 0,
+    hasMetadata: (flags & (1 << 4)) !== 0,
+    useGpu: (flags & (1 << 5)) !== 0,
+    useDirectBlit: (flags & (1 << 6)) !== 0,
   };
 }
 

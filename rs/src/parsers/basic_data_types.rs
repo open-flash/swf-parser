@@ -1,5 +1,5 @@
 use half::f16;
-use nom::{
+use nom::number::streaming::{
   be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16, le_u8 as parse_u8,
 };
 use nom::{IResult, Needed};
@@ -34,10 +34,12 @@ pub fn parse_block_c_string(input: &[u8]) -> IResult<&[u8], String> {
 /// Parse a null-terminated sequence of bytes. The nul-byte is consumed but not included in the
 /// result.
 pub fn parse_c_string(input: &[u8]) -> IResult<&[u8], String> {
-  map!(input, take_until_and_consume!("\x00"), |str: &[u8]| String::from_utf8(
-    str.to_vec()
-  )
-  .unwrap())
+  const NUL_BYTE: &[u8] = b"\x00";
+
+  let (input, str) = nom::bytes::streaming::take_until(NUL_BYTE)(input)?;
+  let (input, _) = nom::bytes::streaming::take(NUL_BYTE.len())(input)?;
+
+  Ok((input, String::from_utf8(str.to_vec()).unwrap()))
 }
 
 /// Parse the variable-length encoded little-endian representation of an unsigned 32-bit integer
@@ -62,45 +64,70 @@ pub fn parse_leb128_u32(input: &[u8]) -> IResult<&[u8], u32> {
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 16.16-bit number
 pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed16P16> {
-  map!(input, apply!(parse_i32_bits, n), |x| Sfixed16P16::from_epsilons(x))
+  use nom::combinator::map;
+  map(do_parse_i32_bits(n), Sfixed16P16::from_epsilons)(input)
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 8.8-bit number
 pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed8P8> {
-  map!(input, apply!(parse_i16_bits, n), |x| Sfixed8P8::from_epsilons(x))
+  use nom::combinator::map;
+  map(do_parse_i16_bits(n), Sfixed8P8::from_epsilons)(input)
+}
+
+/// Generates a bits parser reading a `i16` over `n` bits.
+pub fn do_parse_i16_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), i16> {
+  move |input: (&[u8], usize)| {
+    let (input, x) = nom::bits::streaming::take::<_, u16, _, _>(n)(input)?;
+    let x = match n {
+      0 => 0,
+      16 => x as i16,
+      _ => {
+        if x >> (n - 1) > 0 {
+          -1i16 << (n - 1) | (x as i16)
+        } else {
+          x as i16
+        }
+      }
+    };
+    Ok((input, x))
+  }
 }
 
 /// Parse the bit-encoded big-endian representation of a signed 16-bit integer
 pub fn parse_i16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), i16> {
-  map!(input, take_bits!(u16, n), |x| match n {
-    0 => 0,
-    16 => x as i16,
-    _ => {
-      if x >> (n - 1) > 0 {
-        -1i16 << (n - 1) | (x as i16)
-      } else {
-        x as i16
+  do_parse_i16_bits(n)(input)
+}
+
+/// Generates a bits parser reading a `i32` over `n` bits.
+pub fn do_parse_i32_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), i32> {
+  move |input: (&[u8], usize)| {
+    let (input, x) = nom::bits::streaming::take::<_, u32, _, _>(n)(input)?;
+    let x = match n {
+      0 => 0,
+      32 => x as i32,
+      _ => {
+        if x >> (n - 1) > 0 {
+          -1i32 << (n - 1) | (x as i32)
+        } else {
+          x as i32
+        }
       }
-    }
-  })
+    };
+    Ok((input, x))
+  }
 }
 
 pub fn parse_i32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), i32> {
-  map!(input, take_bits!(u32, n), |x| match n {
-    0 => 0,
-    32 => x as i32,
-    _ => {
-      if x >> (n - 1) > 0 {
-        -1i32 << (n - 1) | (x as i32)
-      } else {
-        x as i32
-      }
-    }
-  })
+  do_parse_i32_bits(n)(input)
+}
+
+/// Generates a bits parser reading a `u32` over `n` bits.
+pub fn do_parse_u32_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), u32> {
+  move |input: (&[u8], usize)| nom::bits::streaming::take::<_, u32, _, _>(n)(input)
 }
 
 pub fn parse_u32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), u32> {
-  take_bits!(input, u32, n)
+  do_parse_u32_bits(n)(input)
 }
 
 pub fn parse_be_f16(input: &[u8]) -> IResult<&[u8], f32> {
@@ -135,20 +162,22 @@ pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
 }
 
 pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Rect> {
-  do_parse!(
+  use nom::combinator::map;
+
+  let (input, n_bits) = map(do_parse_u16_bits(5), |x| x as usize)(input)?;
+  let (input, x_min) = parse_i32_bits(input, n_bits)?;
+  let (input, x_max) = parse_i32_bits(input, n_bits)?;
+  let (input, y_min) = parse_i32_bits(input, n_bits)?;
+  let (input, y_max) = parse_i32_bits(input, n_bits)?;
+  Ok((
     input,
-    n_bits: apply!(parse_u16_bits, 5)
-      >> x_min: apply!(parse_i32_bits, n_bits as usize)
-      >> x_max: apply!(parse_i32_bits, n_bits as usize)
-      >> y_min: apply!(parse_i32_bits, n_bits as usize)
-      >> y_max: apply!(parse_i32_bits, n_bits as usize)
-      >> (ast::Rect {
-        x_min: x_min,
-        x_max: x_max,
-        y_min: y_min,
-        y_max: y_max
-      })
-  )
+    ast::Rect {
+      x_min,
+      x_max,
+      y_min,
+      y_max,
+    },
+  ))
 }
 
 pub fn parse_s_rgb8(input: &[u8]) -> IResult<&[u8], ast::SRgb8> {
@@ -179,9 +208,14 @@ pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> IResult<(&
   }
 }
 
+/// Generates a bits parser reading a `u16` over `n` bits.
+pub fn do_parse_u16_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), u16> {
+  move |input: (&[u8], usize)| nom::bits::streaming::take::<_, u16, _, _>(n)(input)
+}
+
 /// Parse the bit-encoded big-endian representation of an unsigned 16-bit integer
 pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), u16> {
-  take_bits!(input, u16, n)
+  do_parse_u16_bits(n)(input)
 }
 
 #[allow(unused_variables)]
@@ -202,54 +236,38 @@ pub fn parse_matrix(input: &[u8]) -> IResult<&[u8], ast::Matrix> {
 }
 
 pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Matrix> {
-  do_parse!(
+  let (input, has_scale) = parse_bool_bits(input)?;
+  let (input, (scale_x, scale_y)) = if has_scale {
+    let (input, scale_bits) = parse_u16_bits(input, 5)?;
+    let (input, scale_x) = parse_fixed16_p16_bits(input, scale_bits as usize)?;
+    let (input, scale_y) = parse_fixed16_p16_bits(input, scale_bits as usize)?;
+    (input, (scale_x, scale_y))
+  } else {
+    (input, (Sfixed16P16::ONE, Sfixed16P16::ONE))
+  };
+  let (input, has_skew) = parse_bool_bits(input)?;
+  let (input, (rotate_skew0, rotate_skew1)) = if has_skew {
+    let (input, skew_bits) = parse_u16_bits(input, 5)?;
+    let (input, skew0) = parse_fixed16_p16_bits(input, skew_bits as usize)?;
+    let (input, skew1) = parse_fixed16_p16_bits(input, skew_bits as usize)?;
+    (input, (skew0, skew1))
+  } else {
+    (input, (Sfixed16P16::ZERO, Sfixed16P16::ZERO))
+  };
+  let (input, translate_bits) = parse_u16_bits(input, 5)?;
+  let (input, translate_x) = parse_i32_bits(input, translate_bits as usize)?;
+  let (input, translate_y) = parse_i32_bits(input, translate_bits as usize)?;
+  Ok((
     input,
-    has_scale: call!(parse_bool_bits)
-      >> scale:
-        map!(
-          cond!(
-            has_scale,
-            do_parse!(
-              scale_bits: apply!(parse_u16_bits, 5)
-                >> scale_x: apply!(parse_fixed16_p16_bits, scale_bits as usize)
-                >> scale_y: apply!(parse_fixed16_p16_bits, scale_bits as usize)
-                >> (scale_x, scale_y)
-            )
-          ),
-          |scale| match scale {
-            Some((scale_x, scale_y)) => (scale_x, scale_y),
-            None => (Sfixed16P16::from_epsilons(1 << 16), Sfixed16P16::from_epsilons(1 << 16)),
-          }
-        )
-      >> has_skew: call!(parse_bool_bits)
-      >> skew:
-        map!(
-          cond!(
-            has_skew,
-            do_parse!(
-              skew_bits: apply!(parse_u16_bits, 5)
-                >> skew0: apply!(parse_fixed16_p16_bits, skew_bits as usize)
-                >> skew1: apply!(parse_fixed16_p16_bits, skew_bits as usize)
-                >> (skew0, skew1)
-            )
-          ),
-          |skew| match skew {
-            Some((skew0, skew1)) => (skew0, skew1),
-            None => (Sfixed16P16::from_epsilons(0), Sfixed16P16::from_epsilons(0)),
-          }
-        )
-      >> translate_bits: apply!(parse_u16_bits, 5)
-      >> translate_x: apply!(parse_i32_bits, translate_bits as usize)
-      >> translate_y: apply!(parse_i32_bits, translate_bits as usize)
-      >> (ast::Matrix {
-        scale_x: scale.0,
-        scale_y: scale.1,
-        rotate_skew0: skew.0,
-        rotate_skew1: skew.1,
-        translate_x: translate_x,
-        translate_y: translate_y,
-      })
-  )
+    ast::Matrix {
+      scale_x,
+      scale_y,
+      rotate_skew0,
+      rotate_skew1,
+      translate_x,
+      translate_y,
+    },
+  ))
 }
 
 pub fn parse_named_id(input: &[u8]) -> IResult<&[u8], ast::NamedId> {
@@ -265,56 +283,36 @@ pub fn parse_color_transform(input: &[u8]) -> IResult<&[u8], ast::ColorTransform
 
 #[allow(unused_variables)]
 pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ColorTransform> {
-  do_parse!(
+  let (input, has_add) = parse_bool_bits(input)?;
+  let (input, has_mult) = parse_bool_bits(input)?;
+  let (input, n_bits) = parse_u16_bits(input, 4)?;
+  let (input, mult) = if has_mult {
+    let (input, r) = parse_fixed8_p8_bits(input, n_bits as usize)?;
+    let (input, g) = parse_fixed8_p8_bits(input, n_bits as usize)?;
+    let (input, b) = parse_fixed8_p8_bits(input, n_bits as usize)?;
+    (input, (r, g, b))
+  } else {
+    (input, (Sfixed8P8::ONE, Sfixed8P8::ONE, Sfixed8P8::ONE))
+  };
+  let (input, add) = if has_add {
+    let (input, r) = parse_i16_bits(input, n_bits as usize)?;
+    let (input, g) = parse_i16_bits(input, n_bits as usize)?;
+    let (input, b) = parse_i16_bits(input, n_bits as usize)?;
+    (input, (r, g, b))
+  } else {
+    (input, (0, 0, 0))
+  };
+  Ok((
     input,
-    has_add: call!(parse_bool_bits)
-      >> has_mult: call!(parse_bool_bits)
-      >> n_bits: apply!(parse_u16_bits, 4)
-      >> mult:
-        map!(
-          cond!(
-            has_mult,
-            do_parse!(
-              r: apply!(parse_fixed8_p8_bits, n_bits as usize)
-                >> g: apply!(parse_fixed8_p8_bits, n_bits as usize)
-                >> b: apply!(parse_fixed8_p8_bits, n_bits as usize)
-                >> (r, g, b)
-            )
-          ),
-          |mult| match mult {
-            Some((r, g, b)) => (r, g, b),
-            None => (
-              Sfixed8P8::from_epsilons(1 << 8),
-              Sfixed8P8::from_epsilons(1 << 8),
-              Sfixed8P8::from_epsilons(1 << 8)
-            ),
-          }
-        )
-      >> add:
-        map!(
-          cond!(
-            has_add,
-            do_parse!(
-              r: apply!(parse_i16_bits, n_bits as usize)
-                >> g: apply!(parse_i16_bits, n_bits as usize)
-                >> b: apply!(parse_i16_bits, n_bits as usize)
-                >> (r, g, b)
-            )
-          ),
-          |add| match add {
-            Some((r, g, b)) => (r, g, b),
-            None => (0, 0, 0),
-          }
-        )
-      >> (ast::ColorTransform {
-        red_mult: mult.0,
-        green_mult: mult.1,
-        blue_mult: mult.2,
-        red_add: add.0,
-        green_add: add.1,
-        blue_add: add.2,
-      })
-  )
+    ast::ColorTransform {
+      red_mult: mult.0,
+      green_mult: mult.1,
+      blue_mult: mult.2,
+      red_add: add.0,
+      green_add: add.1,
+      blue_add: add.2,
+    },
+  ))
 }
 
 pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::ColorTransformWithAlpha> {
@@ -325,61 +323,40 @@ pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::Col
 pub fn parse_color_transform_with_alpha_bits(
   input: (&[u8], usize),
 ) -> IResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
-  do_parse!(
+  let (input, has_add) = parse_bool_bits(input)?;
+  let (input, has_mult) = parse_bool_bits(input)?;
+  let (input, n_bits) = parse_u16_bits(input, 4)?;
+  let (input, mult) = if has_mult {
+    let (input, r) = parse_fixed8_p8_bits(input, n_bits as usize)?;
+    let (input, g) = parse_fixed8_p8_bits(input, n_bits as usize)?;
+    let (input, b) = parse_fixed8_p8_bits(input, n_bits as usize)?;
+    let (input, a) = parse_fixed8_p8_bits(input, n_bits as usize)?;
+    (input, (r, g, b, a))
+  } else {
+    (input, (Sfixed8P8::ONE, Sfixed8P8::ONE, Sfixed8P8::ONE, Sfixed8P8::ONE))
+  };
+  let (input, add) = if has_add {
+    let (input, r) = parse_i16_bits(input, n_bits as usize)?;
+    let (input, g) = parse_i16_bits(input, n_bits as usize)?;
+    let (input, b) = parse_i16_bits(input, n_bits as usize)?;
+    let (input, a) = parse_i16_bits(input, n_bits as usize)?;
+    (input, (r, g, b, a))
+  } else {
+    (input, (0, 0, 0, 0))
+  };
+  Ok((
     input,
-    has_add: parse_bool_bits
-      >> has_mult: parse_bool_bits
-      >> n_bits: apply!(parse_u16_bits, 4)
-      >> mult:
-        map!(
-          cond!(
-            has_mult,
-            do_parse!(
-              r: apply!(parse_fixed8_p8_bits, n_bits as usize)
-                >> g: apply!(parse_fixed8_p8_bits, n_bits as usize)
-                >> b: apply!(parse_fixed8_p8_bits, n_bits as usize)
-                >> a: apply!(parse_fixed8_p8_bits, n_bits as usize)
-                >> (r, g, b, a)
-            )
-          ),
-          |mult| match mult {
-            Some((r, g, b, a)) => (r, g, b, a),
-            None => (
-              Sfixed8P8::from_epsilons(1 << 8),
-              Sfixed8P8::from_epsilons(1 << 8),
-              Sfixed8P8::from_epsilons(1 << 8),
-              Sfixed8P8::from_epsilons(1 << 8)
-            ),
-          }
-        )
-      >> add:
-        map!(
-          cond!(
-            has_add,
-            do_parse!(
-              r: apply!(parse_i16_bits, n_bits as usize)
-                >> g: apply!(parse_i16_bits, n_bits as usize)
-                >> b: apply!(parse_i16_bits, n_bits as usize)
-                >> a: apply!(parse_i16_bits, n_bits as usize)
-                >> (r, g, b, a)
-            )
-          ),
-          |add| match add {
-            Some((r, g, b, a)) => (r, g, b, a),
-            None => (0, 0, 0, 0),
-          }
-        )
-      >> (ast::ColorTransformWithAlpha {
-        red_mult: mult.0,
-        green_mult: mult.1,
-        blue_mult: mult.2,
-        alpha_mult: mult.3,
-        red_add: add.0,
-        green_add: add.1,
-        blue_add: add.2,
-        alpha_add: add.3,
-      })
-  )
+    ast::ColorTransformWithAlpha {
+      red_mult: mult.0,
+      green_mult: mult.1,
+      blue_mult: mult.2,
+      alpha_mult: mult.3,
+      red_add: add.0,
+      green_add: add.1,
+      blue_add: add.2,
+      alpha_add: add.3,
+    },
+  ))
 }
 
 #[cfg(test)]
@@ -548,7 +525,7 @@ mod tests {
             x_min: 127,
             x_max: 260,
             y_min: 15,
-            y_max: 514
+            y_max: 514,
           }
         ))
       );
@@ -563,7 +540,7 @@ mod tests {
             x_min: 0,
             x_max: 0,
             y_min: 0,
-            y_max: 0
+            y_max: 0,
           }
         ))
       );
@@ -578,7 +555,7 @@ mod tests {
             x_min: 0,
             x_max: 0,
             y_min: 0,
-            y_max: 0
+            y_max: 0,
           }
         ))
       );
@@ -593,7 +570,7 @@ mod tests {
             x_min: 0,
             x_max: 0,
             y_min: 0,
-            y_max: 0
+            y_max: 0,
           }
         ))
       );
@@ -608,7 +585,7 @@ mod tests {
             x_min: 1,
             x_max: 0,
             y_min: 0,
-            y_max: 0
+            y_max: 0,
           }
         ))
       );
@@ -623,7 +600,7 @@ mod tests {
             x_min: 0,
             x_max: 1,
             y_min: 0,
-            y_max: 0
+            y_max: 0,
           }
         ))
       );
@@ -638,7 +615,7 @@ mod tests {
             x_min: 0,
             x_max: 0,
             y_min: 1,
-            y_max: 0
+            y_max: 0,
           }
         ))
       );
@@ -653,7 +630,7 @@ mod tests {
             x_min: 0,
             x_max: 0,
             y_min: 0,
-            y_max: 1
+            y_max: 1,
           }
         ))
       );
