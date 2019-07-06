@@ -16,13 +16,13 @@ fn main() {
   }
 
   let file_path = &args[1];
-//  println!("Reading file: {}", filename);
+  //  println!("Reading file: {}", filename);
 
   let mut file = File::open(file_path).expect("File not found");
   let mut data: Vec<u8> = Vec::new();
   file.read_to_end(&mut data).expect("Unable to read file");
 
-//  println!("Input:\n{:?}", &data);
+  //  println!("Input:\n{:?}", &data);
 
   let swf_file_parse_result: nom::IResult<&[u8], ast::Movie> = parsers::movie::parse_movie(&data[..]);
 

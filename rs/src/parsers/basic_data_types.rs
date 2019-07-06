@@ -1,8 +1,9 @@
-use std::f32;
-
 use half::f16;
+use nom::{
+  be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16, le_u8 as parse_u8,
+};
 use nom::{IResult, Needed};
-use nom::{be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16, le_u8 as parse_u8};
+use std::f32;
 use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
 use swf_tree as ast;
 
@@ -33,7 +34,10 @@ pub fn parse_block_c_string(input: &[u8]) -> IResult<&[u8], String> {
 /// Parse a null-terminated sequence of bytes. The nul-byte is consumed but not included in the
 /// result.
 pub fn parse_c_string(input: &[u8]) -> IResult<&[u8], String> {
-  map!(input, take_until_and_consume!("\x00"), |str: &[u8]| String::from_utf8(str.to_vec()).unwrap())
+  map!(input, take_until_and_consume!("\x00"), |str: &[u8]| String::from_utf8(
+    str.to_vec()
+  )
+  .unwrap())
 }
 
 /// Parse the variable-length encoded little-endian representation of an unsigned 32-bit integer
@@ -58,45 +62,41 @@ pub fn parse_leb128_u32(input: &[u8]) -> IResult<&[u8], u32> {
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 16.16-bit number
 pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed16P16> {
-  map!(
-    input,
-    apply!(parse_i32_bits, n),
-    |x| Sfixed16P16::from_epsilons(x)
-  )
+  map!(input, apply!(parse_i32_bits, n), |x| Sfixed16P16::from_epsilons(x))
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 8.8-bit number
 pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed8P8> {
-  map!(
-    input,
-    apply!(parse_i16_bits, n),
-    |x| Sfixed8P8::from_epsilons(x)
-  )
+  map!(input, apply!(parse_i16_bits, n), |x| Sfixed8P8::from_epsilons(x))
 }
 
 /// Parse the bit-encoded big-endian representation of a signed 16-bit integer
 pub fn parse_i16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), i16> {
-  map!(
-    input,
-    take_bits!(u16, n),
-    |x| match n {
-      0 => 0,
-      16 => x as i16,
-      _ => if x >> (n - 1) > 0 {-1i16 << (n-1) | (x as i16)} else {x as i16}
+  map!(input, take_bits!(u16, n), |x| match n {
+    0 => 0,
+    16 => x as i16,
+    _ => {
+      if x >> (n - 1) > 0 {
+        -1i16 << (n - 1) | (x as i16)
+      } else {
+        x as i16
+      }
     }
-  )
+  })
 }
 
 pub fn parse_i32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), i32> {
-  map!(
-    input,
-    take_bits!(u32, n),
-    |x| match n {
-      0 => 0,
-      32 => x as i32,
-      _ => if x >> (n - 1) > 0 {-1i32 << (n-1) | (x as i32)} else {x as i32}
+  map!(input, take_bits!(u32, n), |x| match n {
+    0 => 0,
+    32 => x as i32,
+    _ => {
+      if x >> (n - 1) > 0 {
+        -1i32 << (n - 1) | (x as i32)
+      } else {
+        x as i32
+      }
     }
-  )
+  })
 }
 
 pub fn parse_u32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), u32> {
@@ -137,33 +137,31 @@ pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
 pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Rect> {
   do_parse!(
     input,
-    n_bits: apply!(parse_u16_bits, 5) >>
-    x_min: apply!(parse_i32_bits, n_bits as usize) >>
-    x_max: apply!(parse_i32_bits, n_bits as usize) >>
-    y_min: apply!(parse_i32_bits, n_bits as usize) >>
-    y_max: apply!(parse_i32_bits, n_bits as usize) >>
-    (ast::Rect {x_min: x_min, x_max: x_max, y_min: y_min, y_max: y_max})
+    n_bits: apply!(parse_u16_bits, 5)
+      >> x_min: apply!(parse_i32_bits, n_bits as usize)
+      >> x_max: apply!(parse_i32_bits, n_bits as usize)
+      >> y_min: apply!(parse_i32_bits, n_bits as usize)
+      >> y_max: apply!(parse_i32_bits, n_bits as usize)
+      >> (ast::Rect {
+        x_min: x_min,
+        x_max: x_max,
+        y_min: y_min,
+        y_max: y_max
+      })
   )
 }
 
 pub fn parse_s_rgb8(input: &[u8]) -> IResult<&[u8], ast::SRgb8> {
   do_parse!(
     input,
-    r: parse_u8 >>
-    g: parse_u8 >>
-    b: parse_u8 >>
-    (ast::SRgb8 {r: r, g: g, b: b})
+    r: parse_u8 >> g: parse_u8 >> b: parse_u8 >> (ast::SRgb8 { r: r, g: g, b: b })
   )
 }
 
 pub fn parse_straight_s_rgba8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba8> {
   do_parse!(
     input,
-    r: parse_u8 >>
-    g: parse_u8 >>
-    b: parse_u8 >>
-    a: parse_u8 >>
-    (ast::StraightSRgba8 {r: r, g: g, b: b, a: a})
+    r: parse_u8 >> g: parse_u8 >> b: parse_u8 >> a: parse_u8 >> (ast::StraightSRgba8 { r: r, g: g, b: b, a: a })
   )
 }
 
@@ -206,55 +204,58 @@ pub fn parse_matrix(input: &[u8]) -> IResult<&[u8], ast::Matrix> {
 pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Matrix> {
   do_parse!(
     input,
-    has_scale: call!(parse_bool_bits) >>
-    scale: map!(
-      cond!(has_scale, do_parse!(
-        scale_bits: apply!(parse_u16_bits, 5) >>
-        scale_x: apply!(parse_fixed16_p16_bits, scale_bits as usize) >>
-        scale_y: apply!(parse_fixed16_p16_bits, scale_bits as usize) >>
-        (scale_x, scale_y)
-      )),
-      |scale| match scale {
-        Some((scale_x, scale_y)) => (scale_x, scale_y),
-        None => (Sfixed16P16::from_epsilons(1 << 16), Sfixed16P16::from_epsilons(1 << 16)),
-      }
-    ) >>
-    has_skew: call!(parse_bool_bits) >>
-    skew: map!(
-      cond!(has_skew, do_parse!(
-        skew_bits: apply!(parse_u16_bits, 5) >>
-        skew0: apply!(parse_fixed16_p16_bits, skew_bits as usize) >>
-        skew1: apply!(parse_fixed16_p16_bits, skew_bits as usize) >>
-        (skew0, skew1)
-      )),
-      |skew| match skew {
-        Some((skew0, skew1)) => (skew0, skew1),
-        None => (Sfixed16P16::from_epsilons(0), Sfixed16P16::from_epsilons(0)),
-      }
-    ) >>
-    translate_bits: apply!(parse_u16_bits, 5) >>
-    translate_x: apply!(parse_i32_bits, translate_bits as usize) >>
-    translate_y: apply!(parse_i32_bits, translate_bits as usize) >>
-    (ast::Matrix {
-      scale_x: scale.0,
-      scale_y: scale.1,
-      rotate_skew0: skew.0,
-      rotate_skew1: skew.1,
-      translate_x: translate_x,
-      translate_y: translate_y,
-    })
+    has_scale: call!(parse_bool_bits)
+      >> scale:
+        map!(
+          cond!(
+            has_scale,
+            do_parse!(
+              scale_bits: apply!(parse_u16_bits, 5)
+                >> scale_x: apply!(parse_fixed16_p16_bits, scale_bits as usize)
+                >> scale_y: apply!(parse_fixed16_p16_bits, scale_bits as usize)
+                >> (scale_x, scale_y)
+            )
+          ),
+          |scale| match scale {
+            Some((scale_x, scale_y)) => (scale_x, scale_y),
+            None => (Sfixed16P16::from_epsilons(1 << 16), Sfixed16P16::from_epsilons(1 << 16)),
+          }
+        )
+      >> has_skew: call!(parse_bool_bits)
+      >> skew:
+        map!(
+          cond!(
+            has_skew,
+            do_parse!(
+              skew_bits: apply!(parse_u16_bits, 5)
+                >> skew0: apply!(parse_fixed16_p16_bits, skew_bits as usize)
+                >> skew1: apply!(parse_fixed16_p16_bits, skew_bits as usize)
+                >> (skew0, skew1)
+            )
+          ),
+          |skew| match skew {
+            Some((skew0, skew1)) => (skew0, skew1),
+            None => (Sfixed16P16::from_epsilons(0), Sfixed16P16::from_epsilons(0)),
+          }
+        )
+      >> translate_bits: apply!(parse_u16_bits, 5)
+      >> translate_x: apply!(parse_i32_bits, translate_bits as usize)
+      >> translate_y: apply!(parse_i32_bits, translate_bits as usize)
+      >> (ast::Matrix {
+        scale_x: scale.0,
+        scale_y: scale.1,
+        rotate_skew0: skew.0,
+        rotate_skew1: skew.1,
+        translate_x: translate_x,
+        translate_y: translate_y,
+      })
   )
 }
 
 pub fn parse_named_id(input: &[u8]) -> IResult<&[u8], ast::NamedId> {
   do_parse!(
     input,
-    id: parse_le_u16 >>
-    name: parse_c_string >>
-    (ast::NamedId {
-      id: id,
-      name: name,
-    })
+    id: parse_le_u16 >> name: parse_c_string >> (ast::NamedId { id: id, name: name })
   )
 }
 
@@ -266,41 +267,53 @@ pub fn parse_color_transform(input: &[u8]) -> IResult<&[u8], ast::ColorTransform
 pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ColorTransform> {
   do_parse!(
     input,
-    has_add: call!(parse_bool_bits) >>
-    has_mult: call!(parse_bool_bits) >>
-    n_bits: apply!(parse_u16_bits, 4) >>
-    mult: map!(
-      cond!(has_mult, do_parse!(
-        r: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
-        g: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
-        b: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
-        (r, g, b)
-      )),
-      |mult| match mult {
-        Some((r, g, b)) => (r, g, b),
-        None => (Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8)),
-      }
-    ) >>
-    add: map!(
-      cond!(has_add, do_parse!(
-        r: apply!(parse_i16_bits, n_bits as usize) >>
-        g: apply!(parse_i16_bits, n_bits as usize) >>
-        b: apply!(parse_i16_bits, n_bits as usize) >>
-        (r, g, b)
-      )),
-      |add| match add {
-        Some((r, g, b)) => (r, g, b),
-        None => (0, 0, 0),
-      }
-    ) >>
-    (ast::ColorTransform {
-      red_mult: mult.0,
-      green_mult: mult.1,
-      blue_mult: mult.2,
-      red_add: add.0,
-      green_add: add.1,
-      blue_add: add.2,
-    })
+    has_add: call!(parse_bool_bits)
+      >> has_mult: call!(parse_bool_bits)
+      >> n_bits: apply!(parse_u16_bits, 4)
+      >> mult:
+        map!(
+          cond!(
+            has_mult,
+            do_parse!(
+              r: apply!(parse_fixed8_p8_bits, n_bits as usize)
+                >> g: apply!(parse_fixed8_p8_bits, n_bits as usize)
+                >> b: apply!(parse_fixed8_p8_bits, n_bits as usize)
+                >> (r, g, b)
+            )
+          ),
+          |mult| match mult {
+            Some((r, g, b)) => (r, g, b),
+            None => (
+              Sfixed8P8::from_epsilons(1 << 8),
+              Sfixed8P8::from_epsilons(1 << 8),
+              Sfixed8P8::from_epsilons(1 << 8)
+            ),
+          }
+        )
+      >> add:
+        map!(
+          cond!(
+            has_add,
+            do_parse!(
+              r: apply!(parse_i16_bits, n_bits as usize)
+                >> g: apply!(parse_i16_bits, n_bits as usize)
+                >> b: apply!(parse_i16_bits, n_bits as usize)
+                >> (r, g, b)
+            )
+          ),
+          |add| match add {
+            Some((r, g, b)) => (r, g, b),
+            None => (0, 0, 0),
+          }
+        )
+      >> (ast::ColorTransform {
+        red_mult: mult.0,
+        green_mult: mult.1,
+        blue_mult: mult.2,
+        red_add: add.0,
+        green_add: add.1,
+        blue_add: add.2,
+      })
   )
 }
 
@@ -309,48 +322,63 @@ pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::Col
 }
 
 #[allow(unused_variables)]
-pub fn parse_color_transform_with_alpha_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
+pub fn parse_color_transform_with_alpha_bits(
+  input: (&[u8], usize),
+) -> IResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
   do_parse!(
     input,
-    has_add: parse_bool_bits >>
-    has_mult: parse_bool_bits >>
-    n_bits: apply!(parse_u16_bits, 4) >>
-    mult: map!(
-      cond!(has_mult, do_parse!(
-        r: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
-        g: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
-        b: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
-        a: apply!(parse_fixed8_p8_bits, n_bits as usize) >>
-        (r, g, b, a)
-      )),
-      |mult| match mult {
-        Some((r, g, b, a)) => (r, g, b, a),
-        None => (Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8), Sfixed8P8::from_epsilons(1 << 8)),
-      }
-    ) >>
-    add: map!(
-      cond!(has_add, do_parse!(
-        r: apply!(parse_i16_bits, n_bits as usize) >>
-        g: apply!(parse_i16_bits, n_bits as usize) >>
-        b: apply!(parse_i16_bits, n_bits as usize) >>
-        a: apply!(parse_i16_bits, n_bits as usize) >>
-        (r, g, b, a)
-      )),
-      |add| match add {
-        Some((r, g, b, a)) => (r, g, b, a),
-        None => (0, 0, 0, 0),
-      }
-    ) >>
-    (ast::ColorTransformWithAlpha {
-      red_mult: mult.0,
-      green_mult: mult.1,
-      blue_mult: mult.2,
-      alpha_mult: mult.3,
-      red_add: add.0,
-      green_add: add.1,
-      blue_add: add.2,
-      alpha_add: add.3,
-    })
+    has_add: parse_bool_bits
+      >> has_mult: parse_bool_bits
+      >> n_bits: apply!(parse_u16_bits, 4)
+      >> mult:
+        map!(
+          cond!(
+            has_mult,
+            do_parse!(
+              r: apply!(parse_fixed8_p8_bits, n_bits as usize)
+                >> g: apply!(parse_fixed8_p8_bits, n_bits as usize)
+                >> b: apply!(parse_fixed8_p8_bits, n_bits as usize)
+                >> a: apply!(parse_fixed8_p8_bits, n_bits as usize)
+                >> (r, g, b, a)
+            )
+          ),
+          |mult| match mult {
+            Some((r, g, b, a)) => (r, g, b, a),
+            None => (
+              Sfixed8P8::from_epsilons(1 << 8),
+              Sfixed8P8::from_epsilons(1 << 8),
+              Sfixed8P8::from_epsilons(1 << 8),
+              Sfixed8P8::from_epsilons(1 << 8)
+            ),
+          }
+        )
+      >> add:
+        map!(
+          cond!(
+            has_add,
+            do_parse!(
+              r: apply!(parse_i16_bits, n_bits as usize)
+                >> g: apply!(parse_i16_bits, n_bits as usize)
+                >> b: apply!(parse_i16_bits, n_bits as usize)
+                >> a: apply!(parse_i16_bits, n_bits as usize)
+                >> (r, g, b, a)
+            )
+          ),
+          |add| match add {
+            Some((r, g, b, a)) => (r, g, b, a),
+            None => (0, 0, 0, 0),
+          }
+        )
+      >> (ast::ColorTransformWithAlpha {
+        red_mult: mult.0,
+        green_mult: mult.1,
+        blue_mult: mult.2,
+        alpha_mult: mult.3,
+        red_add: add.0,
+        green_add: add.1,
+        blue_add: add.2,
+        alpha_add: add.3,
+      })
   )
 }
 
@@ -383,7 +411,10 @@ mod tests {
     }
     {
       let input = vec![0x80];
-      assert_eq!(parse_leb128_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
+      assert_eq!(
+        parse_leb128_u32(&input[..]),
+        Err(::nom::Err::Incomplete(Needed::Size(1)))
+      );
     }
     {
       let input = vec![0x80, 0x01];
@@ -399,7 +430,10 @@ mod tests {
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80];
-      assert_eq!(parse_leb128_u32(&input[..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
+      assert_eq!(
+        parse_leb128_u32(&input[..]),
+        Err(::nom::Err::Incomplete(Needed::Size(1)))
+      );
     }
     {
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x01];
@@ -490,7 +524,10 @@ mod tests {
   #[test]
   fn test_parse_fixed16_p16_bits() {
     let input = vec![0b00000000, 0b00000000, 0b00000000, 0b00000000];
-    assert_eq!(parse_fixed16_p16_bits((&input[..], 0), 32), Ok(((&input[4..], 0), Sfixed16P16::from_epsilons(0))));
+    assert_eq!(
+      parse_fixed16_p16_bits((&input[..], 0), 32),
+      Ok(((&input[4..], 0), Sfixed16P16::from_epsilons(0)))
+    );
   }
 
   #[test]
@@ -500,36 +537,126 @@ mod tests {
       // representations of x_min and x_max are swapped
       // 01011 00001111111 00100000100 00000001111 01000000010
       // nBits xMin        xMax        yMin        yMax
-      let input = vec![0b01011000, 0b01111111, 0b00100000, 0b10000000, 0b00111101, 0b00000001, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 127, x_max: 260, y_min: 15, y_max: 514 })));
+      let input = vec![
+        0b01011000, 0b01111111, 0b00100000, 0b10000000, 0b00111101, 0b00000001, 0b00000000,
+      ];
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 127,
+            x_max: 260,
+            y_min: 15,
+            y_max: 514
+          }
+        ))
+      );
     }
     {
       let input = vec![0b00000000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 })));
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 0,
+            x_max: 0,
+            y_min: 0,
+            y_max: 0
+          }
+        ))
+      );
     }
     {
       let input = vec![0b00001000, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 })));
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 0,
+            x_max: 0,
+            y_min: 0,
+            y_max: 0
+          }
+        ))
+      );
     }
     {
       let input = vec![0b00010000, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 0 })));
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 0,
+            x_max: 0,
+            y_min: 0,
+            y_max: 0
+          }
+        ))
+      );
     }
     {
       let input = vec![0b00010010, 0b00000000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 1, x_max: 0, y_min: 0, y_max: 0 })));
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 1,
+            x_max: 0,
+            y_min: 0,
+            y_max: 0
+          }
+        ))
+      );
     }
     {
       let input = vec![0b00010000, 0b10000000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 1, y_min: 0, y_max: 0 })));
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 0,
+            x_max: 1,
+            y_min: 0,
+            y_max: 0
+          }
+        ))
+      );
     }
     {
       let input = vec![0b00010000, 0b00100000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 1, y_max: 0 })));
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 0,
+            x_max: 0,
+            y_min: 1,
+            y_max: 0
+          }
+        ))
+      );
     }
     {
       let input = vec![0b00010000, 0b00001000];
-      assert_eq!(parse_rect(&input[..]), Ok(((&[][..]), ast::Rect { x_min: 0, x_max: 0, y_min: 0, y_max: 1 })));
+      assert_eq!(
+        parse_rect(&input[..]),
+        Ok((
+          (&[][..]),
+          ast::Rect {
+            x_min: 0,
+            x_max: 0,
+            y_min: 0,
+            y_max: 1
+          }
+        ))
+      );
     }
   }
 }

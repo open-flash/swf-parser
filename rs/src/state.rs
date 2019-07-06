@@ -3,7 +3,7 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub struct ParseState {
   swf_version: u8,
-  glyph_counts: HashMap<usize, usize>
+  glyph_counts: HashMap<usize, usize>,
 }
 
 impl ParseState {

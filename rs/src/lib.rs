@@ -42,7 +42,13 @@ mod tests {
     use serde::Serialize;
 
     let path: &Path = Path::new(path);
-    let _name = path.components().last().unwrap().as_os_str().to_str().expect("Failed to retrieve sample name");
+    let _name = path
+      .components()
+      .last()
+      .unwrap()
+      .as_os_str()
+      .to_str()
+      .expect("Failed to retrieve sample name");
     let movie_path = path.join("main.swf");
     let mut movie_file = ::std::fs::File::open(movie_path).expect("Failed to open movie");
     let mut movie_bytes: Vec<u8> = Vec::new();
@@ -71,7 +77,13 @@ mod tests {
   test_expand_paths! { test_parse_tag; "../tests/tags/*/*/" }
   fn test_parse_tag(path: &str) {
     let path: &Path = Path::new(path);
-    let name = path.components().last().unwrap().as_os_str().to_str().expect("Failed to retrieve sample name");
+    let name = path
+      .components()
+      .last()
+      .unwrap()
+      .as_os_str()
+      .to_str()
+      .expect("Failed to retrieve sample name");
     let input_path = path.join("input.bytes");
     let input_bytes: Vec<u8> = ::std::fs::read(input_path).expect("Failed to read input");
 
@@ -98,7 +110,13 @@ mod tests {
       test_expand_paths! { $name; $glob }
       fn $name(path: &str) {
         let path: &Path = Path::new(path);
-        let _name = path.components().last().unwrap().as_os_str().to_str().expect("Failed to retrieve sample name");
+        let _name = path
+          .components()
+          .last()
+          .unwrap()
+          .as_os_str()
+          .to_str()
+          .expect("Failed to retrieve sample name");
         let input_path = path.join("input.bytes");
         let input_bytes: Vec<u8> = ::std::fs::read(input_path).expect("Failed to read input");
 
@@ -112,7 +130,7 @@ mod tests {
         assert_eq!(actual_value, expected_value);
         assert_eq!(remaining_bytes, &[] as &[u8]);
       }
-    }
+    };
   }
 
   use crate::parsers::basic_data_types::parse_le_f16;
@@ -136,8 +154,18 @@ mod tests {
 
   use crate::parsers::header::parse_swf_signature;
   use swf_tree::SwfSignature;
-  test_various_parser_impl!(test_parse_swf_signature, "../tests/various/swf-signature/*/", parse_swf_signature, SwfSignature);
+  test_various_parser_impl!(
+    test_parse_swf_signature,
+    "../tests/various/swf-signature/*/",
+    parse_swf_signature,
+    SwfSignature
+  );
 
   use crate::parsers::basic_data_types::parse_leb128_u32;
-  test_various_parser_impl!(test_parse_leb128_u32, "../tests/various/uint32-leb128/*/", parse_leb128_u32, u32);
+  test_various_parser_impl!(
+    test_parse_leb128_u32,
+    "../tests/various/uint32-leb128/*/",
+    parse_leb128_u32,
+    u32
+  );
 }

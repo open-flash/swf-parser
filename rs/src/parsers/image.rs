@@ -28,7 +28,10 @@ pub fn get_png_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
   let (input, width) = parse_be_u32(input).unwrap();
   let (_, height) = parse_be_u32(input).unwrap();
 
-  Ok(ImageDimensions { width: width as usize, height: height as usize })
+  Ok(ImageDimensions {
+    width: width as usize,
+    height: height as usize,
+  })
 }
 
 pub fn get_jpeg_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
@@ -41,7 +44,10 @@ pub fn get_jpeg_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
       let frame_height: u16 = ((chunk[5] as u16) << 8) + (chunk[6] as u16);
       let frame_width: u16 = ((chunk[7] as u16) << 8) + (chunk[8] as u16);
       dimensions = match dimensions {
-        None => Some(ImageDimensions { width: frame_width as usize, height: frame_height as usize }),
+        None => Some(ImageDimensions {
+          width: frame_width as usize,
+          height: frame_height as usize,
+        }),
         d => d,
       };
     }
@@ -64,13 +70,14 @@ fn read_jpeg_chunks(input: &[u8]) -> Vec<&[u8]> {
     if (code >= 0xc0 && code <= 0xc7)
       || (code >= 0xc9 && code <= 0xcf)
       || (code >= 0xda && code <= 0xef)
-      || code == 0xfe {
+      || code == 0xfe
+    {
       size += ((chunk[2] as usize) << 8) + (chunk[3] as usize);
     }
     next_chunk_start = find_next_chunk(&chunk[size..]);
     match &next_chunk_start {
       Some(next) => result.push(&chunk[..(chunk.len() - next.len())]),
-      None => result.push(chunk)
+      None => result.push(chunk),
     }
   }
 
@@ -101,7 +108,10 @@ pub fn get_gif_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
   let (input, width) = parse_be_u16(input).unwrap();
   let (_, height) = parse_be_u16(input).unwrap();
 
-  Ok(ImageDimensions { width: width as usize, height: height as usize })
+  Ok(ImageDimensions {
+    width: width as usize,
+    height: height as usize,
+  })
 }
 
 pub fn test_image_start(image_data: &[u8], start_bytes: &[u8]) -> bool {

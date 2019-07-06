@@ -1,4 +1,4 @@
-use nom::{IResult as NomResult, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
+use nom::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8, IResult as NomResult};
 use swf_tree as ast;
 
 pub fn sound_rate_from_id(sound_rate_id: u8) -> ast::SoundRate {
@@ -63,13 +63,13 @@ pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], ast::SoundInfo> {
 pub fn parse_sound_envelope(input: &[u8]) -> NomResult<&[u8], ast::SoundEnvelope> {
   do_parse!(
     input,
-    pos44: parse_le_u32 >>
-    left_level: parse_le_u16 >>
-    right_level: parse_le_u16 >>
-    (ast::SoundEnvelope {
-      pos44,
-      left_level,
-      right_level,
-    })
+    pos44: parse_le_u32
+      >> left_level: parse_le_u16
+      >> right_level: parse_le_u16
+      >> (ast::SoundEnvelope {
+        pos44,
+        left_level,
+        right_level,
+      })
   )
 }
