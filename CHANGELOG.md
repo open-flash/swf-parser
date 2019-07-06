@@ -1,6 +1,9 @@
 # Next
 
 - **[Feature]** Implement parser for `Protect` ([#36](https://github.com/open-flash/swf-parser/issues/36)).
+- **[Feature]** Implement parser for `DefineFont` ([#32](https://github.com/open-flash/swf-parser/issues/32)).
+- **[Feature]** Implement parser for `DefineFontInfo` ([#33](https://github.com/open-flash/swf-parser/issues/33)).
+- **[Fix]** Fix support for non-extended (SWF version < 6) clip actions in `PlaceObject2`.
 
 # 0.7.0 (2019-05-21)
 

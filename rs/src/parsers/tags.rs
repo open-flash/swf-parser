@@ -26,10 +26,11 @@ use crate::parsers::image::GIF_START;
 use crate::parsers::image::PNG_START;
 use crate::parsers::morph_shape::{MorphShapeVersion, parse_morph_shape};
 use crate::parsers::movie::parse_tag_block_string;
-use crate::parsers::shape::{parse_shape, ShapeVersion};
+use crate::parsers::shape::{parse_shape, ShapeVersion, parse_glyph};
 use crate::parsers::sound::{audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id};
 use crate::parsers::text::{parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits, parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits, FontVersion};
 use crate::state::ParseState;
+use swf_tree::Glyph;
 
 fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   match parse_le_u16(input) {
@@ -68,7 +69,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &mut ParseState) -> IResult<&'a [u8
           7 => map!(record_data, parse_define_button, |t| ast::Tag::DefineButton(t)),
           8 => map!(record_data, apply!(parse_define_jpeg_tables, state.get_swf_version()), |t| ast::Tag::DefineJpegTables(t)),
           9 => map!(record_data, parse_set_background_color_tag, |t| ast::Tag::SetBackgroundColor(t)),
-          10 => map!(record_data, parse_define_font, |t| ast::Tag::DefineFont(t)),
+          10 => map!(record_data, parse_define_font, |t| ast::Tag::DefineGlyphFont(t)),
           11 => map!(record_data, parse_define_text, |t| ast::Tag::DefineText(t)),
           12 => map!(record_data, parse_do_action, |t| ast::Tag::DoAction(t)),
           13 => map!(record_data, parse_define_font_info, |t| ast::Tag::DefineFontInfo(t)),
@@ -387,8 +388,45 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
   )
 }
 
-pub fn parse_define_font(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
-  unimplemented!()
+pub fn parse_define_font(input: &[u8]) -> IResult<&[u8], ast::tags::DefineGlyphFont> {
+  let (input, id) = parse_le_u16(input)?;
+  let available = input.len();
+  let mut glyphs: Vec<Glyph> = Vec::new();
+
+  if available > 0 {
+    let saved_input: &[u8] = input;
+
+    let (mut input, first_offset) = parse_le_u16(input)?;
+    let first_offset: usize = first_offset.into();
+    // TODO: assert `first_offset` is even.
+    let glyph_count: usize = first_offset / 2;
+    let mut offsets: Vec<usize> = Vec::with_capacity(glyph_count);
+    offsets.push(first_offset);
+    for _ in 1..glyph_count {
+      let (next_input, offset) = parse_le_u16(input)?;
+      input = next_input;
+      offsets.push(offset.into());
+    }
+
+    for i in 0..glyph_count {
+      let start_offset = offsets[i];
+      let glyph_input = if i + 1 < glyph_count {
+        let end_offset = offsets[i + 1];
+        &saved_input[start_offset..end_offset]
+      } else {
+        &saved_input[start_offset..]
+      };
+      match parse_glyph(glyph_input) {
+        Ok((_, o)) => glyphs.push(o),
+        Err(e) => return Err(e),
+      };
+    }
+  }
+
+  Ok((&[], ast::tags::DefineGlyphFont {
+    id,
+    glyphs,
+  }))
 }
 
 pub fn parse_define_font2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
@@ -482,8 +520,46 @@ pub fn parse_define_font_align_zones<P>(input: &[u8], glyph_count_provider: P) -
   )
 }
 
-pub fn parse_define_font_info(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
-  unimplemented!()
+pub fn parse_define_font_info(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+  fn parse_code_units(mut input: &[u8], use_wide_codes: bool) -> IResult<&[u8], Vec<u16>> {
+    if use_wide_codes {
+      // TODO: Handle odd values
+      let code_unit_count = input.len() / 2;
+      let mut code_units: Vec<u16> = Vec::with_capacity(code_unit_count);
+
+      for _ in 0..code_unit_count {
+        let (next_input, code_unit) = parse_le_u16(input)?;
+        input = next_input;
+        code_units.push(code_unit);
+      }
+
+      Ok((input, code_units))
+    } else {
+      let code_units: Vec<u16> = input.iter().map(|x| u16::from(*x)).collect();
+      Ok((&[][..], code_units))
+    }
+  }
+
+  do_parse!(
+    input,
+    font_id: parse_le_u16 >>
+    font_name: length_value!(parse_u8, parse_block_c_string) >>
+    flags: parse_u8 >>
+    use_wide_codes: value!((flags & (1 << 0)) != 0) >>
+    is_bold: value!((flags & (1 << 1)) != 0) >>
+    is_italic: value!((flags & (1 << 2)) != 0) >>
+    is_ansi: value!((flags & (1 << 3)) != 0) >>
+    is_shift_jis: value!((flags & (1 << 4)) != 0) >>
+    is_small: value!((flags & (1 << 5)) != 0) >>
+    language: value!(ast::LanguageCode::Auto) >>
+    code_units: apply!(parse_code_units, use_wide_codes) >>
+    (ast::tags::DefineFontInfo {
+      font_id, font_name,
+      is_bold, is_italic, is_ansi, is_shift_jis, is_small,
+      language: Some(language),
+      code_units,
+    })
+  )
 }
 
 pub fn parse_define_font_info2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {

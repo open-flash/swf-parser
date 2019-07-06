@@ -1,6 +1,6 @@
 use swf_tree as ast;
 use nom::IResult;
-use nom::{le_f32 as parse_le_f32, be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u8 as parse_u8, le_u32 as parse_le_u32};
+use nom::{le_f32 as parse_le_f32, le_u16 as parse_le_u16, le_u8 as parse_u8, le_u32 as parse_le_u32};
 use crate::parsers::basic_data_types::{parse_le_fixed8_p8, parse_le_fixed16_p16, parse_straight_s_rgba8};
 
 #[allow(unused_variables)]
@@ -26,15 +26,17 @@ pub fn parse_blend_mode(input: &[u8]) -> IResult<&[u8], ast::BlendMode> {
 }
 
 pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> IResult<&[u8], Vec<ast::ClipAction>> {
+  let input = &input[2..]; // Skip `reserved`
+  let input = &input[(if extended_events { 4 } else { 2 })..]; // Skip `all_events`
+
   let mut result: Vec<ast::ClipAction> = Vec::new();
   let mut current_input = input;
 
-  // TODO: Use `parse_le_u32` and `parse_le_u16`
   loop {
     let head = if extended_events {
-      parse_be_u32(current_input)
+      parse_le_u32(current_input)
     } else {
-      map!(current_input, parse_be_u16, |x| x as u32)
+      map!(current_input, parse_le_u16, |x| x as u32)
     };
 
     match head {
@@ -64,29 +66,29 @@ pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> IResult<&[
   do_parse!(
     input,
     flags: switch!(value!(extended_events),
-      true => call!(parse_be_u32) |
-      false => map!(parse_be_u16, |x| (x as u32) << 16)
+      true => call!(parse_le_u32) |
+      false => map!(parse_le_u16, u32::from)
     ) >>
     (ast::ClipEventFlags {
-      key_up: (flags & (1 << 31)) != 0,
-      key_down: (flags & (1 << 30)) != 0,
-      mouse_up: (flags & (1 << 29)) != 0,
-      mouse_down: (flags & (1 << 28)) != 0,
-      mouse_move: (flags & (1 << 27)) != 0,
-      unload: (flags & (1 << 26)) != 0,
-      enter_frame: (flags & (1 << 25)) != 0,
-      load: (flags & (1 << 24)) != 0,
-      drag_over: (flags & (1 << 23)) != 0,
-      roll_out: (flags & (1 << 22)) != 0,
-      roll_over: (flags & (1 << 21)) != 0,
-      release_outside: (flags & (1 << 20)) != 0,
-      release: (flags & (1 << 19)) != 0,
-      press: (flags & (1 << 18)) != 0,
-      initialize: (flags & (1 << 17)) != 0,
-      data: (flags & (1 << 16)) != 0,
-      construct: (flags & (1 << 10)) != 0,
-      key_press: (flags & (1 << 9)) != 0,
-      drag_out: (flags & (1 << 8)) != 0,
+      load: (flags & (1 << 0)) != 0,
+      enter_frame: (flags & (1 << 1)) != 0,
+      unload: (flags & (1 << 2)) != 0,
+      mouse_move: (flags & (1 << 3)) != 0,
+      mouse_down: (flags & (1 << 4)) != 0,
+      mouse_up: (flags & (1 << 5)) != 0,
+      key_down: (flags & (1 << 6)) != 0,
+      key_up: (flags & (1 << 7)) != 0,
+      data: (flags & (1 << 8)) != 0,
+      initialize: (flags & (1 << 9)) != 0,
+      press: (flags & (1 << 10)) != 0,
+      release: (flags & (1 << 11)) != 0,
+      release_outside: (flags & (1 << 12)) != 0,
+      roll_over: (flags & (1 << 13)) != 0,
+      roll_out: (flags & (1 << 14)) != 0,
+      drag_over: (flags & (1 << 15)) != 0,
+      drag_out: (flags & (1 << 16)) != 0,
+      key_press: (flags & (1 << 17)) != 0,
+      construct: (flags & (1 << 18)) != 0,
     })
   )
 }

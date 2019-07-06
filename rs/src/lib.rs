@@ -71,11 +71,16 @@ mod tests {
   test_expand_paths! { test_parse_tag; "../tests/tags/*/*/" }
   fn test_parse_tag(path: &str) {
     let path: &Path = Path::new(path);
-    let _name = path.components().last().unwrap().as_os_str().to_str().expect("Failed to retrieve sample name");
+    let name = path.components().last().unwrap().as_os_str().to_str().expect("Failed to retrieve sample name");
     let input_path = path.join("input.bytes");
     let input_bytes: Vec<u8> = ::std::fs::read(input_path).expect("Failed to read input");
 
-    let mut state = ParseState::new(10);
+    let swf_version: u8 = match name {
+      "po2-swf5" => 5,
+      _ => 10,
+    };
+
+    let mut state = ParseState::new(swf_version);
     state.set_glyph_count(1, 11);
     let (remaining_bytes, actual_value) = parse_tag(&input_bytes, &mut state).expect("Failed to parse");
 

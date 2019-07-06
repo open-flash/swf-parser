@@ -53,11 +53,11 @@ export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {
 
 export function parseClipActionString(byteStream: ReadableByteStream, extendedEvents: boolean): ClipAction[] {
   byteStream.skip(2); // Reserved
-  byteStream.skip(4); // All events (union of the events)
+  byteStream.skip(extendedEvents ? 4 : 2); // All events (union of the events)
   const result: ClipAction[] = [];
   while (true) {
     const savedPos: UintSize = byteStream.bytePos;
-    const peek: Uint32 = extendedEvents ? byteStream.readUint32BE() : byteStream.readUint32BE();
+    const peek: Uint32 = extendedEvents ? byteStream.readFloat32LE() : byteStream.readUint16LE();
     if (peek === 0) {
       break;
     } else {

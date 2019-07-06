@@ -23,18 +23,18 @@ const BLACKLIST: ReadonlySet<string> = new Set([
 ]);
 // `WHITELIST` can be used to only enable a few tests.
 const WHITELIST: ReadonlySet<string> = new Set([
-  // "place-object2/place-id-1",
-  // "place-object3/update-depth-1",
+  // "place-object/po2-place-id-1",
+  // "place-object/po3-update-depth-1",
 ]);
 
 describe("tags", function () {
   for (const group of getSampleGroups()) {
     describe(group.name, function () {
-      for (const sample of getSamplesFromGroup(group.name)) {
+      for (const sample of getSamplesFromGroup(group)) {
         it(sample.name, async function () {
           const inputBytes: Uint8Array = await readFile(sample.inputPath);
           const stream: ReadableByteStream = new ReadableStream(inputBytes);
-          const actualValue: Tag = group.parser(stream);
+          const actualValue: Tag = sample.parser(stream);
           const actualJson: string = `${JSON.stringify(group.type.write(JSON_VALUE_WRITER, actualValue), null, 2)}\n`;
 
           // await writeTextFile(sample.valuePath, actualJson);
@@ -59,7 +59,6 @@ describe("tags", function () {
 interface SampleGroup {
   name: string;
   type: IoType<Tag>;
-  parser(byteStream: ReadableByteStream): Tag;
 }
 
 function* getSampleGroups(): IterableIterator<SampleGroup> {
@@ -68,11 +67,8 @@ function* getSampleGroups(): IterableIterator<SampleGroup> {
       continue;
     }
     const name: string = dirEnt.name;
-    const ctx: DefaultParseContext = new DefaultParseContext(10);
-    ctx.setGlyphCount(1, 11);
     yield {
       name,
-      parser: (stream: ReadableByteStream) => parseTag(stream, ctx),
       type: $Tag,
     };
   }
@@ -82,26 +78,47 @@ interface Sample {
   name: string;
   inputPath: string;
   valuePath: string;
+
+  parser(byteStream: ReadableByteStream): Tag;
 }
 
-function* getSamplesFromGroup(group: string): IterableIterator<Sample> {
-  const groupPath: string = sysPath.join(TAG_SAMPLES_ROOT, group);
+function* getSamplesFromGroup(group: SampleGroup): IterableIterator<Sample> {
+  const groupPath: string = sysPath.join(TAG_SAMPLES_ROOT, group.name);
   for (const dirEnt of fs.readdirSync(groupPath, {withFileTypes: true})) {
     if (!dirEnt.isDirectory()) {
       continue;
     }
     const testName: string = dirEnt.name;
     const testPath: string = sysPath.join(groupPath, testName);
+    const fullName: string = `${group.name}/${testName}`;
 
-    if (BLACKLIST.has(`${group}/${testName}`)) {
+    if (BLACKLIST.has(fullName)) {
       continue;
-    } else if (WHITELIST.size > 0 && !WHITELIST.has(`${group}/${testName}`)) {
+    } else if (WHITELIST.size > 0 && !WHITELIST.has(fullName)) {
       continue;
     }
 
     const inputPath: string = sysPath.join(testPath, "input.bytes");
     const valuePath: string = sysPath.join(testPath, "value.json");
 
-    yield {name: testName, inputPath, valuePath};
+    let swfVersion: number;
+    switch (fullName) {
+      case "place-object/po2-swf5":
+        swfVersion = 5;
+        break;
+      default:
+        swfVersion = 10;
+        break;
+    }
+
+    const ctx: DefaultParseContext = new DefaultParseContext(swfVersion);
+    ctx.setGlyphCount(1, 11);
+
+    yield {
+      name: testName,
+      inputPath,
+      valuePath,
+      parser: (stream: ReadableByteStream) => parseTag(stream, ctx),
+    };
   }
 }

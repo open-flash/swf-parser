@@ -60,7 +60,7 @@ import {
   testImageStart,
 } from "./image";
 import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
-import { parseShape, ShapeVersion } from "./shape";
+import { parseGlyph, parseShape, ShapeVersion } from "./shape";
 import {
   getAudioCodingFormatFromCode,
   getSoundRateFromCode,
@@ -488,8 +488,37 @@ export function parseDefineEditText(byteStream: ReadableByteStream): tags.Define
   };
 }
 
-export function parseDefineFont(_byteStream: ReadableByteStream): tags.DefineFont {
-  throw new Incident("NotImplemented", "parseDefineFont");
+export function parseDefineFont(byteStream: ReadableByteStream): tags.DefineGlyphFont {
+  const id: Uint16 = byteStream.readUint16LE();
+
+  const glyphs: Glyph[] = [];
+  const available: UintSize = byteStream.available();
+  if (available > 0) {
+    const startPos: UintSize = byteStream.bytePos;
+
+    const offsetToFirstGlyph: Uint16 = byteStream.readUint16LE();
+    // Dividing by 2 since each glyph offset takes 2 bytes.
+    // TODO: Assert that `offsetToFirstGlyph` is even
+    const glyphCount: UintSize = Math.floor(offsetToFirstGlyph / 2);
+    const offsets: UintSize[] = [offsetToFirstGlyph];
+    for (let i: UintSize = 1; i < glyphCount; i++) {
+      offsets.push(byteStream.readUint16LE());
+    }
+    offsets.push(available);
+
+    for (let i: number = 1; i < offsets.length; i++) {
+      const length: UintSize = offsets[i] - (byteStream.bytePos - startPos);
+      // TODO: special mode when parsing the shape: the first changeStyle is
+      //       forced to have stateFillStyle0 and stateFill0
+      glyphs.push(parseGlyph(byteStream.take(length)));
+    }
+  }
+
+  return {
+    type: TagType.DefineGlyphFont,
+    id,
+    glyphs,
+  };
 }
 
 export function parseDefineFont2(byteStream: ReadableByteStream): tags.DefineFont {
@@ -587,8 +616,50 @@ export function parseDefineFontAlignZones(
   return {type: TagType.DefineFontAlignZones, fontId, csmTableHint, zones};
 }
 
-export function parseDefineFontInfo(_byteStream: ReadableByteStream): tags.DefineFontInfo {
-  throw new Incident("NotImplemented", "parseDefineFontInfo");
+export function parseDefineFontInfo(byteStream: ReadableByteStream): tags.DefineFontInfo {
+  const id: Uint16 = byteStream.readUint16LE();
+
+  const fontNameLength: UintSize = byteStream.readUint8();
+  const fontName: string = parseBlockCString(byteStream, fontNameLength);
+
+  const flags: Uint8 = byteStream.readUint8();
+  const useWideCodes: boolean = (flags & (1 << 0)) !== 0;
+  const isBold: boolean = (flags & (1 << 1)) !== 0;
+  const isItalic: boolean = (flags & (1 << 2)) !== 0;
+  const isAnsi: boolean = (flags & (1 << 3)) !== 0;
+  const isShiftJis: boolean = (flags & (1 << 4)) !== 0;
+  const isSmall: boolean = (flags & (1 << 5)) !== 0;
+
+  // const emSquareSize: EmSquareSize = 1024;
+
+  const language: LanguageCode = LanguageCode.Auto;
+
+  const codeUnits: Uint16[] = [];
+  if (useWideCodes) {
+    // TODO: Handle odd values.
+    const codeUintCount: UintSize = Math.floor(byteStream.available() / 2);
+    for (let i: UintSize = 0; i < codeUintCount; i++) {
+      codeUnits.push(byteStream.readUint16LE());
+    }
+  } else {
+    const codeUintCount: UintSize = byteStream.available();
+    for (let i: UintSize = 0; i < codeUintCount; i++) {
+      codeUnits.push(byteStream.readUint8());
+    }
+  }
+
+  return {
+    type: TagType.DefineFontInfo,
+    fontId: id,
+    fontName,
+    isBold,
+    isItalic,
+    isAnsi,
+    isSmall,
+    isShiftJis,
+    language,
+    codeUnits,
+  };
 }
 
 export function parseDefineFontInfo2(_byteStream: ReadableByteStream): tags.DefineFontInfo {
