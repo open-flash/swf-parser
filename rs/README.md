@@ -7,7 +7,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/swf-parser.svg)](https://crates.io/crates/swf-parser)
 [![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
-[![Build status](https://img.shields.io/travis/open-flash/swf-parser/master.svg)](https://travis-ci.org/open-flash/swf-parser)
+[![Build status](https://img.shields.io/travis/com/open-flash/swf-parser/master.svg)](https://travis-ci.com/open-flash/swf-parser)
 
 SWF parser implemented in Rust.
 Converts bytes to [`swf-tree` movies][swf-tree].

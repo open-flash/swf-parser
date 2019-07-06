@@ -4,6 +4,7 @@
 - **[Feature]** Implement parser for `DefineFont` ([#32](https://github.com/open-flash/swf-parser/issues/32)).
 - **[Feature]** Implement parser for `DefineFontInfo` ([#33](https://github.com/open-flash/swf-parser/issues/33)).
 - **[Fix]** Fix support for non-extended (SWF version < 6) clip actions in `PlaceObject2`.
+- **[Internal]** Migrate CI to `travis-ci.com`.
 
 ### Rust
 
