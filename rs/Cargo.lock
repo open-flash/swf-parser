@@ -209,7 +209,7 @@ dependencies = [
 
 [[package]]
 name = "swf-parser"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "half 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "inflate 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
