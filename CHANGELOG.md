@@ -1,10 +1,10 @@
-# Next
+# 0.8.0 (2019-07-08)
 
 - **[Breaking change]** Update to `swf-tree@0.8`.
 
 ### Rust
 
-- **[Fix]** Update to `nom@5`.
+- **[Fix]** Update to `nom@5` ([#83](https://github.com/open-flash/swf-parser/issues/83)).
 
 # 0.7.1 (2019-07-06)
 
