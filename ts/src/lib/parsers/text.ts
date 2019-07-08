@@ -6,7 +6,7 @@ import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGlyph } from "./shape";
 
 export enum FontVersion {
-  Font1 = 1,
+  // `Font1` is handled apart as `DefineGlyphFont`.
   Font2 = 2,
   Font3 = 3,
   Font4 = 4,

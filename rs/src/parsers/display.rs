@@ -187,11 +187,14 @@ pub fn parse_blur_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Blur> {
   )
 }
 
-pub fn parse_color_matrix_filter(input: &[u8]) -> IResult<&[u8], ast::filters::ColorMatrix> {
-  do_parse!(
-    input,
-    matrix: length_count!(value!(20), map!(parse_le_f32, |x| x)) >> (ast::filters::ColorMatrix { matrix: matrix })
-  )
+pub fn parse_color_matrix_filter(mut input: &[u8]) -> IResult<&[u8], ast::filters::ColorMatrix> {
+  let mut matrix: [f32; 20] = [0f32; 20];
+  for i in 0..matrix.len() {
+    let (next_input, value) = parse_le_f32(input)?;
+    input = next_input;
+    matrix[i] = value;
+  }
+  Ok((input, ast::filters::ColorMatrix { matrix }))
 }
 
 pub fn parse_convolution_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Convolution> {

@@ -1,5 +1,9 @@
 # Next
 
+- **[Breaking change]** Update to `swf-tree@0.8`.
+
+### Rust
+
 - **[Fix]** Update to `nom@5`.
 
 # 0.7.1 (2019-07-06)

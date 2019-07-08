@@ -10,7 +10,7 @@ use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum FontVersion {
-  Font1,
+  // `Font1` is handled apart as `DefineGlyphFont`.
   Font2,
   Font3,
   Font4,

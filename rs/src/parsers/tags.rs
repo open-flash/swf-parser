@@ -643,7 +643,7 @@ pub fn parse_define_font_info(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
       is_ansi,
       is_shift_jis,
       is_small,
-      language: Some(language),
+      language,
       code_units,
     },
   ))
