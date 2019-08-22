@@ -1,3 +1,7 @@
+# Next
+
+- **[Feature]** Implement parser for `DefineButton` (thanks [@pheki](https://github.com/pheki)) ([#31](https://github.com/open-flash/swf-parser/issues/31)).
+
 # 0.8.0 (2019-07-08)
 
 - **[Breaking change]** Update to `swf-tree@0.8`.

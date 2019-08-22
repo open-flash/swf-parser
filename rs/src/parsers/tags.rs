@@ -26,7 +26,7 @@ use nom::number::streaming::{
 };
 use nom::{IResult, Needed};
 use swf_tree as ast;
-use swf_tree::Glyph;
+use swf_tree::{ButtonCondAction, Glyph};
 
 fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   match parse_le_u16(input) {
@@ -244,8 +244,25 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::t
   }
 }
 
-pub fn parse_define_button(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
-  unimplemented!()
+pub fn parse_define_button(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
+  let (input, id) = parse_le_u16(input)?;
+
+  let (input, characters) = parse_button_record_string(input, ButtonVersion::Button1)?;
+  let actions = input.to_vec();
+  let cond_action = ButtonCondAction {
+    conditions: None,
+    actions,
+  };
+
+  Ok((
+    input,
+    ast::tags::DefineButton {
+      id,
+      track_as_menu: false,
+      characters,
+      actions: vec![cond_action],
+    },
+  ))
 }
 
 pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {

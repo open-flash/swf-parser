@@ -46,7 +46,11 @@ import {
   parseSRgb8,
   parseStraightSRgba8,
 } from "./basic-data-types";
-import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString } from "./button";
+import {
+  ButtonVersion,
+  parseButton2CondActionString,
+  parseButtonRecordString,
+} from "./button";
 import { parseBlendMode, parseClipActionString, parseFilterList } from "./display";
 import {
   ERRONEOUS_JPEG_START,
@@ -389,8 +393,15 @@ function parseDefineBitsLosslessAny(
   return {type: TagType.DefineBitmap, id, width, height, mediaType, data};
 }
 
-export function parseDefineButton(_byteStream: ReadableByteStream): tags.DefineButton {
-  throw new Incident("NotImplemented", "parseDefineButton");
+export function parseDefineButton(byteStream: ReadableByteStream): tags.DefineButton {
+  const id: Uint16 = byteStream.readUint16LE();
+  const trackAsMenu: boolean = false;
+
+  const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button1);
+  const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
+  const condAction: ButtonCondAction = {actions};
+
+  return {type: TagType.DefineButton, id, trackAsMenu, characters, actions: [condAction]};
 }
 
 export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineButton {
