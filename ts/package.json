@@ -35,7 +35,7 @@
     "incident": "^3.2.0",
     "pako": "^1.0.10",
     "semantic-types": "^0.1.1",
-    "swf-tree": "^0.8.0"
+    "swf-tree": "^0.8.0-build.23"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

@@ -56,7 +56,7 @@ export function parseSoundInfo(byteStream: ReadableByteStream): SoundInfo {
   const hasLoops: boolean = (flags & (1 << 2)) !== 0;
   const hasEnvelope: boolean = (flags & (1 << 3)) !== 0;
   const syncNoMultiple: boolean = (flags & (1 << 4)) !== 0;
-  const syncStop: boolean = (flags & (1 << 6)) !== 0;
+  const syncStop: boolean = (flags & (1 << 5)) !== 0;
   // Bits [6, 7] are reserved
 
   const inPoint: Uint32 | undefined = hasInPoint ? byteStream.readUint32LE() : undefined;

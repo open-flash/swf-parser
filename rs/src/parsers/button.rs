@@ -1,8 +1,10 @@
-use crate::parsers::basic_data_types::{parse_color_transform_with_alpha, parse_matrix};
-use crate::parsers::display::{parse_blend_mode, parse_filter_list};
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::IResult as NomResult;
 use swf_tree as ast;
+
+use crate::parsers::basic_data_types::{parse_color_transform_with_alpha, parse_matrix};
+use crate::parsers::display::{parse_blend_mode, parse_filter_list};
+use crate::parsers::sound::parse_sound_info;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum ButtonVersion {
@@ -153,4 +155,14 @@ pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
         idle_to_over_down,
       })
   )
+}
+
+pub fn parse_button_sound(input: &[u8]) -> NomResult<&[u8], Option<ast::ButtonSound>> {
+  let (input, sound_id) = parse_le_u16(input)?;
+  if sound_id == 0 {
+    Ok((input, None))
+  } else {
+    let (input, sound_info) = parse_sound_info(input)?;
+    Ok((input, Some(ast::ButtonSound { sound_id, sound_info })))
+  }
 }

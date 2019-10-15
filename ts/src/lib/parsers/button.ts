@@ -5,12 +5,15 @@ import { BlendMode } from "swf-tree/blend-mode";
 import { ButtonCond } from "swf-tree/button/button-cond";
 import { ButtonCondAction } from "swf-tree/button/button-cond-action";
 import { ButtonRecord } from "swf-tree/button/button-record";
+import { ButtonSound } from "swf-tree/button/button-sound";
 import { ColorTransformWithAlpha } from "swf-tree/color-transform-with-alpha";
 import { Filter } from "swf-tree/filter";
 import { Matrix } from "swf-tree/matrix";
+import { SoundInfo } from "swf-tree/sound/sound-info";
 import { createIncompleteStreamError } from "../errors/incomplete-stream";
 import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types";
 import { parseBlendMode, parseFilterList } from "./display";
+import { parseSoundInfo } from "./sound";
 
 export enum ButtonVersion {
   Button1 = 1,
@@ -139,4 +142,13 @@ export function parseButtonCond(byteStream: ReadableByteStream): ButtonCond {
     outDownToIdle,
     idleToOverDown,
   };
+}
+
+export function parseButtonSound(byteStream: ReadableByteStream): ButtonSound | undefined {
+  const soundId: Uint16 = byteStream.readUint16LE();
+  if (soundId === 0) {
+    return undefined;
+  }
+  const soundInfo: SoundInfo = parseSoundInfo(byteStream);
+  return {soundId, soundInfo};
 }

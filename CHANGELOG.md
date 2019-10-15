@@ -1,6 +1,11 @@
 # Next
 
 - **[Feature]** Implement parser for `DefineButton` (thanks [@pheki](https://github.com/pheki)) ([#31](https://github.com/open-flash/swf-parser/issues/31)).
+- **[Feature]** Implement parser for `DefineButtonSound` ([#34](https://github.com/open-flash/swf-parser/issues/34)).
+
+### Typescript
+
+- **[Fix]** Fix `SoundInfo` parser.
 
 # 0.8.0 (2019-07-08)
 

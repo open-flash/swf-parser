@@ -25,6 +25,7 @@ import {
 } from "swf-tree";
 import { ButtonCondAction } from "swf-tree/button/button-cond-action";
 import { ButtonRecord } from "swf-tree/button/button-record";
+import { ButtonSound } from "swf-tree/button/button-sound";
 import { ImageType } from "swf-tree/image-type";
 import { MorphShape } from "swf-tree/morph-shape";
 import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
@@ -50,6 +51,7 @@ import {
   ButtonVersion,
   parseButton2CondActionString,
   parseButtonRecordString,
+  parseButtonSound,
 } from "./button";
 import { parseBlendMode, parseClipActionString, parseFilterList } from "./display";
 import {
@@ -429,8 +431,21 @@ export function parseDefineButtonCxform(_byteStream: ReadableByteStream): never 
   throw new Incident("NotImplemented", "parseDefineButtonCxform");
 }
 
-export function parseDefineButtonSound(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseButtonSound");
+export function parseDefineButtonSound(byteStream: ReadableByteStream): tags.DefineButtonSound {
+  const buttonId: Uint16 = byteStream.readUint16LE();
+  const overUpToIdle: ButtonSound | undefined = parseButtonSound(byteStream);
+  const idleToOverUp: ButtonSound | undefined = parseButtonSound(byteStream);
+  const overUpToOverDown: ButtonSound | undefined = parseButtonSound(byteStream);
+  const overDownToOverUp: ButtonSound | undefined = parseButtonSound(byteStream);
+
+  return {
+    type: TagType.DefineButtonSound,
+    buttonId,
+    overUpToIdle,
+    idleToOverUp,
+    overUpToOverDown,
+    overDownToOverUp,
+  };
 }
 
 export function parseDefineEditText(byteStream: ReadableByteStream): tags.DefineDynamicText {

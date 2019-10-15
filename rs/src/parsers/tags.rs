@@ -2,7 +2,9 @@ use crate::parsers::basic_data_types::{
   parse_block_c_string, parse_c_string, parse_color_transform, parse_color_transform_with_alpha, parse_language_code,
   parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8, parse_straight_s_rgba8,
 };
-use crate::parsers::button::{parse_button2_cond_action_string, parse_button_record_string, ButtonVersion};
+use crate::parsers::button::{
+  parse_button2_cond_action_string, parse_button_record_string, parse_button_sound, ButtonVersion,
+};
 use crate::parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
 use crate::parsers::image::get_gif_image_dimensions;
 use crate::parsers::image::get_png_image_dimensions;
@@ -85,7 +87,9 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
           13 => map!(record_data, parse_define_font_info, |t| ast::Tag::DefineFontInfo(t)),
           14 => map!(record_data, parse_define_sound, |t| ast::Tag::DefineSound(t)),
           15 => map!(record_data, parse_start_sound, |t| ast::Tag::StartSound(t)),
-          17 => map!(record_data, parse_define_button_sound, |_t| unimplemented!()),
+          17 => map!(record_data, parse_define_button_sound, |t| ast::Tag::DefineButtonSound(
+            t
+          )),
           18 => map!(record_data, parse_sound_stream_head, |t| ast::Tag::SoundStreamHead(t)),
           19 => map!(record_data, parse_sound_stream_block, |t| ast::Tag::SoundStreamBlock(t)),
           20 => map!(record_data, parse_define_bits_lossless, |t| ast::Tag::DefineBitmap(t)),
@@ -296,8 +300,23 @@ pub fn parse_define_button_cxform(_input: &[u8]) -> IResult<&[u8], ()> {
   unimplemented!()
 }
 
-pub fn parse_define_button_sound(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+pub fn parse_define_button_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButtonSound> {
+  let (input, button_id) = parse_le_u16(input)?;
+  let (input, over_up_to_idle) = parse_button_sound(input)?;
+  let (input, idle_to_over_up) = parse_button_sound(input)?;
+  let (input, over_up_to_over_down) = parse_button_sound(input)?;
+  let (input, over_down_to_over_up) = parse_button_sound(input)?;
+
+  Ok((
+    input,
+    ast::tags::DefineButtonSound {
+      button_id,
+      over_up_to_idle,
+      idle_to_over_up,
+      over_up_to_over_down,
+      over_down_to_over_up,
+    },
+  ))
 }
 
 pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
