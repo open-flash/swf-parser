@@ -20,6 +20,7 @@ use crate::parsers::sound::{
 use crate::parsers::text::{
   parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits,
   parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits, FontVersion,
+  TextVersion,
 };
 use crate::state::ParseState;
 use nom::number::streaming::{
@@ -904,6 +905,14 @@ pub fn parse_define_sprite<'a>(input: &'a [u8], state: &ParseState) -> IResult<&
 }
 
 pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
+  parse_define_text_any(input, TextVersion::Text1)
+}
+
+pub fn parse_define_text2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
+  parse_define_text_any(input, TextVersion::Text2)
+}
+
+pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> IResult<&[u8], ast::tags::DefineText> {
   use nom::combinator::map;
 
   let (input, id) = parse_le_u16(input)?;
@@ -911,7 +920,8 @@ pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> 
   let (input, matrix) = parse_matrix(input)?;
   let (input, index_bits) = map(parse_u8, |x| x as usize)(input)?;
   let (input, advance_bits) = map(parse_u8, |x| x as usize)(input)?;
-  let (input, records) = parse_text_record_string(input, false, index_bits, advance_bits)?;
+  let has_alpha = version >= TextVersion::Text2;
+  let (input, records) = parse_text_record_string(input, has_alpha, index_bits, advance_bits)?;
 
   Ok((
     input,
@@ -922,10 +932,6 @@ pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> 
       records: records,
     },
   ))
-}
-
-pub fn parse_define_text2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
-  unimplemented!()
 }
 
 pub fn parse_define_video_stream(_input: &[u8]) -> IResult<&[u8], ()> {
