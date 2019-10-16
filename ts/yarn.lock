@@ -3921,10 +3921,10 @@ sver-compat@^1.5.0:
     es6-iterator "^2.0.1"
     es6-symbol "^3.1.1"
 
-swf-tree@^0.8.0-build.32:
-  version "0.8.0-build.32"
-  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.8.0-build.32.tgz#80c38e0dbcfc1e26129cf9c67af3eb67a820949c"
-  integrity sha512-9TauGVAXBiBVXYuFmXAcqgkaSJ6nd4DK6TcpjoxmxI3nktmIfiGj0utHomtb1gMoPHIkg+IGGyNKB9MsQaOW9g==
+swf-tree@^0.8.0-build.40:
+  version "0.8.0-build.40"
+  resolved "https://registry.yarnpkg.com/swf-tree/-/swf-tree-0.8.0-build.40.tgz#f1bbd26a9a6f64bd761dbddde62db0ecdcbcb4f5"
+  integrity sha512-s9prVlHfOw+Ns1LvIlH2TV8g8e913ezUhw//rNYFvU3GyziAPA+ols2suv7iudu8owwB+vcscgYj36EXkv0SjQ==
   dependencies:
     incident "^3.2.0"
     kryo "^0.8.1"

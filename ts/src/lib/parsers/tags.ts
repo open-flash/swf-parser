@@ -2,17 +2,7 @@
 
 import { ReadableBitStream, ReadableByteStream, ReadableStream } from "@open-flash/stream";
 import { Incident } from "incident";
-import {
-  Float32,
-  Sint16,
-  Uint16,
-  Uint2,
-  Uint3,
-  Uint32,
-  Uint4,
-  Uint8,
-  UintSize,
-} from "semantic-types";
+import { Float32, Sint16, Uint16, Uint2, Uint3, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
 import {
   BlendMode,
   ClipAction,
@@ -60,12 +50,7 @@ import {
   parseSRgb8,
   parseStraightSRgba8,
 } from "./basic-data-types";
-import {
-  ButtonVersion,
-  parseButton2CondActionString,
-  parseButtonRecordString,
-  parseButtonSound,
-} from "./button";
+import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString, parseButtonSound } from "./button";
 import { parseBlendMode, parseClipActionString, parseFilterList } from "./display";
 import {
   ERRONEOUS_JPEG_START,
@@ -1258,6 +1243,9 @@ export function parseSymbolClass(byteStream: ReadableByteStream): tags.SymbolCla
   };
 }
 
-export function parseVideoFrame(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseVideoFrame");
+export function parseVideoFrame(byteStream: ReadableByteStream): tags.VideoFrame {
+  const videoId: Uint16 = byteStream.readUint16LE();
+  const frame: Uint16 = byteStream.readUint16LE();
+  const packet: Uint8Array = Uint8Array.from(byteStream.tailBytes());
+  return {type: TagType.VideoFrame, videoId, frame, packet};
 }

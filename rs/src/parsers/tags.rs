@@ -1,3 +1,11 @@
+use nom::number::streaming::{
+  be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16,
+  le_u32 as parse_le_u32, le_u8 as parse_u8,
+};
+use nom::{IResult, Needed};
+use swf_tree as ast;
+use swf_tree::{ButtonCondAction, Glyph};
+
 use crate::parsers::basic_data_types::{
   parse_block_c_string, parse_c_string, parse_color_transform, parse_color_transform_with_alpha, parse_language_code,
   parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8, parse_straight_s_rgba8,
@@ -24,13 +32,6 @@ use crate::parsers::text::{
 };
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
-use nom::number::streaming::{
-  be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16,
-  le_u32 as parse_le_u32, le_u8 as parse_u8,
-};
-use nom::{IResult, Needed};
-use swf_tree as ast;
-use swf_tree::{ButtonCondAction, Glyph};
 
 fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   match parse_le_u16(input) {
@@ -136,7 +137,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
           60 => map!(record_data, parse_define_video_stream, |t| ast::Tag::DefineVideoStream(
             t
           )),
-          61 => map!(record_data, parse_video_frame, |_t| unimplemented!()),
+          61 => map!(record_data, parse_video_frame, |t| ast::Tag::VideoFrame(t)),
           62 => map!(record_data, parse_define_font_info2, |t| ast::Tag::DefineFontInfo(t)),
           64 => map!(record_data, parse_enable_debugger2, |t| ast::Tag::EnableDebugger(t)),
           65 => map!(record_data, parse_script_limits, |t| ast::Tag::ScriptLimits(t)),
@@ -1364,6 +1365,16 @@ pub fn parse_symbol_class(input: &[u8]) -> IResult<&[u8], ast::tags::SymbolClass
   )
 }
 
-pub fn parse_video_frame(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+pub fn parse_video_frame(input: &[u8]) -> IResult<&[u8], ast::tags::VideoFrame> {
+  let (input, video_id) = parse_le_u16(input)?;
+  let (input, frame) = parse_le_u16(input)?;
+  let (input, packet) = (&[][..], input.to_vec());
+  Ok((
+    input,
+    ast::tags::VideoFrame {
+      video_id,
+      frame,
+      packet,
+    },
+  ))
 }
