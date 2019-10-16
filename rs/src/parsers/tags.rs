@@ -1012,16 +1012,19 @@ pub fn parse_do_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoAction> {
 pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAction> {
   let (input, sprite_id) = parse_le_u16(input)?;
   let (input, actions) = (&[][..], input.to_vec());
-  let tag = ast::tags::DoInitAction { sprite_id, actions };
-  Ok((input, tag))
+  Ok((input, ast::tags::DoInitAction { sprite_id, actions }))
 }
 
-pub fn parse_enable_debugger(_input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
-  unimplemented!()
+pub fn parse_enable_debugger(input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
+  let (input, password) = parse_c_string(input)?;
+  Ok((input, ast::tags::EnableDebugger { password }))
 }
 
-pub fn parse_enable_debugger2(_input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
-  unimplemented!()
+pub fn parse_enable_debugger2(input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
+  use nom::bytes::complete::take;
+  let (input, _) = take(2usize)(input)?;
+  let (input, password) = parse_c_string(input)?;
+  Ok((input, ast::tags::EnableDebugger { password }))
 }
 
 pub fn parse_enable_telemetry(_input: &[u8]) -> IResult<&[u8], ()> {

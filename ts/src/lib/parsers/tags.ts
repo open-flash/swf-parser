@@ -936,12 +936,15 @@ export function parseDoInitAction(byteStream: ReadableByteStream): tags.DoInitAc
   return {type: TagType.DoInitAction, spriteId, actions};
 }
 
-export function parseEnableDebugger(_byteStream: ReadableByteStream): tags.EnableDebugger {
-  throw new Incident("NotImplemented", "parseEnableDebugger");
+export function parseEnableDebugger(byteStream: ReadableByteStream): tags.EnableDebugger {
+  const password: string = byteStream.readCString();
+  return {type: TagType.EnableDebugger, password};
 }
 
-export function parseEnableDebugger2(_byteStream: ReadableByteStream): tags.EnableDebugger {
-  throw new Incident("NotImplemented", "parseEnableDebugger2");
+export function parseEnableDebugger2(byteStream: ReadableByteStream): tags.EnableDebugger {
+  byteStream.skip(2);
+  const password: string = byteStream.readCString();
+  return {type: TagType.EnableDebugger, password};
 }
 
 export function parseEnableTelemetry(_byteStream: ReadableByteStream): never {
