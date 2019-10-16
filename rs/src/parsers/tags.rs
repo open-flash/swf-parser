@@ -173,7 +173,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
           88 => map!(record_data, parse_define_font_name, |t| ast::Tag::DefineFontName(t)),
           89 => map!(record_data, parse_start_sound2, |t| ast::Tag::StartSound2(t)),
           90 => map!(record_data, parse_define_bits_jpeg4, |t| ast::Tag::DefineBitmap(t)),
-          91 => map!(record_data, parse_define_font4, |t| ast::Tag::DefineFont(t)),
+          91 => map!(record_data, parse_define_font4, |t| ast::Tag::DefineCffFont(t)),
           93 => map!(record_data, parse_enable_telemetry, |_t| unimplemented!()),
           _ => Ok((
             &[][..],
@@ -624,8 +624,30 @@ fn parse_define_font_any(input: &[u8], version: FontVersion) -> IResult<&[u8], a
   }
 }
 
-pub fn parse_define_font4(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
-  unimplemented!()
+pub fn parse_define_font4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineCffFont> {
+  use nom::combinator::cond;
+
+  let (input, id) = parse_le_u16(input)?;
+  let (input, font_name) = parse_c_string(input)?;
+
+  let (input, flags) = parse_u8(input)?;
+  let is_bold = (flags & (1 << 0)) != 0;
+  let is_italic = (flags & (1 << 1)) != 0;
+  let has_data = (flags & (1 << 2)) != 0;
+  // Bits [3, 7] are reserved
+
+  let (input, data) = cond(has_data, parse_bytes)(input)?;
+
+  Ok((
+    input,
+    ast::tags::DefineCffFont {
+      id,
+      font_name,
+      is_bold,
+      is_italic,
+      data,
+    },
+  ))
 }
 
 pub fn parse_define_font_align_zones<P>(
@@ -958,7 +980,7 @@ pub fn parse_define_video_stream(input: &[u8]) -> IResult<&[u8], ast::tags::Defi
   let (input, flags) = parse_u8(input)?;
   let use_smoothing = (flags & (1 << 0)) != 0;
   let deblocking = video_deblocking_from_id((flags >> 1) & 0b111);
-  // Bits [4,7] are reserved
+  // Bits [4, 7] are reserved
   let (input, codec) = parse_videoc_codec(input)?;
 
   Ok((

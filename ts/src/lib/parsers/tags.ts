@@ -627,8 +627,27 @@ function parseDefineFontAny(byteStream: ReadableByteStream, version: FontVersion
   };
 }
 
-export function parseDefineFont4(_byteStream: ReadableByteStream): tags.DefineFont {
-  throw new Incident("NotImplemented", "parseDefineFont4");
+export function parseDefineFont4(byteStream: ReadableByteStream): tags.DefineCffFont {
+  const id: Uint16 = byteStream.readUint16LE();
+
+  const flags: Uint8 = byteStream.readUint8();
+  const isBold: boolean = (flags & (1 << 0)) !== 0;
+  const isItalic: boolean = (flags & (1 << 1)) !== 0;
+  const hasData: boolean = (flags & (1 << 2)) !== 0;
+  // Bits [3, 7] are reserved
+
+  const fontName: string = byteStream.readCString();
+
+  const data: Uint8Array | undefined = hasData ? byteStream.tailBytes() : undefined;
+
+  return {
+    type: TagType.DefineCffFont,
+    id,
+    fontName,
+    isBold,
+    isItalic,
+    data,
+  };
 }
 
 export function parseDefineFontAlignZones(

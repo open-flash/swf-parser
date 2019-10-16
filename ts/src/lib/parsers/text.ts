@@ -9,7 +9,7 @@ export enum FontVersion {
   // `Font1` is handled apart as `DefineGlyphFont`.
   Font2 = 2,
   Font3 = 3,
-  Font4 = 4,
+  // `Font4` is handled apart as `DefineCffFont`.
 }
 
 export enum TextVersion {

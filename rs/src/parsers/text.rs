@@ -13,7 +13,7 @@ pub enum FontVersion {
   // `Font1` is handled apart as `DefineGlyphFont`.
   Font2,
   Font3,
-  Font4,
+  // `Font4` is handled apart as `DefineCffFont`.
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
