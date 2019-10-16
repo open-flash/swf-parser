@@ -158,7 +158,9 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
           75 => map!(record_data, parse_define_font3, |t| ast::Tag::DefineFont(t)),
           76 => map!(record_data, parse_symbol_class, |t| ast::Tag::SymbolClass(t)),
           77 => map!(record_data, parse_metadata, |t| ast::Tag::Metadata(t)),
-          78 => map!(record_data, parse_define_scaling_grid, |_t| unimplemented!()),
+          78 => map!(record_data, parse_define_scaling_grid, |t| ast::Tag::DefineScalingGrid(
+            t
+          )),
           82 => map!(record_data, parse_do_abc, |t| ast::Tag::DoAbc(t)),
           83 => map!(record_data, parse_define_shape4, |t| ast::Tag::DefineShape(t)),
           84 => map!(record_data, parse_define_morph_shape2, |t| ast::Tag::DefineMorphShape(
@@ -768,8 +770,10 @@ fn parse_define_morph_shape_any(
   ))
 }
 
-pub fn parse_define_scaling_grid(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+pub fn parse_define_scaling_grid(input: &[u8]) -> IResult<&[u8], ast::tags::DefineScalingGrid> {
+  let (input, character_id) = parse_le_u16(input)?;
+  let (input, splitter) = parse_rect(input)?;
+  Ok((input, ast::tags::DefineScalingGrid { character_id, splitter }))
 }
 
 pub fn parse_define_scene_and_frame_label_data_tag(

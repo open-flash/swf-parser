@@ -745,7 +745,6 @@ export function parseDefineMorphShapeAny(
 
   const shape: MorphShape = parseMorphShape(byteStream, morphShapeVersion);
 
-  // TODO: Use this property order in swf-tree
   return {
     type: TagType.DefineMorphShape,
     id,
@@ -759,8 +758,10 @@ export function parseDefineMorphShapeAny(
   };
 }
 
-export function parseDefineScalingGrid(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseDefineScalingGrid");
+export function parseDefineScalingGrid(byteStream: ReadableByteStream): tags.DefineScalingGrid {
+  const characterId: Uint16 = byteStream.readUint16LE();
+  const splitter: Rect = parseRect(byteStream);
+  return {type: TagType.DefineScalingGrid, characterId, splitter};
 }
 
 export function parseDefineSceneAndFrameLabelData(byteStream: ReadableByteStream): tags.DefineSceneAndFrameLabelData {
