@@ -189,6 +189,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
       return parseDefineButtonColorTransform(byteStream);
     case 24:
       return parseProtect(byteStream);
+    case 25:
+      return {type: TagType.EnablePostscript};
     case 26:
       return parsePlaceObject2(byteStream, context.getVersion());
     case 28:

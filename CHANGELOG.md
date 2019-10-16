@@ -4,6 +4,7 @@
 - **[Feature]** Implement parser for `DefineButtonSound` ([#34](https://github.com/open-flash/swf-parser/issues/34)).
 - **[Feature]** Implement parser for `DefineText2` ([#37](https://github.com/open-flash/swf-parser/issues/37)).
 - **[Feature]** Implement parser for `DefineButtonColorTransform` ([#35](https://github.com/open-flash/swf-parser/issues/35)).
+- **[Feature]** Implement parser for `EnablePostscript` ([#92](https://github.com/open-flash/swf-parser/issues/92)).
 
 ### Typescript
 

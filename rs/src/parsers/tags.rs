@@ -104,6 +104,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
             ast::Tag::DefineButtonColorTransform(t)
           }),
           24 => map!(record_data, parse_protect, |t| ast::Tag::Protect(t)),
+          25 => Ok((&[][..], ast::Tag::EnablePostscript)),
           26 => map!(
             record_data,
             |i| parse_place_object2(i, state.get_swf_version() >= 6),
