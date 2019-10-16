@@ -141,7 +141,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
           62 => map!(record_data, parse_define_font_info2, |t| ast::Tag::DefineFontInfo(t)),
           64 => map!(record_data, parse_enable_debugger2, |t| ast::Tag::EnableDebugger(t)),
           65 => map!(record_data, parse_script_limits, |t| ast::Tag::ScriptLimits(t)),
-          66 => map!(record_data, parse_set_tab_index, |_t| unimplemented!()),
+          66 => map!(record_data, parse_set_tab_index, |t| ast::Tag::SetTabIndex(t)),
           69 => map!(record_data, parse_file_attributes_tag, |t| ast::Tag::FileAttributes(t)),
           70 => map!(
             record_data,
@@ -974,18 +974,13 @@ pub fn parse_define_video_stream(input: &[u8]) -> IResult<&[u8], ast::tags::Defi
 pub fn parse_do_abc(input: &[u8]) -> IResult<&[u8], ast::tags::DoAbc> {
   let (input, flags) = parse_le_u32(input)?;
   let (input, name) = parse_c_string(input)?;
-  let (input, data) = (&[][..], input.to_vec());
-  let tag = ast::tags::DoAbc { flags, name, data };
-  Ok((input, tag))
+  let (input, data) = parse_bytes(input)?;
+  Ok((input, ast::tags::DoAbc { flags, name, data }))
 }
 
 pub fn parse_do_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoAction> {
-  Ok((
-    &[][..],
-    ast::tags::DoAction {
-      actions: input.to_vec(),
-    },
-  ))
+  let (input, actions) = parse_bytes(input)?;
+  Ok((input, ast::tags::DoAction { actions }))
 }
 
 pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAction> {
@@ -1283,8 +1278,10 @@ pub fn parse_set_background_color_tag(input: &[u8]) -> IResult<&[u8], ast::tags:
   )
 }
 
-pub fn parse_set_tab_index(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+pub fn parse_set_tab_index(input: &[u8]) -> IResult<&[u8], ast::tags::SetTabIndex> {
+  let (input, depth) = parse_le_u16(input)?;
+  let (input, index) = parse_le_u16(input)?;
+  Ok((input, ast::tags::SetTabIndex { depth, index }))
 }
 
 fn parse_sound_stream_block(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamBlock> {
@@ -1368,7 +1365,7 @@ pub fn parse_symbol_class(input: &[u8]) -> IResult<&[u8], ast::tags::SymbolClass
 pub fn parse_video_frame(input: &[u8]) -> IResult<&[u8], ast::tags::VideoFrame> {
   let (input, video_id) = parse_le_u16(input)?;
   let (input, frame) = parse_le_u16(input)?;
-  let (input, packet) = (&[][..], input.to_vec());
+  let (input, packet) = parse_bytes(input)?;
   Ok((
     input,
     ast::tags::VideoFrame {

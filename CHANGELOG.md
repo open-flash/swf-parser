@@ -7,6 +7,7 @@
 - **[Feature]** Implement parser for `EnablePostscript` ([#92](https://github.com/open-flash/swf-parser/issues/92)).
 - **[Feature]** Implement parser for `DefineVideoStream` ([#40](https://github.com/open-flash/swf-parser/issues/40)).
 - **[Feature]** Implement parser for `VideoFrame` ([#41](https://github.com/open-flash/swf-parser/issues/41)).
+- **[Feature]** Implement parser for `SetTabIndex` ([#44](https://github.com/open-flash/swf-parser/issues/44)).
 
 ### Typescript
 

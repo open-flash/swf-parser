@@ -1166,8 +1166,10 @@ export function parseSetBackgroundColor(byteStream: ReadableByteStream): tags.Se
   return {type: TagType.SetBackgroundColor, color: parseSRgb8(byteStream)};
 }
 
-export function parseSetTabIndex(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseSetTabIndex");
+export function parseSetTabIndex(byteStream: ReadableByteStream): tags.SetTabIndex {
+  const depth: Uint16 = byteStream.readUint16LE();
+  const index: Uint16 = byteStream.readUint16LE();
+  return {type: TagType.SetTabIndex, depth, index};
 }
 
 export function parseSoundStreamBlock(byteStream: ReadableByteStream): tags.SoundStreamBlock {
