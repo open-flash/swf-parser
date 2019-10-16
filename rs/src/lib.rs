@@ -18,6 +18,7 @@ pub mod parsers {
   pub mod sound;
   pub mod tags;
   pub mod text;
+  pub mod video;
 }
 
 pub mod state;

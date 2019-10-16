@@ -22,6 +22,7 @@ use crate::parsers::text::{
   parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits, FontVersion,
   TextVersion,
 };
+use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
 use nom::number::streaming::{
   be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16,
@@ -132,7 +133,9 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
           57 => map!(record_data, parse_import_assets, |t| ast::Tag::ImportAssets(t)),
           58 => map!(record_data, parse_enable_debugger, |t| ast::Tag::EnableDebugger(t)),
           59 => map!(record_data, parse_do_init_action, |t| ast::Tag::DoInitAction(t)),
-          60 => map!(record_data, parse_define_video_stream, |_t| unimplemented!()),
+          60 => map!(record_data, parse_define_video_stream, |t| ast::Tag::DefineVideoStream(
+            t
+          )),
           61 => map!(record_data, parse_video_frame, |_t| unimplemented!()),
           62 => map!(record_data, parse_define_font_info2, |t| ast::Tag::DefineFontInfo(t)),
           64 => map!(record_data, parse_enable_debugger2, |t| ast::Tag::EnableDebugger(t)),
@@ -940,8 +943,31 @@ pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> IResult<&[u8
   ))
 }
 
-pub fn parse_define_video_stream(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+pub fn parse_define_video_stream(input: &[u8]) -> IResult<&[u8], ast::tags::DefineVideoStream> {
+  use nom::combinator::map;
+
+  let (input, id) = parse_le_u16(input)?;
+  let (input, frame_count) = map(parse_le_u16, |fc| usize::from(fc))(input)?;
+  let (input, width) = parse_le_u16(input)?;
+  let (input, height) = parse_le_u16(input)?;
+  let (input, flags) = parse_u8(input)?;
+  let use_smoothing = (flags & (1 << 0)) != 0;
+  let deblocking = video_deblocking_from_id((flags >> 1) & 0b111);
+  // Bits [4,7] are reserved
+  let (input, codec) = parse_videoc_codec(input)?;
+
+  Ok((
+    input,
+    ast::tags::DefineVideoStream {
+      id,
+      frame_count,
+      width,
+      height,
+      use_smoothing,
+      deblocking,
+      codec,
+    },
+  ))
 }
 
 pub fn parse_do_abc(input: &[u8]) -> IResult<&[u8], ast::tags::DoAbc> {

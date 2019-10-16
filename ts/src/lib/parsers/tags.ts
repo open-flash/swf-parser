@@ -2,10 +2,21 @@
 
 import { ReadableBitStream, ReadableByteStream, ReadableStream } from "@open-flash/stream";
 import { Incident } from "incident";
-import { Float32, Sint16, Uint16, Uint2, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
+import {
+  Float32,
+  Sint16,
+  Uint16,
+  Uint2,
+  Uint3,
+  Uint32,
+  Uint4,
+  Uint8,
+  UintSize,
+} from "semantic-types";
 import {
   BlendMode,
-  ClipAction, ColorTransform,
+  ClipAction,
+  ColorTransform,
   ColorTransformWithAlpha,
   Filter,
   Glyph,
@@ -37,6 +48,8 @@ import { SpriteTag } from "swf-tree/sprite-tag";
 import { TagHeader } from "swf-tree/tag-header";
 import { TextAlignment } from "swf-tree/text";
 import { EmSquareSize } from "swf-tree/text/em-square-size";
+import { VideoCodec } from "swf-tree/video/video-codec";
+import { VideoDeblocking } from "swf-tree/video/video-deblocking";
 import { GlyphCountProvider, ParseContext } from "../parse-context";
 import {
   parseBlockCString,
@@ -86,6 +99,7 @@ import {
   parseTextRendererBits,
   TextVersion,
 } from "./text";
+import { getVideoDeblockingFromCode, parseVideoCodec } from "./video";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -877,8 +891,26 @@ export function parseDefineTextAny(byteStream: ReadableByteStream, version: Text
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 
-export function parseDefineVideoStream(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseDefineVideoStream");
+export function parseDefineVideoStream(byteStream: ReadableByteStream): tags.DefineVideoStream {
+  const id: Uint16 = byteStream.readUint16LE();
+  const frameCount: Uint16 = byteStream.readUint16LE();
+  const width: Uint16 = byteStream.readUint16LE();
+  const height: Uint16 = byteStream.readUint16LE();
+  const flags: Uint8 = byteStream.readUint8();
+  const useSmoothing: boolean = (flags & (1 << 0)) !== 0;
+  const deblocking: VideoDeblocking = getVideoDeblockingFromCode(((flags >>> 1) & 0b111) as Uint3);
+  // Bits [4,7] are reserved
+  const codec: VideoCodec = parseVideoCodec(byteStream);
+  return {
+    type: TagType.DefineVideoStream,
+    id,
+    frameCount,
+    width,
+    height,
+    useSmoothing,
+    deblocking,
+    codec,
+  };
 }
 
 export function parseDoAbc(byteStream: ReadableByteStream): tags.DoAbc {
