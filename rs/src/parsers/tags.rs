@@ -100,7 +100,9 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
             |t| ast::Tag::DefineBitmap(t)
           ),
           22 => map!(record_data, parse_define_shape2, |t| ast::Tag::DefineShape(t)),
-          23 => map!(record_data, parse_define_button_cxform, |_t| unimplemented!()),
+          23 => map!(record_data, parse_define_button_color_transform, |t| {
+            ast::Tag::DefineButtonColorTransform(t)
+          }),
           24 => map!(record_data, parse_protect, |t| ast::Tag::Protect(t)),
           26 => map!(
             record_data,
@@ -297,8 +299,11 @@ pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBut
   ))
 }
 
-pub fn parse_define_button_cxform(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+pub fn parse_define_button_color_transform(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButtonColorTransform> {
+  let (input, button_id) = parse_le_u16(input)?;
+  let (input, transform) = parse_color_transform(input)?;
+
+  Ok((input, ast::tags::DefineButtonColorTransform { button_id, transform }))
 }
 
 pub fn parse_define_button_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButtonSound> {

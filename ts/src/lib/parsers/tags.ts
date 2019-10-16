@@ -5,7 +5,7 @@ import { Incident } from "incident";
 import { Float32, Sint16, Uint16, Uint2, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
 import {
   BlendMode,
-  ClipAction,
+  ClipAction, ColorTransform,
   ColorTransformWithAlpha,
   Filter,
   Glyph,
@@ -186,7 +186,7 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
     case 22:
       return parseDefineShape2(byteStream);
     case 23:
-      return parseDefineButtonCxform(byteStream);
+      return parseDefineButtonColorTransform(byteStream);
     case 24:
       return parseProtect(byteStream);
     case 26:
@@ -428,8 +428,14 @@ export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineB
   return {type: TagType.DefineButton, id, trackAsMenu, characters, actions};
 }
 
-export function parseDefineButtonCxform(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseDefineButtonCxform");
+export function parseDefineButtonColorTransform(byteStream: ReadableByteStream): tags.DefineButtonColorTransform {
+  const buttonId: Uint16 = byteStream.readUint16LE();
+  const transform: ColorTransform = parseColorTransform(byteStream);
+  return {
+    type: TagType.DefineButtonColorTransform,
+    buttonId,
+    transform,
+  };
 }
 
 export function parseDefineButtonSound(byteStream: ReadableByteStream): tags.DefineButtonSound {
