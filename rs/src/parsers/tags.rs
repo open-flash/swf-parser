@@ -27,8 +27,8 @@ use crate::parsers::sound::{
 };
 use crate::parsers::text::{
   parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_grid_fitting_bits,
-  parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits, FontVersion,
-  TextVersion,
+  parse_offset_glyphs, parse_text_alignment, parse_text_record_string, parse_text_renderer_bits, FontInfoVersion,
+  FontVersion, TextVersion,
 };
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
@@ -673,6 +673,14 @@ where
 }
 
 pub fn parse_define_font_info(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+  parse_define_font_info_any(input, FontInfoVersion::FontInfo1)
+}
+
+pub fn parse_define_font_info2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+  parse_define_font_info_any(input, FontInfoVersion::FontInfo2)
+}
+
+fn parse_define_font_info_any(input: &[u8], version: FontInfoVersion) -> IResult<&[u8], ast::tags::DefineFontInfo> {
   fn parse_code_units(mut input: &[u8], use_wide_codes: bool) -> IResult<&[u8], Vec<u16>> {
     if use_wide_codes {
       // TODO: Handle odd values
@@ -701,7 +709,11 @@ pub fn parse_define_font_info(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
   let is_ansi = (flags & (1 << 3)) != 0;
   let is_shift_jis = (flags & (1 << 4)) != 0;
   let is_small = (flags & (1 << 5)) != 0;
-  let language = ast::LanguageCode::Auto;
+  let (input, language) = if version >= FontInfoVersion::FontInfo2 {
+    parse_language_code(input)?
+  } else {
+    (input, ast::LanguageCode::Auto)
+  };
   let (input, code_units) = parse_code_units(input, use_wide_codes)?;
 
   Ok((
@@ -718,10 +730,6 @@ pub fn parse_define_font_info(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
       code_units,
     },
   ))
-}
-
-pub fn parse_define_font_info2(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
-  unimplemented!()
 }
 
 pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontName> {

@@ -72,6 +72,7 @@ import {
   parseSoundInfo,
 } from "./sound";
 import {
+  FontInfoVersion,
   FontVersion,
   parseCsmTableHintBits,
   parseFontAlignmentZone,
@@ -670,6 +671,14 @@ export function parseDefineFontAlignZones(
 }
 
 export function parseDefineFontInfo(byteStream: ReadableByteStream): tags.DefineFontInfo {
+  return parseDefineFontInfoAny(byteStream, FontInfoVersion.FontInfo1);
+}
+
+export function parseDefineFontInfo2(byteStream: ReadableByteStream): tags.DefineFontInfo {
+  return parseDefineFontInfoAny(byteStream, FontInfoVersion.FontInfo2);
+}
+
+function parseDefineFontInfoAny(byteStream: ReadableByteStream, version: FontInfoVersion): tags.DefineFontInfo {
   const id: Uint16 = byteStream.readUint16LE();
 
   const fontNameLength: UintSize = byteStream.readUint8();
@@ -682,21 +691,30 @@ export function parseDefineFontInfo(byteStream: ReadableByteStream): tags.Define
   const isAnsi: boolean = (flags & (1 << 3)) !== 0;
   const isShiftJis: boolean = (flags & (1 << 4)) !== 0;
   const isSmall: boolean = (flags & (1 << 5)) !== 0;
+  // Bits [6, 7] are reserved
 
   // const emSquareSize: EmSquareSize = 1024;
 
-  const language: LanguageCode = LanguageCode.Auto;
+  const language: LanguageCode = version >= FontInfoVersion.FontInfo2
+    ? parseLanguageCode(byteStream)
+    : LanguageCode.Auto;
+
+  // if (version >= FontInfoVersion.FontInfo2) {
+  //   if (!(useWideCodes && !isAnsi && !isShiftJis)) {
+  //     throw new Error("AssertionError: Invalid flags");
+  //   }
+  // }
 
   const codeUnits: Uint16[] = [];
   if (useWideCodes) {
     // TODO: Handle odd values.
-    const codeUintCount: UintSize = Math.floor(byteStream.available() / 2);
-    for (let i: UintSize = 0; i < codeUintCount; i++) {
+    const codeUnitCount: UintSize = Math.floor(byteStream.available() / 2);
+    for (let i: UintSize = 0; i < codeUnitCount; i++) {
       codeUnits.push(byteStream.readUint16LE());
     }
   } else {
-    const codeUintCount: UintSize = byteStream.available();
-    for (let i: UintSize = 0; i < codeUintCount; i++) {
+    const codeUnitCount: UintSize = byteStream.available();
+    for (let i: UintSize = 0; i < codeUnitCount; i++) {
       codeUnits.push(byteStream.readUint8());
     }
   }
@@ -713,10 +731,6 @@ export function parseDefineFontInfo(byteStream: ReadableByteStream): tags.Define
     language,
     codeUnits,
   };
-}
-
-export function parseDefineFontInfo2(_byteStream: ReadableByteStream): tags.DefineFontInfo {
-  throw new Incident("NotImplemented", "parseDefineFontInfo2");
 }
 
 export function parseDefineFontName(byteStream: ReadableByteStream): tags.DefineFontName {
@@ -904,7 +918,7 @@ export function parseDefineVideoStream(byteStream: ReadableByteStream): tags.Def
   const flags: Uint8 = byteStream.readUint8();
   const useSmoothing: boolean = (flags & (1 << 0)) !== 0;
   const deblocking: VideoDeblocking = getVideoDeblockingFromCode(((flags >>> 1) & 0b111) as Uint3);
-  // Bits [4,7] are reserved
+  // Bits [4, 7] are reserved
   const codec: VideoCodec = parseVideoCodec(byteStream);
   return {
     type: TagType.DefineVideoStream,
@@ -1214,7 +1228,7 @@ export function parseSoundStreamHeadAny(byteStream: ReadableByteStream): tags.So
   const playbackSoundType: SoundType = (flags & (1 << 0)) !== 0 ? SoundType.Stereo : SoundType.Mono;
   const playbackSoundSize: SoundSize = (flags & (1 << 1)) !== 0 ? 16 : 8;
   const playbackSoundRate: SoundRate = getSoundRateFromCode(((flags >>> 2) & 0b11) as Uint2);
-  // Bits [4,7] are reserved
+  // Bits [4, 7] are reserved
   const streamSoundType: SoundType = (flags & (1 << 8)) !== 0 ? SoundType.Stereo : SoundType.Mono;
   let streamSoundSize: SoundSize = (flags & (1 << 9)) !== 0 ? 16 : 8;
   const streamSoundRate: SoundRate = getSoundRateFromCode(((flags >>> 10) & 0b11) as Uint2);

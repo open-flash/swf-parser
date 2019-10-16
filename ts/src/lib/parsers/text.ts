@@ -12,6 +12,11 @@ export enum FontVersion {
   // `Font4` is handled apart as `DefineCffFont`.
 }
 
+export enum FontInfoVersion {
+  FontInfo1 = 1,
+  FontInfo2 = 2,
+}
+
 export enum TextVersion {
   Text1 = 1,
   Text2 = 2,

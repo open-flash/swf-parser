@@ -22,6 +22,12 @@ pub enum TextVersion {
   Text2,
 }
 
+#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
+pub enum FontInfoVersion {
+  FontInfo1,
+  FontInfo2,
+}
+
 pub fn parse_grid_fitting_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::GridFitting> {
   fn grid_fitting_from_id(grid_fitting_id: u32) -> ast::text::GridFitting {
     match grid_fitting_id {
