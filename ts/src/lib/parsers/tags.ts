@@ -84,6 +84,7 @@ import {
   parseTextAlignment,
   parseTextRecordString,
   parseTextRendererBits,
+  TextVersion,
 } from "./text";
 
 /**
@@ -850,17 +851,22 @@ export function parseDefineSprite(byteStream: ReadableByteStream, context: Parse
 }
 
 export function parseDefineText(byteStream: ReadableByteStream): tags.DefineText {
+  return parseDefineTextAny(byteStream, TextVersion.Text1);
+}
+
+export function parseDefineText2(byteStream: ReadableByteStream): tags.DefineText {
+  return parseDefineTextAny(byteStream, TextVersion.Text2);
+}
+
+export function parseDefineTextAny(byteStream: ReadableByteStream, version: TextVersion): tags.DefineText {
   const id: Uint16 = byteStream.readUint16LE();
   const bounds: Rect = parseRect(byteStream);
   const matrix: Matrix = parseMatrix(byteStream);
   const indexBits: UintSize = byteStream.readUint8();
   const advanceBits: UintSize = byteStream.readUint8();
-  const records: text.TextRecord[] = parseTextRecordString(byteStream, false, indexBits, advanceBits);
+  const hasAlpha: boolean = version >= TextVersion.Text2;
+  const records: text.TextRecord[] = parseTextRecordString(byteStream, hasAlpha, indexBits, advanceBits);
   return {type: TagType.DefineText, id, bounds, matrix, records};
-}
-
-export function parseDefineText2(_byteStream: ReadableByteStream): tags.DefineText {
-  throw new Incident("NotImplemented", "parseDefineText2");
 }
 
 export function parseDefineVideoStream(_byteStream: ReadableByteStream): never {

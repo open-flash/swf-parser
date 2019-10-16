@@ -12,6 +12,11 @@ export enum FontVersion {
   Font4 = 4,
 }
 
+export enum TextVersion {
+  Text1 = 1,
+  Text2 = 2,
+}
+
 export function parseGridFittingBits(bitStream: ReadableBitStream): text.GridFitting {
   const code: UintSize = bitStream.readUint32Bits(3);
   switch (code) {
