@@ -38,7 +38,7 @@ serde_json_v8 = "^0.0.1"
 test-generator = "^0.2.2"
 
 [replace]
-"swf-tree:0.8.0" = { git="https://github.com/open-flash/swf-tree.git", rev = "a57fac7d873bb9ea889e25c68914f78a502fa023" }
+"swf-tree:0.8.0" = { git="https://github.com/open-flash/swf-tree.git", rev = "39d95f5f23ea13703026c2ab12475607dd2caf71" }
 
 # When testing larger files, increasing `opt-level` provides a significant speed-up.
 # [profile.test]

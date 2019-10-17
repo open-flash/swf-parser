@@ -270,7 +270,7 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
     case 89:
       return parseStartSound2(byteStream);
     case 90:
-      return parseDefineBitsJpeg4(byteStream, context.getVersion());
+      return parseDefineBitsJpeg4(byteStream);
     case 91:
       return parseDefineFont4(byteStream);
     case 93:
@@ -370,8 +370,33 @@ export function parseDefineBitsJpeg3(byteStream: ReadableByteStream, swfVersion:
 }
 
 // TODO: Merge defineBitsJpegX functions into defineBitsJpegAny
-export function parseDefineBitsJpeg4(_byteStream: ReadableByteStream, _swfVersion: Uint8): tags.DefineBitmap {
-  throw new Incident("Unsupported DefineBitsJpeg4");
+export function parseDefineBitsJpeg4(byteStream: ReadableByteStream): tags.DefineBitmap {
+  const id: Uint16 = byteStream.readUint16LE();
+
+  const bytePos: UintSize = byteStream.bytePos;
+
+  const dataLen: Uint32 = byteStream.readUint32LE();
+  byteStream.skip(2); // Skip deblock
+  let data: Uint8Array = byteStream.takeBytes(dataLen);
+  let mediaType: ImageType;
+  let imageDimensions: ImageDimensions;
+
+  if (testImageStart(data, JPEG_START)) {
+    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
+    mediaType = "image/x-ajpegd";
+    byteStream.bytePos = bytePos;
+    data = byteStream.tailBytes();
+  } else if (testImageStart(data, PNG_START)) {
+    mediaType = "image/png";
+    imageDimensions = getPngImageDimensions(new ReadableStream(data));
+  } else if (testImageStart(data, GIF_START)) {
+    mediaType = "image/gif";
+    imageDimensions = getGifImageDimensions(new ReadableStream(data));
+  } else {
+    throw new Incident("UnknownBitmapType");
+  }
+
+  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
 }
 
 export function parseDefineBitsLossless(byteStream: ReadableByteStream): tags.DefineBitmap {

@@ -12,6 +12,7 @@
 - **[Feature]** Implement parser for `EnableDebugger` ([#39](https://github.com/open-flash/swf-parser/issues/39), [#43](https://github.com/open-flash/swf-parser/issues/43)).
 - **[Feature]** Implement parser for `DefineFontInfo2` ([#42](https://github.com/open-flash/swf-parser/issues/42)).
 - **[Feature]** Implement parser for `Telemetry` ([#49](https://github.com/open-flash/swf-parser/issues/49)).
+- **[Feature]** Implement parser for `DefineBitsJpeg4` ([#47](https://github.com/open-flash/swf-parser/issues/47)).
 
 ### Typescript
 

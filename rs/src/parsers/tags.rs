@@ -1,11 +1,3 @@
-use nom::number::streaming::{
-  be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16,
-  le_u32 as parse_le_u32, le_u8 as parse_u8,
-};
-use nom::{IResult, Needed};
-use swf_tree as ast;
-use swf_tree::{ButtonCondAction, Glyph};
-
 use crate::parsers::basic_data_types::{
   parse_block_c_string, parse_c_string, parse_color_transform, parse_color_transform_with_alpha, parse_language_code,
   parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8, parse_straight_s_rgba8,
@@ -32,6 +24,14 @@ use crate::parsers::text::{
 };
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
+use nom::number::streaming::{
+  be_u16 as parse_be_u16, le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16,
+  le_u32 as parse_le_u32, le_u8 as parse_u8,
+};
+use nom::{IResult, Needed};
+use std::convert::TryFrom;
+use swf_tree as ast;
+use swf_tree::{ButtonCondAction, Glyph};
 
 fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   match parse_le_u16(input) {
@@ -403,8 +403,46 @@ pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> IResult<&[u8], 
   ))
 }
 
-pub fn parse_define_bits_jpeg4(_input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
-  unimplemented!()
+pub fn parse_define_bits_jpeg4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
+  use nom::bytes::complete::take;
+  use nom::combinator::map;
+
+  let (djpeg_data, id) = parse_le_u16(input)?;
+  let (input, data_len) = map(parse_le_u32, |dl| usize::try_from(dl).unwrap())(djpeg_data)?;
+  let (input, _) = take(2usize)(input)?; // Skip deblock
+  let data = &input[..data_len];
+
+  let (media_type, dimensions, data) = if test_image_start(data, &JPEG_START) {
+    let dimensions = get_jpeg_image_dimensions(&input[..data_len]).unwrap();
+    (ast::ImageType::Ajpegd, dimensions, djpeg_data.to_vec())
+  } else if test_image_start(data, &PNG_START) {
+    (
+      ast::ImageType::Png,
+      get_png_image_dimensions(data).unwrap(),
+      data.to_vec(),
+    )
+  } else if test_image_start(data, &GIF_START) {
+    (
+      ast::ImageType::Gif,
+      get_gif_image_dimensions(data).unwrap(),
+      data.to_vec(),
+    )
+  } else {
+    panic!("UnknownBitmapType");
+  };
+
+  let input: &[u8] = &[][..];
+
+  Ok((
+    input,
+    ast::tags::DefineBitmap {
+      id,
+      width: dimensions.width as u16,
+      height: dimensions.height as u16,
+      media_type,
+      data,
+    },
+  ))
 }
 
 pub fn parse_define_bits_lossless(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
