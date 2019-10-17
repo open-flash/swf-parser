@@ -1,6 +1,6 @@
 [package]
 name = "swf-parser"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Charles Samborski <demurgos@demurgos.net>"]
 description = "SWF parser"
 documentation = "https://github.com/open-flash/swf-parser"
