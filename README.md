@@ -33,13 +33,11 @@ analysis tools or any other project having to manipulate SWF files.
 
 ## Status
 
-Still experimental but getting better.
+Ready for use.
 
-The Rust and Typescript implementations are kept in sync. They both support the
-following kinds of tags: shape definitions, morph shape definitions, bitmaps,
-AVM1 actions, sprites, sound streams, control tags. It represents about two
-thirds of the SWF tags and is enough to play simple movies.
-Help is welcome to complete the parser.
+The Rust and Typescript implementations are kept in sync. They both have
+complete support for SWF file format specification.
+Help is welcome to improve ergonomics and performance of the parser.
 
 ## Contributing
 
