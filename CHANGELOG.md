@@ -11,6 +11,7 @@
 - **[Feature]** Implement parser for `DefineCffFont` ([#48](https://github.com/open-flash/swf-parser/issues/48)).
 - **[Feature]** Implement parser for `EnableDebugger` ([#39](https://github.com/open-flash/swf-parser/issues/39), [#43](https://github.com/open-flash/swf-parser/issues/43)).
 - **[Feature]** Implement parser for `DefineFontInfo2` ([#42](https://github.com/open-flash/swf-parser/issues/42)).
+- **[Feature]** Implement parser for `Telemetry` ([#49](https://github.com/open-flash/swf-parser/issues/49)).
 
 ### Typescript
 

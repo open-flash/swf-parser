@@ -174,7 +174,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
           89 => map!(record_data, parse_start_sound2, |t| ast::Tag::StartSound2(t)),
           90 => map!(record_data, parse_define_bits_jpeg4, |t| ast::Tag::DefineBitmap(t)),
           91 => map!(record_data, parse_define_font4, |t| ast::Tag::DefineCffFont(t)),
-          93 => map!(record_data, parse_enable_telemetry, |_t| unimplemented!()),
+          93 => map!(record_data, parse_enable_telemetry, |t| ast::Tag::Telemetry(t)),
           _ => Ok((
             &[][..],
             ast::Tag::Unknown(ast::tags::Unknown {
@@ -1035,8 +1035,18 @@ pub fn parse_enable_debugger2(input: &[u8]) -> IResult<&[u8], ast::tags::EnableD
   Ok((input, ast::tags::EnableDebugger { password }))
 }
 
-pub fn parse_enable_telemetry(_input: &[u8]) -> IResult<&[u8], ()> {
-  unimplemented!()
+pub fn parse_enable_telemetry(input: &[u8]) -> IResult<&[u8], ast::tags::Telemetry> {
+  use nom::bytes::complete::take;
+  use nom::combinator::cond;
+  const HASH_SIZE: usize = 32;
+  let (input, _) = take(2usize)(input)?;
+  let (input, password) = cond(input.len() >= HASH_SIZE, take(HASH_SIZE))(input)?;
+  Ok((
+    input,
+    ast::tags::Telemetry {
+      password: password.map(|p| p.to_vec()),
+    },
+  ))
 }
 
 pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAssets> {

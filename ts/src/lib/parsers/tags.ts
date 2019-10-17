@@ -961,8 +961,12 @@ export function parseEnableDebugger2(byteStream: ReadableByteStream): tags.Enabl
   return {type: TagType.EnableDebugger, password};
 }
 
-export function parseEnableTelemetry(_byteStream: ReadableByteStream): never {
-  throw new Incident("NotImplemented", "parseEnableTelemetry");
+export function parseEnableTelemetry(byteStream: ReadableByteStream): tags.Telemetry {
+  byteStream.skip(2);
+  const password: Uint8Array | undefined = byteStream.available() >= 32
+    ? byteStream.takeBytes(32)
+    : undefined;
+  return {type: TagType.Telemetry, password};
 }
 
 export function parseExportAssets(byteStream: ReadableByteStream): tags.ExportAssets {
