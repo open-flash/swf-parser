@@ -6,6 +6,7 @@ use nom::number::streaming::{
   le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
 use nom::IResult;
+use std::convert::TryFrom;
 use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
@@ -28,17 +29,13 @@ pub enum FontInfoVersion {
   FontInfo2,
 }
 
-pub fn parse_grid_fitting_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::GridFitting> {
-  fn grid_fitting_from_id(grid_fitting_id: u32) -> ast::text::GridFitting {
-    match grid_fitting_id {
-      0 => ast::text::GridFitting::None,
-      1 => ast::text::GridFitting::Pixel,
-      2 => ast::text::GridFitting::SubPixel,
-      _ => panic!("UnexpectedGridFittingId: {}", grid_fitting_id),
-    }
+pub(crate) fn grid_fitting_from_code(grid_fitting_code: u8) -> ast::text::GridFitting {
+  match grid_fitting_code {
+    0 => ast::text::GridFitting::None,
+    1 => ast::text::GridFitting::Pixel,
+    2 => ast::text::GridFitting::SubPixel,
+    _ => panic!("UnexpectedGridFittingCode: {}", grid_fitting_code),
   }
-
-  nom::combinator::map(|i| parse_u32_bits(i, 3), grid_fitting_from_id)(input)
 }
 
 pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::CsmTableHint> {
@@ -54,36 +51,34 @@ pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize
   nom::combinator::map(|i| parse_u32_bits(i, 2), csm_table_hint_from_id)(input)
 }
 
-pub fn parse_text_renderer_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::TextRenderer> {
-  fn text_renderer_from_id(text_renderer_id: u32) -> ast::text::TextRenderer {
-    match text_renderer_id {
-      0 => ast::text::TextRenderer::Normal,
-      1 => ast::text::TextRenderer::Advanced,
-      _ => panic!("UnexpectedTextRendererId: {}", text_renderer_id),
-    }
+pub(crate) fn text_renderer_from_code(text_renderer_code: u8) -> ast::text::TextRenderer {
+  match text_renderer_code {
+    0 => ast::text::TextRenderer::Normal,
+    1 => ast::text::TextRenderer::Advanced,
+    _ => panic!("UnexpectedTextRendererCode: {}", text_renderer_code),
   }
-
-  nom::combinator::map(|i| parse_u32_bits(i, 2), text_renderer_from_id)(input)
 }
 
 pub fn parse_font_alignment_zone(input: &[u8]) -> IResult<&[u8], ast::text::FontAlignmentZone> {
-  do_parse!(
+  use nom::combinator::map;
+  use nom::multi::count;
+  let (input, zone_count) = map(parse_u8, usize::from)(input)?;
+  let (input, data) = count(parse_font_alignment_zone_data, zone_count)(input)?;
+  let (input, flags) = parse_u8(input)?;
+  Ok((
     input,
-    data: length_count!(parse_u8, parse_font_alignment_zone_data)
-      >> flags: parse_u8
-      >> (ast::text::FontAlignmentZone {
-        data: data,
-        has_x: (flags & (1 << 0)) != 0,
-        has_y: (flags & (1 << 1)) != 0
-      })
-  )
+    ast::text::FontAlignmentZone {
+      data,
+      has_x: (flags & (1 << 0)) != 0,
+      has_y: (flags & (1 << 1)) != 0,
+    },
+  ))
 }
 
 pub fn parse_font_alignment_zone_data(input: &[u8]) -> IResult<&[u8], ast::text::FontAlignmentZoneData> {
-  do_parse!(
-    input,
-    origin: parse_le_f16 >> size: parse_le_f16 >> (ast::text::FontAlignmentZoneData { origin, size })
-  )
+  let (input, origin) = parse_le_f16(input)?;
+  let (input, size) = parse_le_f16(input)?;
+  Ok((input, ast::text::FontAlignmentZoneData { origin, size }))
 }
 
 pub fn parse_text_record_string(
@@ -118,6 +113,7 @@ pub fn parse_text_record(
   index_bits: usize,
   advance_bits: usize,
 ) -> IResult<&[u8], ast::text::TextRecord> {
+  use nom::bits::bits;
   use nom::combinator::{cond, map};
 
   let (input, flags) = parse_u8(input)?;
@@ -147,17 +143,17 @@ pub fn parse_text_record(
   let (input, offset_y) = cond(has_offset_y, parse_le_i16)(input)?;
   let (input, font_size) = cond(has_font, parse_le_u16)(input)?;
   let (input, entry_count) = parse_u8(input)?;
-  let (input, entries) = bits!(input, |i| parse_glyph_entries(i, entry_count, index_bits, advance_bits))?;
+  let (input, entries) = bits(|i| parse_glyph_entries(i, entry_count, index_bits, advance_bits))(input)?;
 
   Ok((
     input,
     ast::text::TextRecord {
-      font_id: font_id,
-      color: color,
+      font_id,
+      color,
       offset_x: offset_x.unwrap_or_default(),
       offset_y: offset_y.unwrap_or_default(),
-      font_size: font_size,
-      entries: entries,
+      font_size,
+      entries,
     },
   ))
 }
@@ -188,22 +184,17 @@ pub fn parse_offset_glyphs(
   glyph_count: usize,
   use_wide_offsets: bool,
 ) -> IResult<&[u8], Vec<ast::Glyph>> {
-  let parsed_offsets = if use_wide_offsets {
-    pair!(
-      input,
-      length_count!(value!(glyph_count), map!(parse_le_u32, |x| x as usize)),
-      map!(parse_le_u32, |x| x as usize)
-    )
+  use nom::combinator::map;
+  use nom::multi::count;
+
+  let (offsets, end_offset) = if use_wide_offsets {
+    let (input, offsets) = count(map(parse_le_u32, |x| usize::try_from(x).unwrap()), glyph_count)(input)?;
+    let (_, end_offset) = map(parse_le_u32, |x| usize::try_from(x).unwrap())(input)?;
+    (offsets, end_offset)
   } else {
-    pair!(
-      input,
-      length_count!(value!(glyph_count), map!(parse_le_u16, |x| x as usize)),
-      map!(parse_le_u16, |x| x as usize)
-    )
-  };
-  let (offsets, end_offset) = match parsed_offsets {
-    Ok((_, o)) => o,
-    Err(e) => return Err(e),
+    let (input, offsets) = count(map(parse_le_u16, usize::from), glyph_count)(input)?;
+    let (_, end_offset) = map(parse_le_u16, usize::from)(input)?;
+    (offsets, end_offset)
   };
   let mut glyphs: Vec<ast::Glyph> = Vec::with_capacity(glyph_count);
   for i in 0..glyph_count {
@@ -218,51 +209,55 @@ pub fn parse_offset_glyphs(
       Err(e) => return Err(e),
     };
   }
-  value!(&input[end_offset..], glyphs)
+  Ok((&input[end_offset..], glyphs))
 }
 
 pub fn parse_kerning_record(input: &[u8]) -> IResult<&[u8], ast::text::KerningRecord> {
-  do_parse!(
+  let (input, left) = parse_le_u16(input)?;
+  let (input, right) = parse_le_u16(input)?;
+  let (input, adjustment) = parse_le_i16(input)?;
+  Ok((
     input,
-    left: parse_le_u16
-      >> right: parse_le_u16
-      >> adjustment: parse_le_i16
-      >> (ast::text::KerningRecord {
-        left: left,
-        right: right,
-        adjustment: adjustment,
-      })
-  )
+    ast::text::KerningRecord {
+      left,
+      right,
+      adjustment,
+    },
+  ))
 }
 
 pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> IResult<&[u8], ast::text::FontLayout> {
-  do_parse!(
+  use nom::combinator::map;
+  use nom::multi::count;
+  let (input, ascent) = parse_le_u16(input)?;
+  let (input, descent) = parse_le_u16(input)?;
+  let (input, leading) = parse_le_u16(input)?;
+  let (input, advances) = count(parse_le_u16, glyph_count)(input)?;
+  let (input, bounds) = count(parse_rect, glyph_count)(input)?;
+  let (input, kerning) = {
+    let (input, kerning_count) = map(parse_le_u16, usize::from)(input)?;
+    count(parse_kerning_record, kerning_count)(input)?
+  };
+  Ok((
     input,
-    ascent: parse_le_u16
-      >> descent: parse_le_u16
-      >> leading: parse_le_u16
-      >> advances: length_count!(value!(glyph_count), parse_le_u16)
-      >> bounds: length_count!(value!(glyph_count), parse_rect)
-      >> kerning: length_count!(parse_le_u16, parse_kerning_record)
-      >> (ast::text::FontLayout {
-        ascent: ascent,
-        descent: descent,
-        leading: leading,
-        advances,
-        bounds,
-        kerning,
-      })
-  )
+    ast::text::FontLayout {
+      ascent: ascent,
+      descent: descent,
+      leading: leading,
+      advances,
+      bounds,
+      kerning,
+    },
+  ))
 }
 
 pub fn parse_text_alignment(input: &[u8]) -> IResult<&[u8], ast::text::TextAlignment> {
-  switch!(
-    input,
-    parse_u8,
-    0 => value!(ast::text::TextAlignment::Left) |
-    1 => value!(ast::text::TextAlignment::Right) |
-    2 => value!(ast::text::TextAlignment::Center) |
-    3 => value!(ast::text::TextAlignment::Justify)
-    // TODO(demurgos): Throw error
-  )
+  let (input, code) = parse_u8(input)?;
+  match code {
+    0 => Ok((input, ast::text::TextAlignment::Left)),
+    1 => Ok((input, ast::text::TextAlignment::Right)),
+    2 => Ok((input, ast::text::TextAlignment::Center)),
+    3 => Ok((input, ast::text::TextAlignment::Justify)),
+    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+  }
 }

@@ -1,3 +1,9 @@
+# Next
+
+### Rust
+
+- **[Fix]** Remove `nom` macros.
+
 # 0.9.0 (2019-10-17)
 
 - **[Breaking change]** Update to `swf-tree@0.9`.

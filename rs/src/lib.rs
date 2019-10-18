@@ -1,5 +1,4 @@
 extern crate inflate;
-#[macro_use]
 extern crate nom;
 extern crate num_traits;
 extern crate swf_fixed;

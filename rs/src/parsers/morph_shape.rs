@@ -1,13 +1,13 @@
-use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
-use nom::{IResult as NomResult, Needed};
-use swf_tree as ast;
-
 use crate::parsers::basic_data_types::{
-  do_parse_u16_bits, parse_bool_bits, parse_i32_bits, parse_le_fixed8_p8, parse_matrix, parse_straight_s_rgba8,
-  parse_u16_bits, parse_u32_bits,
+  do_parse_u16_bits, do_parse_u32_bits, parse_bool_bits, parse_i32_bits, parse_le_fixed8_p8, parse_matrix,
+  parse_straight_s_rgba8, parse_u16_bits,
 };
 use crate::parsers::gradient::parse_morph_gradient;
 use crate::parsers::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits};
+use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
+use nom::{IResult as NomResult, Needed};
+use std::convert::TryFrom;
+use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum MorphShapeVersion {
@@ -16,10 +16,12 @@ pub enum MorphShapeVersion {
 }
 
 pub fn parse_morph_shape(input: &[u8], version: MorphShapeVersion) -> NomResult<&[u8], ast::MorphShape> {
+  use nom::bits::bits;
+  use nom::bytes::complete::take;
   // Skip offset to end records
   // TODO: Read this offset and assert that it is valid
-  let (input, _end_offset) = take!(input, 4)?;
-  bits!(input, |i| parse_morph_shape_bits(i, version))
+  let (input, _end_offset) = take(4usize)(input)?;
+  bits(|i| parse_morph_shape_bits(i, version))(input)
 }
 
 pub fn parse_morph_shape_bits(
@@ -46,16 +48,17 @@ pub fn parse_morph_shape_bits(
 }
 
 fn parse_style_bits_len(input: &[u8]) -> NomResult<&[u8], (usize, usize)> {
-  bits!(input, parse_style_bits_len_bits)
+  use nom::bits::bits;;
+  bits(parse_style_bits_len_bits)(input)
 }
 
 fn parse_style_bits_len_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), (usize, usize)> {
-  do_parse!(
-    input,
-    fill_bits: map!(|i| parse_u32_bits(i, 4), |x| x as usize)
-      >> line_bits: map!(|i| parse_u32_bits(i, 4), |x| x as usize)
-      >> ((fill_bits, line_bits))
-  )
+  use nom::combinator::map;
+
+  let (input, fill_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let (input, line_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+
+  Ok((input, (fill_bits, line_bits)))
 }
 
 pub struct InternalMorphShapeStyles {
@@ -69,19 +72,23 @@ pub fn parse_morph_shape_styles_bits(
   input: (&[u8], usize),
   version: MorphShapeVersion,
 ) -> NomResult<(&[u8], usize), InternalMorphShapeStyles> {
-  do_parse!(
+  use nom::bits::bytes;
+  use nom::combinator::map;
+
+  let (input, fill) = bytes(parse_morph_fill_style_list)(input)?;
+  let (input, line) = bytes(|i| parse_morph_line_style_list(i, version))(input)?;
+  let (input, fill_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let (input, line_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+
+  Ok((
     input,
-    fill: bytes!(parse_morph_fill_style_list)
-      >> line: bytes!(|i| parse_morph_line_style_list(i, version))
-      >> fill_bits: map!(|i| parse_u32_bits(i, 4), |x| x as usize)
-      >> line_bits: map!(|i| parse_u32_bits(i, 4), |x| x as usize)
-      >> (InternalMorphShapeStyles {
-        fill: fill,
-        line: line,
-        fill_bits: fill_bits,
-        line_bits: line_bits,
-      })
-  )
+    InternalMorphShapeStyles {
+      fill,
+      line,
+      fill_bits,
+      line_bits,
+    },
+  ))
 }
 
 enum MixedShapeRecord {
@@ -300,21 +307,28 @@ pub fn parse_morph_style_change_bits(
 }
 
 pub fn parse_morph_fill_style_list(input: &[u8]) -> NomResult<&[u8], Vec<ast::MorphFillStyle>> {
-  length_count!(input, |i| parse_list_length(i, true), parse_morph_fill_style)
+  use nom::multi::count;
+  let (input, style_count) = parse_list_length(input, true)?;
+  count(parse_morph_fill_style, style_count)(input)
 }
 
 pub fn parse_morph_fill_style(input: &[u8]) -> NomResult<&[u8], ast::MorphFillStyle> {
-  switch!(input, parse_u8,
-    0x00 => map!(parse_morph_solid_fill, |fill| ast::MorphFillStyle::Solid(fill)) |
-    0x10 => map!(parse_morph_linear_gradient_fill, |fill| ast::MorphFillStyle::LinearGradient(fill)) |
-    0x12 => map!(parse_morph_radial_gradient_fill, |fill| ast::MorphFillStyle::RadialGradient(fill)) |
-    0x13 => map!(parse_morph_focal_gradient_fill, |fill| ast::MorphFillStyle::FocalGradient(fill)) |
-    0x40 => map!(|i| parse_morph_bitmap_fill(i, true, true), |fill| ast::MorphFillStyle::Bitmap(fill)) |
-    0x41 => map!(|i| parse_morph_bitmap_fill(i, false, true), |fill| ast::MorphFillStyle::Bitmap(fill)) |
-    0x42 => map!(|i| parse_morph_bitmap_fill(i, true, false), |fill| ast::MorphFillStyle::Bitmap(fill)) |
-    0x43 => map!(|i| parse_morph_bitmap_fill(i, false, false), |fill| ast::MorphFillStyle::Bitmap(fill))
-    // TODO: Error
-  )
+  use nom::combinator::map;
+  let (input, code) = parse_u8(input)?;
+  match code {
+    0x00 => map(parse_morph_solid_fill, ast::MorphFillStyle::Solid)(input),
+    0x10 => map(parse_morph_linear_gradient_fill, ast::MorphFillStyle::LinearGradient)(input),
+    0x12 => map(parse_morph_radial_gradient_fill, ast::MorphFillStyle::RadialGradient)(input),
+    0x13 => map(parse_morph_focal_gradient_fill, ast::MorphFillStyle::FocalGradient)(input),
+    0x40 => map(|i| parse_morph_bitmap_fill(i, true, true), ast::MorphFillStyle::Bitmap)(input),
+    0x41 => map(|i| parse_morph_bitmap_fill(i, false, true), ast::MorphFillStyle::Bitmap)(input),
+    0x42 => map(|i| parse_morph_bitmap_fill(i, true, false), ast::MorphFillStyle::Bitmap)(input),
+    0x43 => map(
+      |i| parse_morph_bitmap_fill(i, false, false),
+      ast::MorphFillStyle::Bitmap,
+    )(input),
+    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+  }
 }
 
 pub fn parse_morph_bitmap_fill(
@@ -322,19 +336,19 @@ pub fn parse_morph_bitmap_fill(
   repeating: bool,
   smoothed: bool,
 ) -> NomResult<&[u8], ast::fill_styles::MorphBitmap> {
-  do_parse!(
+  let (input, bitmap_id) = parse_le_u16(input)?;
+  let (input, matrix) = parse_matrix(input)?;
+  let (input, morph_matrix) = parse_matrix(input)?;
+  Ok((
     input,
-    bitmap_id: parse_le_u16
-      >> matrix: parse_matrix
-      >> morph_matrix: parse_matrix
-      >> (ast::fill_styles::MorphBitmap {
-        bitmap_id: bitmap_id,
-        matrix: matrix,
-        morph_matrix: morph_matrix,
-        repeating: repeating,
-        smoothed: smoothed,
-      })
-  )
+    ast::fill_styles::MorphBitmap {
+      bitmap_id,
+      matrix,
+      morph_matrix,
+      repeating,
+      smoothed,
+    },
+  ))
 }
 
 pub fn parse_morph_focal_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::fill_styles::MorphFocalGradient> {
@@ -347,11 +361,11 @@ pub fn parse_morph_focal_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::fi
   Ok((
     input,
     ast::fill_styles::MorphFocalGradient {
-      matrix: matrix,
-      morph_matrix: morph_matrix,
-      gradient: gradient,
-      focal_point: focal_point,
-      morph_focal_point: morph_focal_point,
+      matrix,
+      morph_matrix,
+      gradient,
+      focal_point,
+      morph_focal_point,
     },
   ))
 }
@@ -364,9 +378,9 @@ pub fn parse_morph_linear_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::f
   Ok((
     input,
     ast::fill_styles::MorphLinearGradient {
-      matrix: matrix,
-      morph_matrix: morph_matrix,
-      gradient: gradient,
+      matrix,
+      morph_matrix,
+      gradient,
     },
   ))
 }
@@ -379,56 +393,60 @@ pub fn parse_morph_radial_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::f
   Ok((
     input,
     ast::fill_styles::MorphRadialGradient {
-      matrix: matrix,
-      morph_matrix: morph_matrix,
-      gradient: gradient,
+      matrix,
+      morph_matrix,
+      gradient,
     },
   ))
 }
 
 pub fn parse_morph_solid_fill(input: &[u8]) -> NomResult<&[u8], ast::fill_styles::MorphSolid> {
-  do_parse!(
-    input,
-    color: parse_straight_s_rgba8
-      >> morph_color: parse_straight_s_rgba8
-      >> (ast::fill_styles::MorphSolid { color, morph_color })
-  )
+  let (input, color) = parse_straight_s_rgba8(input)?;
+  let (input, morph_color) = parse_straight_s_rgba8(input)?;
+  Ok((input, ast::fill_styles::MorphSolid { color, morph_color }))
 }
 
 pub fn parse_morph_line_style_list(
   input: &[u8],
   version: MorphShapeVersion,
 ) -> NomResult<&[u8], Vec<ast::MorphLineStyle>> {
-  if version >= MorphShapeVersion::MorphShape2 {
-    length_count!(input, |i| parse_list_length(i, true), parse_morph_line_style2)
-  } else {
-    length_count!(input, |i| parse_list_length(i, true), parse_morph_line_style1)
-  }
+  use nom::multi::count;
+  let (input, style_count) = parse_list_length(input, true)?;
+  count(
+    if version >= MorphShapeVersion::MorphShape2 {
+      parse_morph_line_style2
+    } else {
+      parse_morph_line_style1
+    },
+    style_count,
+  )(input)
 }
 
 pub fn parse_morph_line_style1(input: &[u8]) -> NomResult<&[u8], ast::MorphLineStyle> {
-  do_parse!(
+  let (input, width) = parse_le_u16(input)?;
+  let (input, morph_width) = parse_le_u16(input)?;
+  let (input, color) = parse_straight_s_rgba8(input)?;
+  let (input, morph_color) = parse_straight_s_rgba8(input)?;
+  Ok((
     input,
-    width: parse_le_u16
-      >> morph_width: parse_le_u16
-      >> color: parse_straight_s_rgba8
-      >> morph_color: parse_straight_s_rgba8
-      >> (ast::MorphLineStyle {
-        width: width,
-        morph_width: morph_width,
-        start_cap: ast::CapStyle::Round,
-        end_cap: ast::CapStyle::Round,
-        join: ast::JoinStyle::Round,
-        no_h_scale: false,
-        no_v_scale: false,
-        no_close: false,
-        pixel_hinting: false,
-        fill: ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid { color, morph_color }),
-      })
-  )
+    ast::MorphLineStyle {
+      width,
+      morph_width,
+      start_cap: ast::CapStyle::Round,
+      end_cap: ast::CapStyle::Round,
+      join: ast::JoinStyle::Round,
+      no_h_scale: false,
+      no_v_scale: false,
+      no_close: false,
+      pixel_hinting: false,
+      fill: ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid { color, morph_color }),
+    },
+  ))
 }
 
 pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineStyle> {
+  use nom::combinator::map;
+
   fn cap_style_from_id(cap_style_id: u16) -> ast::CapStyle {
     match cap_style_id {
       0 => ast::CapStyle::Round,
@@ -438,39 +456,42 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
     }
   }
 
-  do_parse!(
+  let (input, width) = parse_le_u16(input)?;
+  let (input, morph_width) = parse_le_u16(input)?;
+  let (input, flags) = parse_le_u16(input)?;
+  let pixel_hinting = (flags & (1 << 0)) != 0;
+  let no_v_scale = (flags & (1 << 1)) != 0;
+  let no_h_scale = (flags & (1 << 2)) != 0;
+  let has_fill = (flags & (1 << 3)) != 0;
+  let join_style_id = (flags >> 4) & 0b11;
+  let start_cap_style_id = (flags >> 6) & 0b11;
+  let end_cap_style_id = (flags >> 8) & 0b11;
+  let no_close = (flags & (1 << 10)) != 0;
+  // (Skip bits [11, 15])
+  let start_cap = cap_style_from_id(start_cap_style_id);
+  let end_cap = cap_style_from_id(end_cap_style_id);
+  let (input, join) = match join_style_id {
+    0 => (input, ast::JoinStyle::Round),
+    1 => (input, ast::JoinStyle::Bevel),
+    2 => map(parse_le_u16, |limit| {
+      ast::JoinStyle::Miter(ast::join_styles::Miter { limit })
+    })(input)?,
+    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+  };
+  let (input, fill) = if has_fill {
+    parse_morph_fill_style(input)?
+  } else {
+    let (input, color) = parse_straight_s_rgba8(input)?;
+    let (input, morph_color) = parse_straight_s_rgba8(input)?;
+    (
+      input,
+      ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid { color, morph_color }),
+    )
+  };
+
+  Ok((
     input,
-    width: parse_le_u16 >>
-    morph_width: parse_le_u16 >>
-    flags: parse_le_u16 >>
-    pixel_hinting: value!((flags & (1 << 0)) != 0) >>
-    no_v_scale: value!((flags & (1 << 1)) != 0) >>
-    no_h_scale: value!((flags & (1 << 2)) != 0) >>
-    has_fill: value!((flags & (1 << 3)) != 0) >>
-    join_style_id: value!((flags >> 4) & 0b11) >>
-    start_cap_style_id: value!((flags >> 6) & 0b11) >>
-    end_cap_style_id: value!((flags >> 8) & 0b11) >>
-    no_close: value!((flags & (1 << 10)) != 0) >>
-    // (Skip bits [11, 15])
-    start_cap: map!(value!(start_cap_style_id), cap_style_from_id) >>
-    end_cap: map!(value!(end_cap_style_id), cap_style_from_id) >>
-    join: switch!(value!(join_style_id),
-      0 => value!(ast::JoinStyle::Round) |
-      1 => value!(ast::JoinStyle::Bevel) |
-      2 => do_parse!(
-        limit: parse_le_u16 >>
-        (ast::JoinStyle::Miter(ast::join_styles::Miter{limit}))
-      )
-    ) >>
-    fill: switch!(value!(has_fill),
-      true => call!(parse_morph_fill_style) |
-      false => do_parse!(
-        color: parse_straight_s_rgba8 >>
-        morph_color: parse_straight_s_rgba8 >>
-        (ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid { color, morph_color }))
-      )
-    ) >>
-    (ast::MorphLineStyle {
+    ast::MorphLineStyle {
       width,
       morph_width,
       fill,
@@ -481,6 +502,6 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
       join,
       start_cap,
       end_cap,
-    })
-  )
+    },
+  ))
 }

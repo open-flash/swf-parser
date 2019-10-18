@@ -1,11 +1,13 @@
+use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
+use nom::{IResult as NomResult, Needed};
+use std::convert::TryFrom;
+use swf_tree as ast;
+
 use crate::parsers::basic_data_types::{
   do_parse_i32_bits, do_parse_u16_bits, do_parse_u32_bits, parse_bool_bits, parse_i32_bits, parse_le_fixed8_p8,
   parse_matrix, parse_s_rgb8, parse_straight_s_rgba8, parse_u16_bits,
 };
 use crate::parsers::gradient::parse_gradient;
-use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
-use nom::{IResult as NomResult, Needed};
-use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum ShapeVersion {
@@ -16,21 +18,23 @@ pub enum ShapeVersion {
 }
 
 pub fn parse_glyph(input: &[u8]) -> NomResult<&[u8], ast::Glyph> {
-  bits!(input, parse_glyph_bits)
+  use nom::bits::bits;
+  bits(parse_glyph_bits)(input)
 }
 
 pub fn parse_glyph_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::Glyph> {
   use nom::combinator::map;
 
-  let (input, fill_bits) = map(do_parse_u32_bits(4), |x| x as usize)(input)?;
-  let (input, line_bits) = map(do_parse_u32_bits(4), |x| x as usize)(input)?;
+  let (input, fill_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let (input, line_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
   let (input, records) = parse_shape_record_string_bits(input, fill_bits, line_bits, ShapeVersion::Shape1)?;
 
   Ok((input, ast::Glyph { records }))
 }
 
 pub fn parse_shape(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], ast::Shape> {
-  bits!(input, |i| parse_shape_bits(i, version))
+  use nom::bits::bits;
+  bits(|i| parse_shape_bits(i, version))(input)
 }
 
 pub fn parse_shape_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResult<(&[u8], usize), ast::Shape> {
@@ -58,19 +62,23 @@ pub struct ShapeStyles {
 }
 
 pub fn parse_shape_styles_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResult<(&[u8], usize), ShapeStyles> {
-  do_parse!(
+  use nom::bits::bytes;
+  use nom::combinator::map;
+
+  let (input, fill) = bytes(|i| parse_fill_style_list(i, version))(input)?;
+  let (input, line) = bytes(|i| parse_line_style_list(i, version))(input)?;
+  let (input, fill_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let (input, line_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+
+  Ok((
     input,
-    fill: bytes!(|i| parse_fill_style_list(i, version))
-      >> line: bytes!(|i| parse_line_style_list(i, version))
-      >> fill_bits: map!(do_parse_u32_bits(4), |x| x as usize)
-      >> line_bits: map!(do_parse_u32_bits(4), |x| x as usize)
-      >> (ShapeStyles {
-        fill: fill,
-        line: line,
-        fill_bits: fill_bits,
-        line_bits: line_bits,
-      })
-  )
+    ShapeStyles {
+      fill,
+      line,
+      fill_bits,
+      line_bits,
+    },
+  ))
 }
 
 pub fn parse_shape_record_string_bits(
@@ -248,37 +256,48 @@ pub fn parse_list_length(input: &[u8], allow_extended: bool) -> NomResult<&[u8],
 }
 
 pub fn parse_fill_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<ast::FillStyle>> {
-  length_count!(input, |i| parse_list_length(i, version >= ShapeVersion::Shape2), |i| {
-    parse_fill_style(i, version >= ShapeVersion::Shape3)
-  })
+  use nom::multi::count;
+  let (input, style_count) = parse_list_length(input, version >= ShapeVersion::Shape2)?;
+  count(|i| parse_fill_style(i, version >= ShapeVersion::Shape3), style_count)(input)
 }
 
 pub fn parse_fill_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::FillStyle> {
-  switch!(input, parse_u8,
-    0x00 => map!(|i| parse_solid_fill(i, with_alpha), |fill| ast::FillStyle::Solid(fill)) |
-    0x10 => map!(|i| parse_linear_gradient_fill(i, with_alpha), |fill| ast::FillStyle::LinearGradient(fill)) |
-    0x12 => map!(|i| parse_radial_gradient_fill(i, with_alpha), |fill| ast::FillStyle::RadialGradient(fill)) |
-    0x13 => map!(|i| parse_focal_gradient_fill(i, with_alpha), |fill| ast::FillStyle::FocalGradient(fill)) |
-    0x40 => map!(|i| parse_bitmap_fill(i, true, true), |fill| ast::FillStyle::Bitmap(fill)) |
-    0x41 => map!(|i| parse_bitmap_fill(i, false, true), |fill| ast::FillStyle::Bitmap(fill)) |
-    0x42 => map!(|i| parse_bitmap_fill(i, true, false), |fill| ast::FillStyle::Bitmap(fill)) |
-    0x43 => map!(|i| parse_bitmap_fill(i, false, false), |fill| ast::FillStyle::Bitmap(fill))
-    // TODO: Error
-  )
+  use nom::combinator::map;
+  let (input, code) = parse_u8(input)?;
+  match code {
+    0x00 => map(|i| parse_solid_fill(i, with_alpha), ast::FillStyle::Solid)(input),
+    0x10 => map(
+      |i| parse_linear_gradient_fill(i, with_alpha),
+      ast::FillStyle::LinearGradient,
+    )(input),
+    0x12 => map(
+      |i| parse_radial_gradient_fill(i, with_alpha),
+      ast::FillStyle::RadialGradient,
+    )(input),
+    0x13 => map(
+      |i| parse_focal_gradient_fill(i, with_alpha),
+      ast::FillStyle::FocalGradient,
+    )(input),
+    0x40 => map(|i| parse_bitmap_fill(i, true, true), ast::FillStyle::Bitmap)(input),
+    0x41 => map(|i| parse_bitmap_fill(i, false, true), ast::FillStyle::Bitmap)(input),
+    0x42 => map(|i| parse_bitmap_fill(i, true, false), ast::FillStyle::Bitmap)(input),
+    0x43 => map(|i| parse_bitmap_fill(i, false, false), ast::FillStyle::Bitmap)(input),
+    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+  }
 }
 
 pub fn parse_bitmap_fill(input: &[u8], repeating: bool, smoothed: bool) -> NomResult<&[u8], ast::fill_styles::Bitmap> {
-  do_parse!(
+  let (input, bitmap_id) = parse_le_u16(input)?;
+  let (input, matrix) = parse_matrix(input)?;
+  Ok((
     input,
-    bitmap_id: parse_le_u16
-      >> matrix: parse_matrix
-      >> (ast::fill_styles::Bitmap {
-        bitmap_id: bitmap_id,
-        matrix: matrix,
-        repeating: repeating,
-        smoothed: smoothed
-      })
-  )
+    ast::fill_styles::Bitmap {
+      bitmap_id,
+      matrix,
+      repeating,
+      smoothed,
+    },
+  ))
 }
 
 pub fn parse_focal_gradient_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::fill_styles::FocalGradient> {
@@ -289,9 +308,9 @@ pub fn parse_focal_gradient_fill(input: &[u8], with_alpha: bool) -> NomResult<&[
   Ok((
     input,
     ast::fill_styles::FocalGradient {
-      matrix: matrix,
-      gradient: gradient,
-      focal_point: focal_point,
+      matrix,
+      gradient,
+      focal_point,
     },
   ))
 }
@@ -303,13 +322,7 @@ pub fn parse_linear_gradient_fill(
   let (input, matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_gradient(input, with_alpha)?;
 
-  Ok((
-    input,
-    ast::fill_styles::LinearGradient {
-      matrix: matrix,
-      gradient: gradient,
-    },
-  ))
+  Ok((input, ast::fill_styles::LinearGradient { matrix, gradient }))
 }
 
 pub fn parse_radial_gradient_fill(
@@ -319,58 +332,62 @@ pub fn parse_radial_gradient_fill(
   let (input, matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_gradient(input, with_alpha)?;
 
-  Ok((
-    input,
-    ast::fill_styles::RadialGradient {
-      matrix: matrix,
-      gradient: gradient,
-    },
-  ))
+  Ok((input, ast::fill_styles::RadialGradient { matrix, gradient }))
 }
 
 pub fn parse_solid_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::fill_styles::Solid> {
-  do_parse!(
-    input,
-    color:
-      switch!(value!(with_alpha),
-        true => call!(parse_straight_s_rgba8) |
-        false => map!(parse_s_rgb8, |c| ast::StraightSRgba8 {r: c.r, g: c.g, b: c.b, a: 255})
-      )
-      >> (ast::fill_styles::Solid { color: color })
-  )
+  use nom::combinator::map;
+  let (input, color) = if with_alpha {
+    parse_straight_s_rgba8(input)?
+  } else {
+    map(parse_s_rgb8, |c| ast::StraightSRgba8 {
+      r: c.r,
+      g: c.g,
+      b: c.b,
+      a: 255,
+    })(input)?
+  };
+  Ok((input, ast::fill_styles::Solid { color }))
 }
 
 pub fn parse_line_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<ast::LineStyle>> {
+  use nom::multi::count;
   let (input, style_count) = parse_list_length(input, version >= ShapeVersion::Shape2)?;
 
   if version >= ShapeVersion::Shape4 {
-    nom::multi::count(parse_line_style2, style_count)(input)
+    count(parse_line_style2, style_count)(input)
   } else {
-    nom::multi::count(|i| parse_line_style(i, version >= ShapeVersion::Shape3), style_count)(input)
+    count(|i| parse_line_style(i, version >= ShapeVersion::Shape3), style_count)(input)
   }
 }
 
 pub fn parse_line_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::LineStyle> {
-  do_parse!(
+  use nom::combinator::map;
+  let (input, width) = parse_le_u16(input)?;
+  let (input, color) = if with_alpha {
+    parse_straight_s_rgba8(input)?
+  } else {
+    map(parse_s_rgb8, |c| ast::StraightSRgba8 {
+      r: c.r,
+      g: c.g,
+      b: c.b,
+      a: 255,
+    })(input)?
+  };
+  Ok((
     input,
-    width: parse_le_u16
-      >> color:
-        switch!(value!(with_alpha),
-          true => call!(parse_straight_s_rgba8) |
-          false => map!(parse_s_rgb8, |c| ast::StraightSRgba8 {r: c.r, g: c.g, b: c.b, a: 255})
-        )
-      >> (ast::LineStyle {
-        width: width,
-        start_cap: ast::CapStyle::Round,
-        end_cap: ast::CapStyle::Round,
-        join: ast::JoinStyle::Round,
-        no_h_scale: false,
-        no_v_scale: false,
-        no_close: false,
-        pixel_hinting: false,
-        fill: ast::FillStyle::Solid(ast::fill_styles::Solid { color }),
-      })
-  )
+    ast::LineStyle {
+      width,
+      start_cap: ast::CapStyle::Round,
+      end_cap: ast::CapStyle::Round,
+      join: ast::JoinStyle::Round,
+      no_h_scale: false,
+      no_v_scale: false,
+      no_close: false,
+      pixel_hinting: false,
+      fill: ast::FillStyle::Solid(ast::fill_styles::Solid { color }),
+    },
+  ))
 }
 
 pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {

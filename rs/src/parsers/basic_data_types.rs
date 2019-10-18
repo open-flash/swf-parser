@@ -6,6 +6,7 @@ use nom::{IResult, Needed};
 use std::f32;
 use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
 use swf_tree as ast;
+use swf_tree::LanguageCode;
 
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8], usize), bool> {
@@ -131,11 +132,13 @@ pub fn parse_u32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize)
 }
 
 pub fn parse_be_f16(input: &[u8]) -> IResult<&[u8], f32> {
-  map!(input, parse_be_u16, transmute_u16_to_f16)
+  use nom::combinator::map;
+  map(parse_be_u16, transmute_u16_to_f16)(input)
 }
 
 pub fn parse_le_f16(input: &[u8]) -> IResult<&[u8], f32> {
-  map!(input, parse_le_u16, transmute_u16_to_f16)
+  use nom::combinator::map;
+  map(parse_le_u16, transmute_u16_to_f16)(input)
 }
 
 fn transmute_u16_to_f16(bits: u16) -> f32 {
@@ -144,21 +147,25 @@ fn transmute_u16_to_f16(bits: u16) -> f32 {
 
 /// Parse the little-endian representation of an unsigned fixed-point 8.8-bit number
 pub fn parse_le_ufixed8_p8(input: &[u8]) -> IResult<&[u8], Ufixed8P8> {
-  map!(input, parse_le_u16, |x| Ufixed8P8::from_epsilons(x))
+  use nom::combinator::map;
+  map(parse_le_u16, Ufixed8P8::from_epsilons)(input)
 }
 
 /// Parse the little-endian representation of a signed fixed-point 8.8-bit number
 pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Sfixed8P8> {
-  map!(input, parse_le_i16, |x| Sfixed8P8::from_epsilons(x))
+  use nom::combinator::map;
+  map(parse_le_i16, Sfixed8P8::from_epsilons)(input)
 }
 
 /// Parse the little-endian representation of a signed fixed-point 16.16-bit number
 pub fn parse_le_fixed16_p16(input: &[u8]) -> IResult<&[u8], Sfixed16P16> {
-  map!(input, parse_le_i32, |x| Sfixed16P16::from_epsilons(x))
+  use nom::combinator::map;
+  map(parse_le_i32, Sfixed16P16::from_epsilons)(input)
 }
 
 pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
-  bits!(input, parse_rect_bits)
+  use nom::bits::bits;
+  bits(parse_rect_bits)(input)
 }
 
 pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Rect> {
@@ -181,17 +188,18 @@ pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Re
 }
 
 pub fn parse_s_rgb8(input: &[u8]) -> IResult<&[u8], ast::SRgb8> {
-  do_parse!(
-    input,
-    r: parse_u8 >> g: parse_u8 >> b: parse_u8 >> (ast::SRgb8 { r: r, g: g, b: b })
-  )
+  let (input, r) = parse_u8(input)?;
+  let (input, g) = parse_u8(input)?;
+  let (input, b) = parse_u8(input)?;
+  Ok((input, ast::SRgb8 { r, g, b }))
 }
 
 pub fn parse_straight_s_rgba8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba8> {
-  do_parse!(
-    input,
-    r: parse_u8 >> g: parse_u8 >> b: parse_u8 >> a: parse_u8 >> (ast::StraightSRgba8 { r: r, g: g, b: b, a: a })
-  )
+  let (input, r) = parse_u8(input)?;
+  let (input, g) = parse_u8(input)?;
+  let (input, b) = parse_u8(input)?;
+  let (input, a) = parse_u8(input)?;
+  Ok((input, ast::StraightSRgba8 { r, g, b, a }))
 }
 
 /// Skip `n` bits
@@ -220,19 +228,22 @@ pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize)
 
 #[allow(unused_variables)]
 pub fn parse_language_code(input: &[u8]) -> IResult<&[u8], ast::LanguageCode> {
-  switch!(input, parse_u8,
-    0 => value!(ast::LanguageCode::Auto) |
-    1 => value!(ast::LanguageCode::Latin) |
-    2 => value!(ast::LanguageCode::Japanese) |
-    3 => value!(ast::LanguageCode::Korean) |
-    4 => value!(ast::LanguageCode::SimplifiedChinese) |
-    5 => value!(ast::LanguageCode::TraditionalChinese)
-    // TODO(demurgos): Error on unexpected value
-  )
+  let (input, code) = parse_u8(input)?;
+  let lang: LanguageCode = match code {
+    0 => ast::LanguageCode::Auto,
+    1 => ast::LanguageCode::Latin,
+    2 => ast::LanguageCode::Japanese,
+    3 => ast::LanguageCode::Korean,
+    4 => ast::LanguageCode::SimplifiedChinese,
+    5 => ast::LanguageCode::TraditionalChinese,
+    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+  };
+  Ok((input, lang))
 }
 
 pub fn parse_matrix(input: &[u8]) -> IResult<&[u8], ast::Matrix> {
-  bits!(input, parse_matrix_bits)
+  use nom::bits::bits;
+  bits(parse_matrix_bits)(input)
 }
 
 pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Matrix> {
@@ -271,14 +282,14 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::
 }
 
 pub fn parse_named_id(input: &[u8]) -> IResult<&[u8], ast::NamedId> {
-  do_parse!(
-    input,
-    id: parse_le_u16 >> name: parse_c_string >> (ast::NamedId { id: id, name: name })
-  )
+  let (input, id) = parse_le_u16(input)?;
+  let (input, name) = parse_c_string(input)?;
+  Ok((input, ast::NamedId { id, name }))
 }
 
 pub fn parse_color_transform(input: &[u8]) -> IResult<&[u8], ast::ColorTransform> {
-  bits!(input, parse_color_transform_bits)
+  use nom::bits::bits;
+  bits(parse_color_transform_bits)(input)
 }
 
 #[allow(unused_variables)]
@@ -316,7 +327,8 @@ pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usiz
 }
 
 pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::ColorTransformWithAlpha> {
-  bits!(input, parse_color_transform_with_alpha_bits)
+  use nom::bits::bits;
+  bits(parse_color_transform_with_alpha_bits)(input)
 }
 
 #[allow(unused_variables)]

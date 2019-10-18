@@ -5,19 +5,21 @@ use swf_tree as ast;
 
 #[allow(unused_variables)]
 pub fn parse_color_stop(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::ColorStop> {
-  do_parse!(
-    input,
-    ratio: parse_u8
-      >> color:
-        switch!(value!(with_alpha),
-          true => call!(parse_straight_s_rgba8) |
-          false => map!(parse_s_rgb8, |c| ast::StraightSRgba8 {r: c.r, g: c.g, b: c.b, a: 255})
-        )
-      >> (ast::ColorStop {
-        ratio: ratio,
-        color: color,
-      })
-  )
+  use nom::combinator::map;
+
+  let (input, ratio) = parse_u8(input)?;
+  let (input, color) = if with_alpha {
+    parse_straight_s_rgba8(input)?
+  } else {
+    map(parse_s_rgb8, |c| ast::StraightSRgba8 {
+      r: c.r,
+      g: c.g,
+      b: c.b,
+      a: 255,
+    })(input)?
+  };
+
+  Ok((input, ast::ColorStop { ratio, color }))
 }
 
 pub fn parse_gradient(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::Gradient> {
