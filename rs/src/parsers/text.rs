@@ -5,7 +5,7 @@ use crate::parsers::shape::parse_glyph;
 use nom::number::streaming::{
   le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
-use nom::IResult;
+use nom::IResult as NomResult;
 use std::convert::TryFrom;
 use swf_tree as ast;
 
@@ -38,7 +38,7 @@ pub(crate) fn grid_fitting_from_code(grid_fitting_code: u8) -> ast::text::GridFi
   }
 }
 
-pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::text::CsmTableHint> {
+pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::text::CsmTableHint> {
   fn csm_table_hint_from_id(csm_table_hint_id: u32) -> ast::text::CsmTableHint {
     match csm_table_hint_id {
       0 => ast::text::CsmTableHint::Thin,
@@ -59,7 +59,7 @@ pub(crate) fn text_renderer_from_code(text_renderer_code: u8) -> ast::text::Text
   }
 }
 
-pub fn parse_font_alignment_zone(input: &[u8]) -> IResult<&[u8], ast::text::FontAlignmentZone> {
+pub fn parse_font_alignment_zone(input: &[u8]) -> NomResult<&[u8], ast::text::FontAlignmentZone> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, zone_count) = map(parse_u8, usize::from)(input)?;
@@ -75,7 +75,7 @@ pub fn parse_font_alignment_zone(input: &[u8]) -> IResult<&[u8], ast::text::Font
   ))
 }
 
-pub fn parse_font_alignment_zone_data(input: &[u8]) -> IResult<&[u8], ast::text::FontAlignmentZoneData> {
+pub fn parse_font_alignment_zone_data(input: &[u8]) -> NomResult<&[u8], ast::text::FontAlignmentZoneData> {
   let (input, origin) = parse_le_f16(input)?;
   let (input, size) = parse_le_f16(input)?;
   Ok((input, ast::text::FontAlignmentZoneData { origin, size }))
@@ -86,7 +86,7 @@ pub fn parse_text_record_string(
   has_alpha: bool,
   index_bits: usize,
   advance_bits: usize,
-) -> IResult<&[u8], Vec<ast::text::TextRecord>> {
+) -> NomResult<&[u8], Vec<ast::text::TextRecord>> {
   let mut result: Vec<ast::text::TextRecord> = Vec::new();
   let mut current_input: &[u8] = input;
   while current_input.len() > 0 {
@@ -112,7 +112,7 @@ pub fn parse_text_record(
   has_alpha: bool,
   index_bits: usize,
   advance_bits: usize,
-) -> IResult<&[u8], ast::text::TextRecord> {
+) -> NomResult<&[u8], ast::text::TextRecord> {
   use nom::bits::bits;
   use nom::combinator::{cond, map};
 
@@ -163,7 +163,7 @@ pub fn parse_glyph_entries(
   entry_count: u8,
   index_bits: usize,
   advance_bits: usize,
-) -> IResult<(&[u8], usize), Vec<ast::text::GlyphEntry>> {
+) -> NomResult<(&[u8], usize), Vec<ast::text::GlyphEntry>> {
   nom::multi::count(|i| parse_glyph_entry(i, index_bits, advance_bits), entry_count as usize)(input)
 }
 
@@ -171,7 +171,7 @@ pub fn parse_glyph_entry(
   input: (&[u8], usize),
   index_bits: usize,
   advance_bits: usize,
-) -> IResult<(&[u8], usize), ast::text::GlyphEntry> {
+) -> NomResult<(&[u8], usize), ast::text::GlyphEntry> {
   use nom::combinator::map;
   let (input, index) = map(do_parse_u32_bits(index_bits), |x| x as usize)(input)?;
   let (input, advance) = parse_i32_bits(input, advance_bits)?;
@@ -183,7 +183,7 @@ pub fn parse_offset_glyphs(
   input: &[u8],
   glyph_count: usize,
   use_wide_offsets: bool,
-) -> IResult<&[u8], Vec<ast::Glyph>> {
+) -> NomResult<&[u8], Vec<ast::Glyph>> {
   use nom::combinator::map;
   use nom::multi::count;
 
@@ -212,7 +212,7 @@ pub fn parse_offset_glyphs(
   Ok((&input[end_offset..], glyphs))
 }
 
-pub fn parse_kerning_record(input: &[u8]) -> IResult<&[u8], ast::text::KerningRecord> {
+pub fn parse_kerning_record(input: &[u8]) -> NomResult<&[u8], ast::text::KerningRecord> {
   let (input, left) = parse_le_u16(input)?;
   let (input, right) = parse_le_u16(input)?;
   let (input, adjustment) = parse_le_i16(input)?;
@@ -226,7 +226,7 @@ pub fn parse_kerning_record(input: &[u8]) -> IResult<&[u8], ast::text::KerningRe
   ))
 }
 
-pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> IResult<&[u8], ast::text::FontLayout> {
+pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> NomResult<&[u8], ast::text::FontLayout> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, ascent) = parse_le_u16(input)?;
@@ -251,7 +251,7 @@ pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> IResult<&[u8], ast
   ))
 }
 
-pub fn parse_text_alignment(input: &[u8]) -> IResult<&[u8], ast::text::TextAlignment> {
+pub fn parse_text_alignment(input: &[u8]) -> NomResult<&[u8], ast::text::TextAlignment> {
   let (input, code) = parse_u8(input)?;
   match code {
     0 => Ok((input, ast::text::TextAlignment::Left)),

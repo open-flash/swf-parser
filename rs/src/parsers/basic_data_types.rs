@@ -2,14 +2,14 @@ use half::f16;
 use nom::number::streaming::{
   be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16, le_u8 as parse_u8,
 };
-use nom::{IResult, Needed};
+use nom::{IResult as NomResult, Needed};
 use std::f32;
 use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
 use swf_tree as ast;
 use swf_tree::LanguageCode;
 
 /// Parse the bit-encoded representation of a bool (1 bit)
-pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8], usize), bool> {
+pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> NomResult<(&[u8], usize), bool> {
   if input_slice.len() < 1 {
     Err(::nom::Err::Incomplete(Needed::Size(1)))
   } else {
@@ -24,7 +24,7 @@ pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> IResult<(&[u8]
 
 /// Parse a sequence of bytes up to the end of input or first nul-byte. If there
 /// is a nul-byte, it is consumed but not included in the result.
-pub fn parse_block_c_string(input: &[u8]) -> IResult<&[u8], String> {
+pub fn parse_block_c_string(input: &[u8]) -> NomResult<&[u8], String> {
   let input = match memchr::memchr(0, input) {
     Some(idx) => &input[0..idx],
     None => input,
@@ -34,7 +34,7 @@ pub fn parse_block_c_string(input: &[u8]) -> IResult<&[u8], String> {
 
 /// Parse a null-terminated sequence of bytes. The nul-byte is consumed but not included in the
 /// result.
-pub fn parse_c_string(input: &[u8]) -> IResult<&[u8], String> {
+pub fn parse_c_string(input: &[u8]) -> NomResult<&[u8], String> {
   const NUL_BYTE: &[u8] = b"\x00";
 
   let (input, str) = nom::bytes::streaming::take_until(NUL_BYTE)(input)?;
@@ -44,7 +44,7 @@ pub fn parse_c_string(input: &[u8]) -> IResult<&[u8], String> {
 }
 
 /// Parse the variable-length encoded little-endian representation of an unsigned 32-bit integer
-pub fn parse_leb128_u32(input: &[u8]) -> IResult<&[u8], u32> {
+pub fn parse_leb128_u32(input: &[u8]) -> NomResult<&[u8], u32> {
   let mut result: u32 = 0;
   let mut current_input: &[u8] = input;
   for i in 0..5 {
@@ -64,19 +64,19 @@ pub fn parse_leb128_u32(input: &[u8]) -> IResult<&[u8], u32> {
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 16.16-bit number
-pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed16P16> {
+pub fn parse_fixed16_p16_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usize), Sfixed16P16> {
   use nom::combinator::map;
   map(do_parse_i32_bits(n), Sfixed16P16::from_epsilons)(input)
 }
 
 /// Parse the bit-encoded big-endian representation of a signed fixed-point 8.8-bit number
-pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), Sfixed8P8> {
+pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usize), Sfixed8P8> {
   use nom::combinator::map;
   map(do_parse_i16_bits(n), Sfixed8P8::from_epsilons)(input)
 }
 
 /// Generates a bits parser reading a `i16` over `n` bits.
-pub fn do_parse_i16_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), i16> {
+pub fn do_parse_i16_bits(n: usize) -> impl Fn((&[u8], usize)) -> NomResult<(&[u8], usize), i16> {
   move |input: (&[u8], usize)| {
     let (input, x) = nom::bits::streaming::take::<_, u16, _, _>(n)(input)?;
     let x = match n {
@@ -95,12 +95,12 @@ pub fn do_parse_i16_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8],
 }
 
 /// Parse the bit-encoded big-endian representation of a signed 16-bit integer
-pub fn parse_i16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), i16> {
+pub fn parse_i16_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usize), i16> {
   do_parse_i16_bits(n)(input)
 }
 
 /// Generates a bits parser reading a `i32` over `n` bits.
-pub fn do_parse_i32_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), i32> {
+pub fn do_parse_i32_bits(n: usize) -> impl Fn((&[u8], usize)) -> NomResult<(&[u8], usize), i32> {
   move |input: (&[u8], usize)| {
     let (input, x) = nom::bits::streaming::take::<_, u32, _, _>(n)(input)?;
     let x = match n {
@@ -118,25 +118,25 @@ pub fn do_parse_i32_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8],
   }
 }
 
-pub fn parse_i32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), i32> {
+pub fn parse_i32_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usize), i32> {
   do_parse_i32_bits(n)(input)
 }
 
 /// Generates a bits parser reading a `u32` over `n` bits.
-pub fn do_parse_u32_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), u32> {
+pub fn do_parse_u32_bits(n: usize) -> impl Fn((&[u8], usize)) -> NomResult<(&[u8], usize), u32> {
   move |input: (&[u8], usize)| nom::bits::streaming::take::<_, u32, _, _>(n)(input)
 }
 
-pub fn parse_u32_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), u32> {
+pub fn parse_u32_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usize), u32> {
   do_parse_u32_bits(n)(input)
 }
 
-pub fn parse_be_f16(input: &[u8]) -> IResult<&[u8], f32> {
+pub fn parse_be_f16(input: &[u8]) -> NomResult<&[u8], f32> {
   use nom::combinator::map;
   map(parse_be_u16, transmute_u16_to_f16)(input)
 }
 
-pub fn parse_le_f16(input: &[u8]) -> IResult<&[u8], f32> {
+pub fn parse_le_f16(input: &[u8]) -> NomResult<&[u8], f32> {
   use nom::combinator::map;
   map(parse_le_u16, transmute_u16_to_f16)(input)
 }
@@ -146,29 +146,29 @@ fn transmute_u16_to_f16(bits: u16) -> f32 {
 }
 
 /// Parse the little-endian representation of an unsigned fixed-point 8.8-bit number
-pub fn parse_le_ufixed8_p8(input: &[u8]) -> IResult<&[u8], Ufixed8P8> {
+pub fn parse_le_ufixed8_p8(input: &[u8]) -> NomResult<&[u8], Ufixed8P8> {
   use nom::combinator::map;
   map(parse_le_u16, Ufixed8P8::from_epsilons)(input)
 }
 
 /// Parse the little-endian representation of a signed fixed-point 8.8-bit number
-pub fn parse_le_fixed8_p8(input: &[u8]) -> IResult<&[u8], Sfixed8P8> {
+pub fn parse_le_fixed8_p8(input: &[u8]) -> NomResult<&[u8], Sfixed8P8> {
   use nom::combinator::map;
   map(parse_le_i16, Sfixed8P8::from_epsilons)(input)
 }
 
 /// Parse the little-endian representation of a signed fixed-point 16.16-bit number
-pub fn parse_le_fixed16_p16(input: &[u8]) -> IResult<&[u8], Sfixed16P16> {
+pub fn parse_le_fixed16_p16(input: &[u8]) -> NomResult<&[u8], Sfixed16P16> {
   use nom::combinator::map;
   map(parse_le_i32, Sfixed16P16::from_epsilons)(input)
 }
 
-pub fn parse_rect(input: &[u8]) -> IResult<&[u8], ast::Rect> {
+pub fn parse_rect(input: &[u8]) -> NomResult<&[u8], ast::Rect> {
   use nom::bits::bits;
   bits(parse_rect_bits)(input)
 }
 
-pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Rect> {
+pub fn parse_rect_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::Rect> {
   use nom::combinator::map;
 
   let (input, n_bits) = map(do_parse_u16_bits(5), |x| x as usize)(input)?;
@@ -187,14 +187,14 @@ pub fn parse_rect_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Re
   ))
 }
 
-pub fn parse_s_rgb8(input: &[u8]) -> IResult<&[u8], ast::SRgb8> {
+pub fn parse_s_rgb8(input: &[u8]) -> NomResult<&[u8], ast::SRgb8> {
   let (input, r) = parse_u8(input)?;
   let (input, g) = parse_u8(input)?;
   let (input, b) = parse_u8(input)?;
   Ok((input, ast::SRgb8 { r, g, b }))
 }
 
-pub fn parse_straight_s_rgba8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba8> {
+pub fn parse_straight_s_rgba8(input: &[u8]) -> NomResult<&[u8], ast::StraightSRgba8> {
   let (input, r) = parse_u8(input)?;
   let (input, g) = parse_u8(input)?;
   let (input, b) = parse_u8(input)?;
@@ -203,7 +203,7 @@ pub fn parse_straight_s_rgba8(input: &[u8]) -> IResult<&[u8], ast::StraightSRgba
 }
 
 /// Skip `n` bits
-pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> IResult<(&[u8], usize), ()> {
+pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> NomResult<(&[u8], usize), ()> {
   let slice_len: usize = input_slice.len();
   let available_bits: usize = 8 * slice_len - bit_pos;
   let skipped_full_bytes = (bit_pos + n) / 8;
@@ -217,17 +217,17 @@ pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> IResult<(&
 }
 
 /// Generates a bits parser reading a `u16` over `n` bits.
-pub fn do_parse_u16_bits(n: usize) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), u16> {
+pub fn do_parse_u16_bits(n: usize) -> impl Fn((&[u8], usize)) -> NomResult<(&[u8], usize), u16> {
   move |input: (&[u8], usize)| nom::bits::streaming::take::<_, u16, _, _>(n)(input)
 }
 
 /// Parse the bit-encoded big-endian representation of an unsigned 16-bit integer
-pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> IResult<(&[u8], usize), u16> {
+pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usize), u16> {
   do_parse_u16_bits(n)(input)
 }
 
 #[allow(unused_variables)]
-pub fn parse_language_code(input: &[u8]) -> IResult<&[u8], ast::LanguageCode> {
+pub fn parse_language_code(input: &[u8]) -> NomResult<&[u8], ast::LanguageCode> {
   let (input, code) = parse_u8(input)?;
   let lang: LanguageCode = match code {
     0 => ast::LanguageCode::Auto,
@@ -241,12 +241,12 @@ pub fn parse_language_code(input: &[u8]) -> IResult<&[u8], ast::LanguageCode> {
   Ok((input, lang))
 }
 
-pub fn parse_matrix(input: &[u8]) -> IResult<&[u8], ast::Matrix> {
+pub fn parse_matrix(input: &[u8]) -> NomResult<&[u8], ast::Matrix> {
   use nom::bits::bits;
   bits(parse_matrix_bits)(input)
 }
 
-pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::Matrix> {
+pub fn parse_matrix_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::Matrix> {
   let (input, has_scale) = parse_bool_bits(input)?;
   let (input, (scale_x, scale_y)) = if has_scale {
     let (input, scale_bits) = parse_u16_bits(input, 5)?;
@@ -281,19 +281,19 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::
   ))
 }
 
-pub fn parse_named_id(input: &[u8]) -> IResult<&[u8], ast::NamedId> {
+pub fn parse_named_id(input: &[u8]) -> NomResult<&[u8], ast::NamedId> {
   let (input, id) = parse_le_u16(input)?;
   let (input, name) = parse_c_string(input)?;
   Ok((input, ast::NamedId { id, name }))
 }
 
-pub fn parse_color_transform(input: &[u8]) -> IResult<&[u8], ast::ColorTransform> {
+pub fn parse_color_transform(input: &[u8]) -> NomResult<&[u8], ast::ColorTransform> {
   use nom::bits::bits;
   bits(parse_color_transform_bits)(input)
 }
 
 #[allow(unused_variables)]
-pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usize), ast::ColorTransform> {
+pub fn parse_color_transform_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::ColorTransform> {
   let (input, has_add) = parse_bool_bits(input)?;
   let (input, has_mult) = parse_bool_bits(input)?;
   let (input, n_bits) = parse_u16_bits(input, 4)?;
@@ -326,7 +326,7 @@ pub fn parse_color_transform_bits(input: (&[u8], usize)) -> IResult<(&[u8], usiz
   ))
 }
 
-pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::ColorTransformWithAlpha> {
+pub fn parse_color_transform_with_alpha(input: &[u8]) -> NomResult<&[u8], ast::ColorTransformWithAlpha> {
   use nom::bits::bits;
   bits(parse_color_transform_with_alpha_bits)(input)
 }
@@ -334,7 +334,7 @@ pub fn parse_color_transform_with_alpha(input: &[u8]) -> IResult<&[u8], ast::Col
 #[allow(unused_variables)]
 pub fn parse_color_transform_with_alpha_bits(
   input: (&[u8], usize),
-) -> IResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
+) -> NomResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
   let (input, has_add) = parse_bool_bits(input)?;
   let (input, has_mult) = parse_bool_bits(input)?;
   let (input, n_bits) = parse_u16_bits(input, 4)?;

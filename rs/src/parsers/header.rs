@@ -1,11 +1,11 @@
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
-use nom::IResult;
+use nom::IResult as NomResult;
 use std::convert::TryFrom;
 use swf_tree as ast;
 
 use crate::parsers::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
 
-pub fn parse_compression_method(input: &[u8]) -> IResult<&[u8], ast::CompressionMethod> {
+pub fn parse_compression_method(input: &[u8]) -> NomResult<&[u8], ast::CompressionMethod> {
   use nom::bytes::streaming::take;
   let (input, tag) = take(3usize)(input)?;
   match tag {
@@ -16,7 +16,7 @@ pub fn parse_compression_method(input: &[u8]) -> IResult<&[u8], ast::Compression
   }
 }
 
-pub fn parse_swf_signature(input: &[u8]) -> IResult<&[u8], ast::SwfSignature> {
+pub fn parse_swf_signature(input: &[u8]) -> NomResult<&[u8], ast::SwfSignature> {
   use nom::combinator::map;
 
   let (input, compression_method) = parse_compression_method(input)?;
@@ -33,7 +33,7 @@ pub fn parse_swf_signature(input: &[u8]) -> IResult<&[u8], ast::SwfSignature> {
   ))
 }
 
-pub fn parse_header(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::Header> {
+pub fn parse_header(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Header> {
   let (input, frame_size) = parse_rect(input)?;
   let (input, frame_rate) = parse_le_ufixed8_p8(input)?;
   let (input, frame_count) = parse_le_u16(input)?;

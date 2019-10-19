@@ -2,11 +2,11 @@ use crate::parsers::basic_data_types::{parse_le_fixed16_p16, parse_le_fixed8_p8,
 use nom::number::streaming::{
   le_f32 as parse_le_f32, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
-use nom::IResult;
+use nom::IResult as NomResult;
 use swf_tree as ast;
 
 #[allow(unused_variables)]
-pub fn parse_blend_mode(input: &[u8]) -> IResult<&[u8], ast::BlendMode> {
+pub fn parse_blend_mode(input: &[u8]) -> NomResult<&[u8], ast::BlendMode> {
   let (input, code) = parse_u8(input)?;
   let blend_mode: ast::BlendMode = match code {
     0 => ast::BlendMode::Normal,
@@ -29,7 +29,7 @@ pub fn parse_blend_mode(input: &[u8]) -> IResult<&[u8], ast::BlendMode> {
   Ok((input, blend_mode))
 }
 
-pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> IResult<&[u8], Vec<ast::ClipAction>> {
+pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> NomResult<&[u8], Vec<ast::ClipAction>> {
   use nom::combinator::map;
 
   let input = &input[2..]; // Skip `reserved`
@@ -68,7 +68,7 @@ pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> IResult
 }
 
 #[allow(unused_variables)]
-pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::ClipEventFlags> {
+pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::ClipEventFlags> {
   use nom::combinator::map;
 
   let (input, flags) = if extended_events {
@@ -103,7 +103,7 @@ pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> IResult<&[
   ))
 }
 
-pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::ClipAction> {
+pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::ClipAction> {
   use nom::combinator::map;
 
   let (input, events) = parse_clip_event_flags(input, extended_events)?;
@@ -126,14 +126,14 @@ pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> IResult<&[u8],
   ))
 }
 
-pub fn parse_filter_list(input: &[u8]) -> IResult<&[u8], Vec<ast::Filter>> {
+pub fn parse_filter_list(input: &[u8]) -> NomResult<&[u8], Vec<ast::Filter>> {
   use nom::multi::count;
   let (input, filter_count) = parse_u8(input)?;
   count(parse_filter, usize::from(filter_count))(input)
 }
 
 #[allow(unused_variables)]
-pub fn parse_filter(input: &[u8]) -> IResult<&[u8], ast::Filter> {
+pub fn parse_filter(input: &[u8]) -> NomResult<&[u8], ast::Filter> {
   use nom::combinator::map;
   let (input, code) = parse_u8(input)?;
   match code {
@@ -149,7 +149,7 @@ pub fn parse_filter(input: &[u8]) -> IResult<&[u8], ast::Filter> {
   }
 }
 
-pub fn parse_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Bevel> {
+pub fn parse_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Bevel> {
   let (input, shadow_color) = parse_straight_s_rgba8(input)?;
   let (input, highlight_color) = parse_straight_s_rgba8(input)?;
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
@@ -183,7 +183,7 @@ pub fn parse_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Bevel> {
   ))
 }
 
-pub fn parse_blur_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Blur> {
+pub fn parse_blur_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Blur> {
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
   let (input, blur_y) = parse_le_fixed16_p16(input)?;
   let (input, flags) = parse_u8(input)?;
@@ -193,7 +193,7 @@ pub fn parse_blur_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Blur> {
   Ok((input, ast::filters::Blur { blur_x, blur_y, passes }))
 }
 
-pub fn parse_color_matrix_filter(mut input: &[u8]) -> IResult<&[u8], ast::filters::ColorMatrix> {
+pub fn parse_color_matrix_filter(mut input: &[u8]) -> NomResult<&[u8], ast::filters::ColorMatrix> {
   let mut matrix: [f32; 20] = [0f32; 20];
   for i in 0..matrix.len() {
     let (next_input, value) = parse_le_f32(input)?;
@@ -203,7 +203,7 @@ pub fn parse_color_matrix_filter(mut input: &[u8]) -> IResult<&[u8], ast::filter
   Ok((input, ast::filters::ColorMatrix { matrix }))
 }
 
-pub fn parse_convolution_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Convolution> {
+pub fn parse_convolution_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Convolution> {
   use nom::combinator::map;
   use nom::multi::count;
 
@@ -233,7 +233,7 @@ pub fn parse_convolution_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Co
   ))
 }
 
-pub fn parse_drop_shadow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::DropShadow> {
+pub fn parse_drop_shadow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::DropShadow> {
   let (input, color) = parse_straight_s_rgba8(input)?;
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
   let (input, blur_y) = parse_le_fixed16_p16(input)?;
@@ -263,7 +263,7 @@ pub fn parse_drop_shadow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Dr
   ))
 }
 
-pub fn parse_glow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Glow> {
+pub fn parse_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Glow> {
   let (input, color) = parse_straight_s_rgba8(input)?;
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
   let (input, blur_y) = parse_le_fixed16_p16(input)?;
@@ -289,7 +289,7 @@ pub fn parse_glow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::Glow> {
   ))
 }
 
-fn parse_filter_gradient(input: &[u8], color_count: usize) -> IResult<&[u8], Vec<ast::ColorStop>> {
+fn parse_filter_gradient(input: &[u8], color_count: usize) -> NomResult<&[u8], Vec<ast::ColorStop>> {
   let mut result: Vec<ast::ColorStop> = Vec::with_capacity(color_count);
   let mut current_input = input;
 
@@ -314,7 +314,7 @@ fn parse_filter_gradient(input: &[u8], color_count: usize) -> IResult<&[u8], Vec
   Ok((current_input, result))
 }
 
-pub fn parse_gradient_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters::GradientBevel> {
+pub fn parse_gradient_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::GradientBevel> {
   use nom::combinator::map;
 
   let (input, color_count) = map(parse_u8, |x| x as usize)(input)?;
@@ -350,7 +350,7 @@ pub fn parse_gradient_bevel_filter(input: &[u8]) -> IResult<&[u8], ast::filters:
   ))
 }
 
-pub fn parse_gradient_glow_filter(input: &[u8]) -> IResult<&[u8], ast::filters::GradientGlow> {
+pub fn parse_gradient_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::GradientGlow> {
   use nom::combinator::map;
 
   let (input, color_count) = map(parse_u8, |x| x as usize)(input)?;

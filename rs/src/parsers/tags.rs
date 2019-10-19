@@ -1,7 +1,7 @@
 use nom::number::streaming::{
   le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
-use nom::{IResult, Needed};
+use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
 use swf_tree as ast;
 use swf_tree::{ButtonCondAction, Glyph};
@@ -32,7 +32,7 @@ use crate::parsers::text::{
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
 
-fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
+fn parse_tag_header(input: &[u8]) -> NomResult<&[u8], ast::TagHeader> {
   use nom::combinator::map;
 
   let (input, code_and_length) = parse_le_u16(input)?;
@@ -53,7 +53,7 @@ fn parse_tag_header(input: &[u8]) -> IResult<&[u8], ast::TagHeader> {
   }
 }
 
-pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], ast::Tag> {
+pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
   use std::convert::TryInto;
 
   match parse_tag_header(input) {
@@ -87,7 +87,7 @@ pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], a
   }
 }
 
-fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState) -> IResult<&'a [u8], ast::Tag> {
+fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
   use nom::combinator::map;
   match code {
     1 => Ok((input, ast::Tag::ShowFrame)),
@@ -186,7 +186,7 @@ fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState) -> IResult
   }
 }
 
-pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTextSettings> {
+pub fn parse_csm_text_settings(input: &[u8]) -> NomResult<&[u8], ast::tags::CsmTextSettings> {
   let (input, text_id) = parse_le_u16(input)?;
   let (input, flags) = parse_u8(input)?;
   // Skip bits [0, 2]
@@ -207,7 +207,7 @@ pub fn parse_csm_text_settings(input: &[u8]) -> IResult<&[u8], ast::tags::CsmTex
   ))
 }
 
-pub fn parse_define_binary_data(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBinaryData> {
+pub fn parse_define_binary_data(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBinaryData> {
   let (input, id) = parse_le_u16(input)?;
   let (input, _reserved) = parse_le_u32(input)?; // TODO: assert reserved == 0
   let data = input.to_vec();
@@ -215,7 +215,7 @@ pub fn parse_define_binary_data(input: &[u8]) -> IResult<&[u8], ast::tags::Defin
   Ok((input, ast::tags::DefineBinaryData { id, data }))
 }
 
-pub fn parse_define_bits(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
+pub fn parse_define_bits(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   let (input, id) = parse_le_u16(input)?;
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
@@ -238,7 +238,7 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::t
   }
 }
 
-pub fn parse_define_button(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
+pub fn parse_define_button(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineButton> {
   let (input, id) = parse_le_u16(input)?;
 
   let (input, characters) = parse_button_record_string(input, ButtonVersion::Button1)?;
@@ -259,7 +259,7 @@ pub fn parse_define_button(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButt
   ))
 }
 
-pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButton> {
+pub fn parse_define_button2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineButton> {
   use nom::combinator::map;
 
   let (input, id) = parse_le_u16(input)?;
@@ -286,14 +286,14 @@ pub fn parse_define_button2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBut
   ))
 }
 
-pub fn parse_define_button_color_transform(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButtonColorTransform> {
+pub fn parse_define_button_color_transform(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineButtonColorTransform> {
   let (input, button_id) = parse_le_u16(input)?;
   let (input, transform) = parse_color_transform(input)?;
 
   Ok((input, ast::tags::DefineButtonColorTransform { button_id, transform }))
 }
 
-pub fn parse_define_button_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineButtonSound> {
+pub fn parse_define_button_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineButtonSound> {
   let (input, button_id) = parse_le_u16(input)?;
   let (input, over_up_to_idle) = parse_button_sound(input)?;
   let (input, idle_to_over_up) = parse_button_sound(input)?;
@@ -312,7 +312,7 @@ pub fn parse_define_button_sound(input: &[u8]) -> IResult<&[u8], ast::tags::Defi
   ))
 }
 
-pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
+pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   let (input, id) = parse_le_u16(input)?;
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
@@ -340,7 +340,7 @@ pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> IResult<&[u8], 
   ))
 }
 
-pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> IResult<&[u8], ast::tags::DefineBitmap> {
+pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   let (ajpeg_data, id) = parse_le_u16(input)?;
   let (input, data_len) = parse_le_u32(ajpeg_data).map(|(i, dl)| (i, dl as usize))?;
   let data = &input[..data_len];
@@ -383,7 +383,7 @@ pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> IResult<&[u8], 
   ))
 }
 
-pub fn parse_define_bits_jpeg4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
+pub fn parse_define_bits_jpeg4(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   use nom::bytes::complete::take;
   use nom::combinator::map;
 
@@ -425,15 +425,15 @@ pub fn parse_define_bits_jpeg4(input: &[u8]) -> IResult<&[u8], ast::tags::Define
   ))
 }
 
-pub fn parse_define_bits_lossless(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
+pub fn parse_define_bits_lossless(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   parse_define_bits_lossless_any(input, ast::ImageType::SwfBmp)
 }
 
-pub fn parse_define_bits_lossless2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineBitmap> {
+pub fn parse_define_bits_lossless2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   parse_define_bits_lossless_any(input, ast::ImageType::SwfAbmp)
 }
 
-fn parse_define_bits_lossless_any(input: &[u8], media_type: ast::ImageType) -> IResult<&[u8], ast::tags::DefineBitmap> {
+fn parse_define_bits_lossless_any(input: &[u8], media_type: ast::ImageType) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   let (input, id) = parse_le_u16(input)?;
   let data: Vec<u8> = input.to_vec();
   let input = &input[1..]; // BitmapFormat
@@ -453,7 +453,7 @@ fn parse_define_bits_lossless_any(input: &[u8], media_type: ast::ImageType) -> I
   ))
 }
 
-pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineDynamicText> {
+pub fn parse_define_edit_text(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineDynamicText> {
   use nom::combinator::cond;
   use nom::combinator::map;
 
@@ -531,7 +531,7 @@ pub fn parse_define_edit_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineD
   ))
 }
 
-pub fn parse_define_font(input: &[u8]) -> IResult<&[u8], ast::tags::DefineGlyphFont> {
+pub fn parse_define_font(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineGlyphFont> {
   let (input, id) = parse_le_u16(input)?;
   let available = input.len();
   let mut glyphs: Vec<Glyph> = Vec::new();
@@ -569,16 +569,16 @@ pub fn parse_define_font(input: &[u8]) -> IResult<&[u8], ast::tags::DefineGlyphF
   Ok((&[], ast::tags::DefineGlyphFont { id, glyphs }))
 }
 
-pub fn parse_define_font2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+pub fn parse_define_font2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineFont> {
   parse_define_font_any(input, FontVersion::Font2)
 }
 
-pub fn parse_define_font3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFont> {
+pub fn parse_define_font3(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineFont> {
   parse_define_font_any(input, FontVersion::Font3)
 }
 
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/swf/parser/module.ts#L632
-fn parse_define_font_any(input: &[u8], version: FontVersion) -> IResult<&[u8], ast::tags::DefineFont> {
+fn parse_define_font_any(input: &[u8], version: FontVersion) -> NomResult<&[u8], ast::tags::DefineFont> {
   use nom::bytes::complete::take;
   use nom::combinator::{cond, map};
   use nom::multi::count;
@@ -659,7 +659,7 @@ fn parse_define_font_any(input: &[u8], version: FontVersion) -> IResult<&[u8], a
   }
 }
 
-pub fn parse_define_font4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineCffFont> {
+pub fn parse_define_font4(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineCffFont> {
   use nom::combinator::cond;
 
   let (input, id) = parse_le_u16(input)?;
@@ -688,7 +688,7 @@ pub fn parse_define_font4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineCffFo
 pub fn parse_define_font_align_zones<P>(
   input: &[u8],
   glyph_count_provider: P,
-) -> IResult<&[u8], ast::tags::DefineFontAlignZones>
+) -> NomResult<&[u8], ast::tags::DefineFontAlignZones>
 where
   P: Fn(usize) -> Option<usize>,
 {
@@ -712,19 +712,19 @@ where
   ))
 }
 
-pub fn parse_define_font_info(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+pub fn parse_define_font_info(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineFontInfo> {
   parse_define_font_info_any(input, FontInfoVersion::FontInfo1)
 }
 
-pub fn parse_define_font_info2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+pub fn parse_define_font_info2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineFontInfo> {
   parse_define_font_info_any(input, FontInfoVersion::FontInfo2)
 }
 
-fn parse_define_font_info_any(input: &[u8], version: FontInfoVersion) -> IResult<&[u8], ast::tags::DefineFontInfo> {
+fn parse_define_font_info_any(input: &[u8], version: FontInfoVersion) -> NomResult<&[u8], ast::tags::DefineFontInfo> {
   use nom::bytes::complete::take;
   use nom::combinator::map;
 
-  fn parse_code_units(mut input: &[u8], use_wide_codes: bool) -> IResult<&[u8], Vec<u16>> {
+  fn parse_code_units(mut input: &[u8], use_wide_codes: bool) -> NomResult<&[u8], Vec<u16>> {
     if use_wide_codes {
       // TODO: Handle odd values
       let code_unit_count = input.len() / 2;
@@ -780,7 +780,7 @@ fn parse_define_font_info_any(input: &[u8], version: FontInfoVersion) -> IResult
   ))
 }
 
-pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineFontName> {
+pub fn parse_define_font_name(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineFontName> {
   let (input, font_id) = parse_le_u16(input)?;
   let (input, name) = parse_c_string(input)?;
   let (input, copyright) = parse_c_string(input)?;
@@ -794,7 +794,7 @@ pub fn parse_define_font_name(input: &[u8]) -> IResult<&[u8], ast::tags::DefineF
   ))
 }
 
-pub fn parse_define_jpeg_tables(input: &[u8], _swf_version: u8) -> IResult<&[u8], ast::tags::DefineJpegTables> {
+pub fn parse_define_jpeg_tables(input: &[u8], _swf_version: u8) -> NomResult<&[u8], ast::tags::DefineJpegTables> {
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
 
@@ -805,18 +805,18 @@ pub fn parse_define_jpeg_tables(input: &[u8], _swf_version: u8) -> IResult<&[u8]
   Ok((input, ast::tags::DefineJpegTables { data }))
 }
 
-pub fn parse_define_morph_shape(input: &[u8]) -> IResult<&[u8], ast::tags::DefineMorphShape> {
+pub fn parse_define_morph_shape(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineMorphShape> {
   parse_define_morph_shape_any(input, MorphShapeVersion::MorphShape1)
 }
 
-pub fn parse_define_morph_shape2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineMorphShape> {
+pub fn parse_define_morph_shape2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineMorphShape> {
   parse_define_morph_shape_any(input, MorphShapeVersion::MorphShape2)
 }
 
 fn parse_define_morph_shape_any(
   input: &[u8],
   version: MorphShapeVersion,
-) -> IResult<&[u8], ast::tags::DefineMorphShape> {
+) -> NomResult<&[u8], ast::tags::DefineMorphShape> {
   use nom::combinator::cond;
 
   let (input, id) = parse_le_u16(input)?;
@@ -848,7 +848,7 @@ fn parse_define_morph_shape_any(
   ))
 }
 
-pub fn parse_define_scaling_grid(input: &[u8]) -> IResult<&[u8], ast::tags::DefineScalingGrid> {
+pub fn parse_define_scaling_grid(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineScalingGrid> {
   let (input, character_id) = parse_le_u16(input)?;
   let (input, splitter) = parse_rect(input)?;
   Ok((input, ast::tags::DefineScalingGrid { character_id, splitter }))
@@ -856,7 +856,7 @@ pub fn parse_define_scaling_grid(input: &[u8]) -> IResult<&[u8], ast::tags::Defi
 
 pub fn parse_define_scene_and_frame_label_data_tag(
   input: &[u8],
-) -> IResult<&[u8], ast::tags::DefineSceneAndFrameLabelData> {
+) -> NomResult<&[u8], ast::tags::DefineSceneAndFrameLabelData> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, scene_count) = map(parse_leb128_u32, |x| usize::try_from(x).unwrap())(input)?;
@@ -864,13 +864,13 @@ pub fn parse_define_scene_and_frame_label_data_tag(
   let (input, label_count) = map(parse_leb128_u32, |x| usize::try_from(x).unwrap())(input)?;
   let (input, labels) = count(parse_label, label_count)(input)?;
 
-  fn parse_scene(input: &[u8]) -> IResult<&[u8], ast::tags::Scene> {
+  fn parse_scene(input: &[u8]) -> NomResult<&[u8], ast::tags::Scene> {
     let (input, offset) = parse_leb128_u32(input)?;
     let (input, name) = parse_c_string(input)?;
     Ok((input, ast::tags::Scene { offset, name }))
   }
 
-  fn parse_label(input: &[u8]) -> IResult<&[u8], ast::tags::Label> {
+  fn parse_label(input: &[u8]) -> NomResult<&[u8], ast::tags::Label> {
     let (input, frame) = parse_leb128_u32(input)?;
     let (input, name) = parse_c_string(input)?;
     Ok((input, ast::tags::Label { frame, name }))
@@ -879,23 +879,23 @@ pub fn parse_define_scene_and_frame_label_data_tag(
   Ok((input, ast::tags::DefineSceneAndFrameLabelData { scenes, labels }))
 }
 
-pub fn parse_define_shape(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+pub fn parse_define_shape(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineShape> {
   parse_define_shape_any(input, ShapeVersion::Shape1)
 }
 
-pub fn parse_define_shape2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+pub fn parse_define_shape2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineShape> {
   parse_define_shape_any(input, ShapeVersion::Shape2)
 }
 
-pub fn parse_define_shape3(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+pub fn parse_define_shape3(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineShape> {
   parse_define_shape_any(input, ShapeVersion::Shape3)
 }
 
-pub fn parse_define_shape4(input: &[u8]) -> IResult<&[u8], ast::tags::DefineShape> {
+pub fn parse_define_shape4(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineShape> {
   parse_define_shape_any(input, ShapeVersion::Shape4)
 }
 
-fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> IResult<&[u8], ast::tags::DefineShape> {
+fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], ast::tags::DefineShape> {
   use nom::combinator::cond;
 
   let (input, id) = parse_le_u16(input)?;
@@ -925,11 +925,11 @@ fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> IResult<&[u8],
   ))
 }
 
-fn parse_bytes(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+fn parse_bytes(input: &[u8]) -> NomResult<&[u8], Vec<u8>> {
   Ok((&[][..], input.to_vec()))
 }
 
-fn parse_define_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSound> {
+fn parse_define_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineSound> {
   let (input, id) = parse_le_u16(input)?;
   let (input, flags) = parse_u8(input)?;
   let sound_type = if (flags & (1 << 0)) != 0 {
@@ -966,7 +966,7 @@ fn parse_define_sound(input: &[u8]) -> IResult<&[u8], ast::tags::DefineSound> {
 }
 
 // TODO: Readonly `state`?
-pub fn parse_define_sprite<'a>(input: &'a [u8], state: &ParseState) -> IResult<&'a [u8], ast::tags::DefineSprite> {
+pub fn parse_define_sprite<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::tags::DefineSprite> {
   let (input, id) = parse_le_u16(input)?;
   let (input, frame_count) = parse_le_u16(input)?;
   let (input, tags) = parse_tag_block_string(input, state)?;
@@ -980,15 +980,15 @@ pub fn parse_define_sprite<'a>(input: &'a [u8], state: &ParseState) -> IResult<&
   ))
 }
 
-pub fn parse_define_text(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
+pub fn parse_define_text(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineText> {
   parse_define_text_any(input, TextVersion::Text1)
 }
 
-pub fn parse_define_text2(input: &[u8]) -> IResult<&[u8], ast::tags::DefineText> {
+pub fn parse_define_text2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineText> {
   parse_define_text_any(input, TextVersion::Text2)
 }
 
-pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> IResult<&[u8], ast::tags::DefineText> {
+pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> NomResult<&[u8], ast::tags::DefineText> {
   use nom::combinator::map;
 
   let (input, id) = parse_le_u16(input)?;
@@ -1010,7 +1010,7 @@ pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> IResult<&[u8
   ))
 }
 
-pub fn parse_define_video_stream(input: &[u8]) -> IResult<&[u8], ast::tags::DefineVideoStream> {
+pub fn parse_define_video_stream(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineVideoStream> {
   use nom::combinator::map;
 
   let (input, id) = parse_le_u16(input)?;
@@ -1037,37 +1037,37 @@ pub fn parse_define_video_stream(input: &[u8]) -> IResult<&[u8], ast::tags::Defi
   ))
 }
 
-pub fn parse_do_abc(input: &[u8]) -> IResult<&[u8], ast::tags::DoAbc> {
+pub fn parse_do_abc(input: &[u8]) -> NomResult<&[u8], ast::tags::DoAbc> {
   let (input, flags) = parse_le_u32(input)?;
   let (input, name) = parse_c_string(input)?;
   let (input, data) = parse_bytes(input)?;
   Ok((input, ast::tags::DoAbc { flags, name, data }))
 }
 
-pub fn parse_do_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoAction> {
+pub fn parse_do_action(input: &[u8]) -> NomResult<&[u8], ast::tags::DoAction> {
   let (input, actions) = parse_bytes(input)?;
   Ok((input, ast::tags::DoAction { actions }))
 }
 
-pub fn parse_do_init_action(input: &[u8]) -> IResult<&[u8], ast::tags::DoInitAction> {
+pub fn parse_do_init_action(input: &[u8]) -> NomResult<&[u8], ast::tags::DoInitAction> {
   let (input, sprite_id) = parse_le_u16(input)?;
   let (input, actions) = (&[][..], input.to_vec());
   Ok((input, ast::tags::DoInitAction { sprite_id, actions }))
 }
 
-pub fn parse_enable_debugger(input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
+pub fn parse_enable_debugger(input: &[u8]) -> NomResult<&[u8], ast::tags::EnableDebugger> {
   let (input, password) = parse_c_string(input)?;
   Ok((input, ast::tags::EnableDebugger { password }))
 }
 
-pub fn parse_enable_debugger2(input: &[u8]) -> IResult<&[u8], ast::tags::EnableDebugger> {
+pub fn parse_enable_debugger2(input: &[u8]) -> NomResult<&[u8], ast::tags::EnableDebugger> {
   use nom::bytes::complete::take;
   let (input, _) = take(2usize)(input)?;
   let (input, password) = parse_c_string(input)?;
   Ok((input, ast::tags::EnableDebugger { password }))
 }
 
-pub fn parse_enable_telemetry(input: &[u8]) -> IResult<&[u8], ast::tags::Telemetry> {
+pub fn parse_enable_telemetry(input: &[u8]) -> NomResult<&[u8], ast::tags::Telemetry> {
   use nom::bytes::complete::take;
   use nom::combinator::cond;
   const HASH_SIZE: usize = 32;
@@ -1081,7 +1081,7 @@ pub fn parse_enable_telemetry(input: &[u8]) -> IResult<&[u8], ast::tags::Telemet
   ))
 }
 
-pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAssets> {
+pub fn parse_export_assets(input: &[u8]) -> NomResult<&[u8], ast::tags::ExportAssets> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, asset_count) = map(parse_le_u16, usize::from)(input)?;
@@ -1089,7 +1089,7 @@ pub fn parse_export_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ExportAsse
   Ok((input, ast::tags::ExportAssets { assets }))
 }
 
-pub fn parse_file_attributes_tag(input: &[u8]) -> IResult<&[u8], ast::tags::FileAttributes> {
+pub fn parse_file_attributes_tag(input: &[u8]) -> NomResult<&[u8], ast::tags::FileAttributes> {
   let (input, flags) = parse_le_u32(input)?;
   let use_network = (flags & (1 << 0)) != 0;
   let use_relative_urls = (flags & (1 << 1)) != 0;
@@ -1113,7 +1113,7 @@ pub fn parse_file_attributes_tag(input: &[u8]) -> IResult<&[u8], ast::tags::File
   ))
 }
 
-pub fn parse_frame_label(input: &[u8]) -> IResult<&[u8], ast::tags::FrameLabel> {
+pub fn parse_frame_label(input: &[u8]) -> NomResult<&[u8], ast::tags::FrameLabel> {
   // TODO: Use nom macros/atEof
   let (input, name) = parse_c_string(input)?;
   let (input, is_anchor) = if input.len() > 0 {
@@ -1126,7 +1126,7 @@ pub fn parse_frame_label(input: &[u8]) -> IResult<&[u8], ast::tags::FrameLabel> 
   Ok((input, ast::tags::FrameLabel { name, is_anchor }))
 }
 
-pub fn parse_import_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ImportAssets> {
+pub fn parse_import_assets(input: &[u8]) -> NomResult<&[u8], ast::tags::ImportAssets> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, url) = parse_c_string(input)?;
@@ -1136,7 +1136,7 @@ pub fn parse_import_assets(input: &[u8]) -> IResult<&[u8], ast::tags::ImportAsse
 }
 
 #[allow(unused_variables)]
-pub fn parse_import_assets2(input: &[u8]) -> IResult<&[u8], ast::tags::ImportAssets> {
+pub fn parse_import_assets2(input: &[u8]) -> NomResult<&[u8], ast::tags::ImportAssets> {
   use nom::bytes::complete::take;
   use nom::combinator::map;
   use nom::multi::count;
@@ -1148,12 +1148,12 @@ pub fn parse_import_assets2(input: &[u8]) -> IResult<&[u8], ast::tags::ImportAss
   Ok((input, ast::tags::ImportAssets { url, assets }))
 }
 
-pub fn parse_metadata(input: &[u8]) -> IResult<&[u8], ast::tags::Metadata> {
+pub fn parse_metadata(input: &[u8]) -> NomResult<&[u8], ast::tags::Metadata> {
   let (input, metadata) = parse_c_string(input)?;
   Ok((input, ast::tags::Metadata { metadata }))
 }
 
-pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject> {
+pub fn parse_place_object(input: &[u8]) -> NomResult<&[u8], ast::tags::PlaceObject> {
   use nom::combinator::{cond, map};
 
   let (input, character_id) = parse_le_u16(input)?;
@@ -1196,7 +1196,7 @@ pub fn parse_place_object(input: &[u8]) -> IResult<&[u8], ast::tags::PlaceObject
 }
 
 /// `extended_events` corresponds to `swf_version >= 6`
-pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
+pub fn parse_place_object2(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::tags::PlaceObject> {
   use nom::combinator::cond;
 
   let (input, flags) = parse_u8(input)?;
@@ -1240,7 +1240,7 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> IResult<&[u8]
 }
 
 /// `extended_events` corresponds to `swf_version >= 6`
-pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8], ast::tags::PlaceObject> {
+pub fn parse_place_object3(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::tags::PlaceObject> {
   use nom::combinator::{cond, map};
 
   let (input, flags) = parse_le_u16(input)?;
@@ -1299,19 +1299,19 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> IResult<&[u8]
   ))
 }
 
-fn parse_protect(input: &[u8]) -> IResult<&[u8], ast::tags::Protect> {
+fn parse_protect(input: &[u8]) -> NomResult<&[u8], ast::tags::Protect> {
   let (input, password) = parse_block_c_string(input)?;
   Ok((input, ast::tags::Protect { password }))
 }
 
-pub fn parse_remove_object(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObject> {
+pub fn parse_remove_object(input: &[u8]) -> NomResult<&[u8], ast::tags::RemoveObject> {
   use nom::combinator::map;
   let (input, character_id) = map(parse_le_u16, Some)(input)?;
   let (input, depth) = parse_le_u16(input)?;
   Ok((input, ast::tags::RemoveObject { character_id, depth }))
 }
 
-pub fn parse_remove_object2(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObject> {
+pub fn parse_remove_object2(input: &[u8]) -> NomResult<&[u8], ast::tags::RemoveObject> {
   let (input, depth) = parse_le_u16(input)?;
   Ok((
     input,
@@ -1322,7 +1322,7 @@ pub fn parse_remove_object2(input: &[u8]) -> IResult<&[u8], ast::tags::RemoveObj
   ))
 }
 
-pub fn parse_script_limits(input: &[u8]) -> IResult<&[u8], ast::tags::ScriptLimits> {
+pub fn parse_script_limits(input: &[u8]) -> NomResult<&[u8], ast::tags::ScriptLimits> {
   let (input, max_recursion_depth) = parse_le_u16(input)?;
   let (input, script_timeout) = parse_le_u16(input)?;
   Ok((
@@ -1334,31 +1334,31 @@ pub fn parse_script_limits(input: &[u8]) -> IResult<&[u8], ast::tags::ScriptLimi
   ))
 }
 
-pub fn parse_set_background_color_tag(input: &[u8]) -> IResult<&[u8], ast::tags::SetBackgroundColor> {
+pub fn parse_set_background_color_tag(input: &[u8]) -> NomResult<&[u8], ast::tags::SetBackgroundColor> {
   let (input, color) = parse_s_rgb8(input)?;
   Ok((input, ast::tags::SetBackgroundColor { color }))
 }
 
-pub fn parse_set_tab_index(input: &[u8]) -> IResult<&[u8], ast::tags::SetTabIndex> {
+pub fn parse_set_tab_index(input: &[u8]) -> NomResult<&[u8], ast::tags::SetTabIndex> {
   let (input, depth) = parse_le_u16(input)?;
   let (input, index) = parse_le_u16(input)?;
   Ok((input, ast::tags::SetTabIndex { depth, index }))
 }
 
-fn parse_sound_stream_block(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamBlock> {
+fn parse_sound_stream_block(input: &[u8]) -> NomResult<&[u8], ast::tags::SoundStreamBlock> {
   let (input, data) = parse_bytes(input)?;
   Ok((input, ast::tags::SoundStreamBlock { data }))
 }
 
-fn parse_sound_stream_head(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamHead> {
+fn parse_sound_stream_head(input: &[u8]) -> NomResult<&[u8], ast::tags::SoundStreamHead> {
   parse_sound_stream_head_any(input)
 }
 
-fn parse_sound_stream_head2(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamHead> {
+fn parse_sound_stream_head2(input: &[u8]) -> NomResult<&[u8], ast::tags::SoundStreamHead> {
   parse_sound_stream_head_any(input)
 }
 
-fn parse_sound_stream_head_any(input: &[u8]) -> IResult<&[u8], ast::tags::SoundStreamHead> {
+fn parse_sound_stream_head_any(input: &[u8]) -> NomResult<&[u8], ast::tags::SoundStreamHead> {
   use nom::combinator::cond;
   let (input, flags) = parse_le_u16(input)?;
   let playback_sound_type = if (flags & (1 << 0)) != 0 {
@@ -1407,13 +1407,13 @@ fn parse_sound_stream_head_any(input: &[u8]) -> IResult<&[u8], ast::tags::SoundS
   ))
 }
 
-pub fn parse_start_sound(input: &[u8]) -> IResult<&[u8], ast::tags::StartSound> {
+pub fn parse_start_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::StartSound> {
   let (input, sound_id) = parse_le_u16(input)?;
   let (input, sound_info) = parse_sound_info(input)?;
   Ok((input, ast::tags::StartSound { sound_id, sound_info }))
 }
 
-pub fn parse_start_sound2(input: &[u8]) -> IResult<&[u8], ast::tags::StartSound2> {
+pub fn parse_start_sound2(input: &[u8]) -> NomResult<&[u8], ast::tags::StartSound2> {
   let (input, sound_class_name) = parse_c_string(input)?;
   let (input, sound_info) = parse_sound_info(input)?;
   Ok((
@@ -1425,7 +1425,7 @@ pub fn parse_start_sound2(input: &[u8]) -> IResult<&[u8], ast::tags::StartSound2
   ))
 }
 
-pub fn parse_symbol_class(input: &[u8]) -> IResult<&[u8], ast::tags::SymbolClass> {
+pub fn parse_symbol_class(input: &[u8]) -> NomResult<&[u8], ast::tags::SymbolClass> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, symbol_count) = map(parse_le_u16, usize::from)(input)?;
@@ -1433,7 +1433,7 @@ pub fn parse_symbol_class(input: &[u8]) -> IResult<&[u8], ast::tags::SymbolClass
   Ok((input, ast::tags::SymbolClass { symbols }))
 }
 
-pub fn parse_video_frame(input: &[u8]) -> IResult<&[u8], ast::tags::VideoFrame> {
+pub fn parse_video_frame(input: &[u8]) -> NomResult<&[u8], ast::tags::VideoFrame> {
   let (input, video_id) = parse_le_u16(input)?;
   let (input, frame) = parse_le_u16(input)?;
   let (input, packet) = parse_bytes(input)?;

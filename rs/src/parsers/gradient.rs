@@ -1,10 +1,10 @@
 use crate::parsers::basic_data_types::{parse_s_rgb8, parse_straight_s_rgba8};
 use nom::number::streaming::le_u8 as parse_u8;
-use nom::IResult;
+use nom::IResult as NomResult;
 use swf_tree as ast;
 
 #[allow(unused_variables)]
-pub fn parse_color_stop(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::ColorStop> {
+pub fn parse_color_stop(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::ColorStop> {
   use nom::combinator::map;
 
   let (input, ratio) = parse_u8(input)?;
@@ -22,7 +22,7 @@ pub fn parse_color_stop(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::C
   Ok((input, ast::ColorStop { ratio, color }))
 }
 
-pub fn parse_gradient(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::Gradient> {
+pub fn parse_gradient(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::Gradient> {
   let (input, flags) = parse_u8(input)?;
   let spread_id = flags >> 6;
   let color_space_id = (flags & ((1 << 6) - 1)) >> 4;
@@ -54,7 +54,7 @@ pub fn parse_gradient(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::Gra
 }
 
 #[allow(unused_variables)]
-pub fn parse_morph_color_stop(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::MorphColorStop> {
+pub fn parse_morph_color_stop(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::MorphColorStop> {
   let (input, start) = parse_color_stop(input, with_alpha)?;
   let (input, end) = parse_color_stop(input, with_alpha)?;
 
@@ -70,7 +70,7 @@ pub fn parse_morph_color_stop(input: &[u8], with_alpha: bool) -> IResult<&[u8], 
 }
 
 #[allow(unused_variables)]
-pub fn parse_morph_gradient(input: &[u8], with_alpha: bool) -> IResult<&[u8], ast::MorphGradient> {
+pub fn parse_morph_gradient(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::MorphGradient> {
   let (input, flags) = parse_u8(input)?;
   let spread_id = flags >> 6;
   let color_space_id = (flags & ((1 << 6) - 1)) >> 4;
