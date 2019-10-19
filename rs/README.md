@@ -20,7 +20,7 @@ use swf_tree;
 
 fn main() {
   let bytes: &[u8] = ...;
-  let (_, movie): (_, swf_tree::Movie) = swf_parser::parsers::movie::parse_movie(&bytes[..])
+  let (_, movie): (_, swf_tree::Movie) = swf_parser::complete::parse_movie(&bytes[..])
     .expect("Failed to parse movie");
 }
 ```

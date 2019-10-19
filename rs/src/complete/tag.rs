@@ -20,7 +20,7 @@ use crate::parsers::image::GIF_START;
 use crate::parsers::image::PNG_START;
 use crate::parsers::image::{get_jpeg_image_dimensions, test_image_start, ERRONEOUS_JPEG_START, JPEG_START};
 use crate::parsers::morph_shape::{parse_morph_shape, MorphShapeVersion};
-use crate::parsers::movie::parse_tag_block_string;
+use crate::streaming::movie::parse_tag_block_string;
 use crate::parsers::shape::{parse_glyph, parse_shape, ShapeVersion};
 use crate::parsers::sound::{
   audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id,
@@ -32,14 +32,9 @@ use crate::parsers::text::{
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
 
-pub(crate) fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
+pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
   use nom::combinator::complete;
   complete(|i| crate::streaming::tag::parse_tag(i, state))(input)
-}
-
-pub(crate) fn parse_tag_header(input: &[u8]) -> NomResult<&[u8], ast::TagHeader> {
-  use nom::combinator::complete;
-  complete(crate::streaming::tag::parse_tag_header)(input)
 }
 
 pub(crate) fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
