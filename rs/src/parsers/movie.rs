@@ -1,6 +1,6 @@
 use crate::parsers::header::{parse_header, parse_swf_signature};
-use crate::parsers::tags::parse_tag;
 use crate::state::ParseState;
+use crate::streaming::tag::parse_tag;
 use nom::{IResult as NomResult, Needed};
 use swf_tree as ast;
 

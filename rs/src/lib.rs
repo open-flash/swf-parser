@@ -15,12 +15,16 @@ pub mod parsers {
   pub mod movie;
   pub mod shape;
   pub mod sound;
-  pub mod tags;
   pub mod text;
   pub mod video;
 }
-
 pub mod state;
+pub(crate) mod complete {
+  pub(crate) mod tag;
+}
+pub mod streaming {
+  pub mod tag;
+}
 
 #[cfg(test)]
 mod tests {
@@ -34,8 +38,8 @@ mod tests {
   use ::test_generator::test_expand_paths;
 
   use crate::parsers::movie::parse_movie;
-  use crate::parsers::tags::parse_tag;
   use crate::state::ParseState;
+  use crate::streaming::tag::parse_tag;
 
   test_expand_paths! { test_parse_movie; "../tests/movies/*/" }
   fn test_parse_movie(path: &str) {

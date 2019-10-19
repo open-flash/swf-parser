@@ -1,7 +1,7 @@
-use nom::number::streaming::{
+use nom::number::complete::{
   le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
-use nom::{IResult as NomResult, Needed};
+use nom::IResult as NomResult;
 use std::convert::TryFrom;
 use swf_tree as ast;
 use swf_tree::{ButtonCondAction, Glyph};
@@ -32,62 +32,17 @@ use crate::parsers::text::{
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
 
-fn parse_tag_header(input: &[u8]) -> NomResult<&[u8], ast::TagHeader> {
-  use nom::combinator::map;
-
-  let (input, code_and_length) = parse_le_u16(input)?;
-  let code = code_and_length >> 6;
-  let max_length = (1 << 6) - 1;
-  let length = code_and_length & max_length;
-  if length < max_length {
-    // TODO: Check if it should be a `<=` instead?
-    Ok((
-      input,
-      ast::TagHeader {
-        code,
-        length: length.into(),
-      },
-    ))
-  } else {
-    map(parse_le_u32, |length| ast::TagHeader { code, length })(input)
-  }
+pub(crate) fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
+  use nom::combinator::complete;
+  complete(|i| crate::streaming::tag::parse_tag(i, state))(input)
 }
 
-pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
-  use std::convert::TryInto;
-
-  match parse_tag_header(input) {
-    Ok((remaining_input, rh)) => {
-      let tag_length: usize = rh.length.try_into().unwrap();
-      if remaining_input.len() < tag_length {
-        let record_header_length = input.len() - remaining_input.len();
-        Err(::nom::Err::Incomplete(Needed::Size(record_header_length + tag_length)))
-      } else {
-        let record_data: &[u8] = &remaining_input[..tag_length];
-        let remaining_input: &[u8] = &remaining_input[tag_length..];
-        let record_result = parse_tag_body(record_data, rh.code, state);
-        match record_result {
-          Ok((_, output_tag)) => {
-            match output_tag {
-              ast::Tag::DefineFont(ref tag) => {
-                match tag.glyphs {
-                  Some(ref glyphs) => state.set_glyph_count(tag.id as usize, glyphs.len()),
-                  None => state.set_glyph_count(tag.id as usize, 0),
-                };
-              }
-              _ => (),
-            };
-            Ok((remaining_input, output_tag))
-          }
-          Err(e) => Err(e),
-        }
-      }
-    }
-    Err(e) => Err(e),
-  }
+pub(crate) fn parse_tag_header(input: &[u8]) -> NomResult<&[u8], ast::TagHeader> {
+  use nom::combinator::complete;
+  complete(crate::streaming::tag::parse_tag_header)(input)
 }
 
-fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
+pub(crate) fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
   use nom::combinator::map;
   match code {
     1 => Ok((input, ast::Tag::ShowFrame)),
@@ -433,7 +388,10 @@ pub fn parse_define_bits_lossless2(input: &[u8]) -> NomResult<&[u8], ast::tags::
   parse_define_bits_lossless_any(input, ast::ImageType::SwfAbmp)
 }
 
-fn parse_define_bits_lossless_any(input: &[u8], media_type: ast::ImageType) -> NomResult<&[u8], ast::tags::DefineBitmap> {
+fn parse_define_bits_lossless_any(
+  input: &[u8],
+  media_type: ast::ImageType,
+) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   let (input, id) = parse_le_u16(input)?;
   let data: Vec<u8> = input.to_vec();
   let input = &input[1..]; // BitmapFormat
