@@ -41,8 +41,8 @@ mod tests {
   use ::test_generator::test_expand_paths;
 
   use crate::complete::parse_movie;
-  use crate::state::ParseState;
   use crate::complete::parse_tag;
+  use crate::state::ParseState;
 
   test_expand_paths! { test_parse_movie; "../tests/movies/*/" }
   fn test_parse_movie(path: &str) {

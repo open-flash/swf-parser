@@ -1,4 +1,4 @@
-use nom::{IResult as NomResult};
+use nom::IResult as NomResult;
 use swf_tree as ast;
 
 /// Parse a fully loaded movie

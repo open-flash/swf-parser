@@ -4,26 +4,24 @@ use crate::streaming::tag::parse_tag;
 use nom::{IResult as NomResult, Needed};
 use swf_tree as ast;
 
-pub fn parse_tag_block_string<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], Vec<ast::Tag>> {
+pub fn parse_tag_block_string<'a>(mut input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], Vec<ast::Tag>> {
   let mut result: Vec<ast::Tag> = Vec::new();
-  let mut current_input: &[u8] = input;
-  while current_input.len() > 0 {
-    // TODO: Check two bytes ahead
+  while input.len() > 0 {
+    // TODO: Check two bytes ahead?
     // A null byte indicates the end of the string of tags
-    if current_input[0] == 0 {
-      current_input = &current_input[1..];
+    if input[0] == 0 {
+      input = &input[1..];
       break;
     }
-    match parse_tag(current_input, state) {
-      Ok((next_input, swf_tag)) => {
-        current_input = next_input;
+    input = match parse_tag(input, state) {
+      Ok((input, swf_tag)) => {
         result.push(swf_tag);
+        input
       }
-      Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
-      Err(e) => return Err(e),
+      Err(_) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
     };
   }
-  Ok((current_input, result))
+  Ok((input, result))
 }
 
 pub fn parse_movie_payload(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {

@@ -20,7 +20,6 @@ use crate::parsers::image::GIF_START;
 use crate::parsers::image::PNG_START;
 use crate::parsers::image::{get_jpeg_image_dimensions, test_image_start, ERRONEOUS_JPEG_START, JPEG_START};
 use crate::parsers::morph_shape::{parse_morph_shape, MorphShapeVersion};
-use crate::streaming::movie::parse_tag_block_string;
 use crate::parsers::shape::{parse_glyph, parse_shape, ShapeVersion};
 use crate::parsers::sound::{
   audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id,
@@ -31,15 +30,19 @@ use crate::parsers::text::{
 };
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::state::ParseState;
+use crate::streaming::movie::parse_tag_block_string;
 
+// TODO: Result with `never` error?
 pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
-  use nom::combinator::complete;
-  complete(|i| crate::streaming::tag::parse_tag(i, state))(input)
+  match crate::streaming::tag::parse_tag(input, state) {
+    Ok(ok) => Ok(ok),
+    Err((input, _e)) => Err(nom::Err::Error((input, nom::error::ErrorKind::Complete))),
+  }
 }
 
-pub(crate) fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
+pub(crate) fn parse_tag_body(input: &[u8], code: u16, state: &ParseState) -> ast::Tag {
   use nom::combinator::map;
-  match code {
+  let result = match code {
     1 => Ok((input, ast::Tag::ShowFrame)),
     2 => map(parse_define_shape, ast::Tag::DefineShape)(input),
     4 => map(parse_place_object, ast::Tag::PlaceObject)(input),
@@ -133,6 +136,14 @@ pub(crate) fn parse_tag_body<'a>(input: &'a [u8], code: u16, state: &ParseState)
     91 => map(parse_define_font4, ast::Tag::DefineCffFont)(input),
     93 => map(parse_enable_telemetry, ast::Tag::Telemetry)(input),
     _ => map(parse_bytes, |data| ast::Tag::Unknown(ast::tags::Unknown { code, data }))(input),
+  };
+  match result {
+    Ok((_, tag)) => tag,
+    // TODO: ast::Tag::Error
+    Err(_) => ast::Tag::Unknown(ast::tags::Unknown {
+      code,
+      data: input.to_vec(),
+    }),
   }
 }
 
