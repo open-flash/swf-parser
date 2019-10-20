@@ -1,4 +1,3 @@
-
 [package]
 name = "swf-parser-fuzz"
 version = "0.0.1"

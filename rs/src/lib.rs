@@ -9,7 +9,6 @@ pub mod parsers {
   pub mod button;
   pub mod display;
   pub mod gradient;
-  pub mod header;
   pub mod image;
   pub mod morph_shape;
   pub mod shape;
@@ -21,7 +20,8 @@ pub mod state;
 pub mod complete {
   pub(crate) mod movie;
   pub(crate) mod tag;
-  pub use movie::parse_movie;
+  pub use movie::parse_swf;
+  pub use movie::SwfParseError;
   pub use tag::parse_tag;
 }
 pub mod streaming {
@@ -40,7 +40,7 @@ mod tests {
 
   use ::test_generator::test_expand_paths;
 
-  use crate::complete::parse_movie;
+  use crate::complete::parse_swf;
   use crate::complete::parse_tag;
   use crate::state::ParseState;
 
@@ -61,7 +61,7 @@ mod tests {
     let mut movie_bytes: Vec<u8> = Vec::new();
     movie_file.read_to_end(&mut movie_bytes).expect("Failed to read movie");
 
-    let (_remaining_input, actual_movie) = parse_movie(&movie_bytes).expect("Failed to parse movie");
+    let actual_movie = parse_swf(&movie_bytes).expect("Failed to parse movie");
 
     let actual_ast_path = path.join("local-ast.rs.json");
     let actual_ast_file = ::std::fs::File::create(actual_ast_path).expect("Failed to create actual AST file");
@@ -143,7 +143,7 @@ mod tests {
   use crate::parsers::basic_data_types::parse_le_f16;
   test_various_parser_impl!(test_parse_le_f16, "../tests/various/float16-le/*/", parse_le_f16, f32);
 
-  use crate::parsers::header::parse_header;
+  use crate::streaming::movie::parse_header;
   use swf_tree::Header;
 
   fn parse_header34(input: &[u8]) -> NomResult<&[u8], Header> {
@@ -159,7 +159,7 @@ mod tests {
   use swf_tree::Rect;
   test_various_parser_impl!(test_parse_rect, "../tests/various/rect/*/", parse_rect, Rect);
 
-  use crate::parsers::header::parse_swf_signature;
+  use crate::streaming::movie::parse_swf_signature;
   use swf_tree::SwfSignature;
   test_various_parser_impl!(
     test_parse_swf_signature,

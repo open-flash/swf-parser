@@ -6,6 +6,7 @@ use std::convert::TryFrom;
 use swf_tree as ast;
 
 /// Represents an error caused by incomplete input.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum StreamingTagError {
   /// Indicates that the input is not long enough to read the tag header.
   ///

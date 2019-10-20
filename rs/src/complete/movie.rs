@@ -1,8 +1,44 @@
-use nom::IResult as NomResult;
 use swf_tree as ast;
+use crate::streaming::movie::{parse_swf_signature, parse_movie_payload};
 
-/// Parse a fully loaded movie
-pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
-  use nom::combinator::complete;
-  complete(crate::streaming::movie::parse_movie)(input)
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SwfParseError {
+  InvalidSignature,
+  InvalidPayload,
+  InvalidMovie,
+}
+
+/// Parse a completely loaded SWF file
+pub fn parse_swf(input: &[u8]) -> Result<ast::Movie, SwfParseError> {
+  let (input, signature) = match parse_swf_signature(input) {
+    Ok(ok) => ok,
+    Err(_) => return Err(SwfParseError::InvalidSignature),
+  };
+
+  let payload_memory: Vec<u8>;
+
+  let payload: &[u8] = match signature.compression_method {
+    ast::CompressionMethod::None => input,
+    ast::CompressionMethod::Deflate => {
+      use ::std::io::Write;
+      let mut decoder = ::inflate::InflateWriter::from_zlib(Vec::new());
+      match decoder.write(input) {
+        Ok(_) => (),
+        Err(_) => return Err(SwfParseError::InvalidPayload),
+      }
+      payload_memory = match decoder.finish() {
+        Ok(uncompressed) => uncompressed,
+        Err(_) => return Err(SwfParseError::InvalidPayload),
+      };
+      &payload_memory
+    },
+    ast::CompressionMethod::Lzma => unimplemented!("LZMA-compressed payload"),
+  };
+
+  let (_, movie) = match parse_movie_payload(payload, signature.swf_version) {
+    Ok(ok) => ok,
+    Err(_) => return Err(SwfParseError::InvalidMovie),
+  };
+
+  Ok(movie)
 }
