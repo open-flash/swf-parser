@@ -15,7 +15,7 @@ pub fn parse_swf(input: &[u8]) -> Result<ast::Movie, SwfParseError> {
     Err(_) => return Err(SwfParseError::InvalidSignature),
   };
 
-  let payload_memory: Vec<u8>;
+  let mut payload_memory: Vec<u8>;
 
   let payload: &[u8] = match signature.compression_method {
     ast::CompressionMethod::None => input,
@@ -32,7 +32,15 @@ pub fn parse_swf(input: &[u8]) -> Result<ast::Movie, SwfParseError> {
       };
       &payload_memory
     },
-    ast::CompressionMethod::Lzma => unimplemented!("LZMA-compressed payload"),
+    ast::CompressionMethod::Lzma => {
+      let mut payload_reader = std::io::BufReader::new(input);
+      payload_memory = Vec::new();
+      match lzma_rs::lzma_decompress(&mut payload_reader, &mut payload_memory) {
+        Ok(_) => (),
+        Err(_) => return Err(SwfParseError::InvalidPayload),
+      }
+      &payload_memory
+    }
   };
 
   let (_, movie) = match parse_movie_payload(payload, signature.swf_version) {

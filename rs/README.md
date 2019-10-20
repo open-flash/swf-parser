@@ -44,8 +44,8 @@ The Rust implementation supports fuzzing:
 ```
 # Make sure that you have `cargo-fuzz`
 cargo install cargo-fuzz
-# Fuzz the `movie` parser
-cargo fuzz run movie
+# Fuzz the `swf` parser
+cargo fuzz run swf
 ```
 
 Prefer non-`master` branches when sending a PR so your changes can be rebased if
