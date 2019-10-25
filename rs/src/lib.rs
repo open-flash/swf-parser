@@ -4,6 +4,8 @@ extern crate num_traits;
 extern crate swf_fixed;
 extern crate swf_tree;
 
+mod stream_buffer;
+
 pub mod parsers {
   pub mod basic_data_types;
   pub mod button;
@@ -25,6 +27,7 @@ pub mod complete {
 }
 pub mod streaming {
   pub mod movie;
+  pub mod parser;
   pub mod tag;
 }
 
@@ -104,7 +107,7 @@ mod tests {
     let expected_reader = ::std::io::BufReader::new(expected_file);
     let expected_value = serde_json_v8::from_reader::<_, Tag>(expected_reader).expect("Failed to read AST");
 
-    assert_eq!(actual_value, expected_value);
+    assert_eq!(actual_value, Some(expected_value));
     assert_eq!(remaining_bytes, &[] as &[u8]);
   }
 

@@ -9,7 +9,7 @@ use swf_tree as ast;
 pub(crate) enum StreamingTagError {
   /// Indicates that the input is not long enough to read the tag header.
   ///
-  /// A header is either `2` or `6` bytes long.
+  /// A header is `1`, `2` or `6` bytes long.
   /// Parsing with an input of 6 bytes or more guarantees that this error
   /// will not occur.
   IncompleteHeader,
@@ -24,15 +24,24 @@ pub(crate) enum StreamingTagError {
 
 /// Parses the tag at the start of the (possibly incomplete) input.
 ///
-/// The minimum length of `input` for a tag is `2`.
+/// The minimum length of `input` for a tag is `1`.
 /// In case of success, returns the remaining input and `Tag`.
 /// In case of error, returns the original input and error description.
-pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], ast::Tag), (&[u8], StreamingTagError)> {
+pub(crate) fn parse_tag(
+  input: &[u8],
+  swf_version: u8,
+) -> Result<(&[u8], Option<ast::Tag>), (&[u8], StreamingTagError)> {
+  if input.is_empty() {
+    return Err((input, StreamingTagError::IncompleteHeader));
+  }
   let base_input = input; // Keep original input for errors.
   let (input, header) = match parse_tag_header(input) {
     Ok(ok) => ok,
     Err(_) => return Err((base_input, StreamingTagError::IncompleteHeader)),
   };
+  if header.code == 0 {
+    return Ok((&[], None));
+  }
   let body_len = usize::try_from(header.length).unwrap();
   if input.len() < body_len {
     let header_len = base_input.len() - input.len();
@@ -41,10 +50,17 @@ pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], ast::Ta
   }
   let (input, tag_body) = (&input[body_len..], &input[..body_len]);
   let tag = parse_tag_body(tag_body, header.code, swf_version);
-  Ok((input, tag))
+  Ok((input, Some(tag)))
 }
 
 pub(crate) fn parse_tag_header(input: &[u8]) -> NomResult<&[u8], ast::TagHeader> {
+  // TODO: More test samples to pin down how Adobe's player handles this case (header starting with a NUL byte).
+  // if input.len() > 0 && input[0] == 0 {
+  //   // If the first byte is `NUL`, treat it as an end-of-tags marker.
+  //   // This is not documented but seems to be how SWF works in practice
+  //   return Ok((&input[1..], ast::TagHeader { code: 0, length: 0}));
+  // }
+
   let (input, code_and_length) = parse_le_u16(input)?;
   let code = code_and_length >> 6;
   let max_length = (1 << 6) - 1;

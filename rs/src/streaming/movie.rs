@@ -80,22 +80,16 @@ pub fn parse_movie_payload(input: &[u8], swf_version: u8) -> NomResult<&[u8], as
 
 pub fn parse_tag_block_string(mut input: &[u8], swf_version: u8) -> NomResult<&[u8], Vec<ast::Tag>> {
   let mut result: Vec<ast::Tag> = Vec::new();
-  while input.len() > 0 {
-    // TODO: Check two bytes ahead?
-    // A null byte indicates the end of the string of tags
-    if input[0] == 0 {
-      input = &input[1..];
-      break;
-    }
+  loop {
     input = match parse_tag(input, swf_version) {
-      Ok((input, swf_tag)) => {
-        result.push(swf_tag);
+      Ok((input, Some(tag))) => {
+        result.push(tag);
         input
       }
+      Ok((input, None)) => return Ok((input, result)),
       Err(_) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
-    };
+    }
   }
-  Ok((input, result))
 }
 
 #[cfg(test)]

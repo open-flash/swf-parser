@@ -1,10 +1,11 @@
 # Next
 
-- **[Breaking change]** Make the parsers stateless.
+- **[Breaking change]** Make the parsers stateless by parsing font alignment zones based on available input instead of memorized glyph count.
 
 ### Rust
 
 - **[Fix]** Remove `nom` macros.
+- **[Feature]** Add experimental streaming parser.
 
 # 0.9.0 (2019-10-17)
 

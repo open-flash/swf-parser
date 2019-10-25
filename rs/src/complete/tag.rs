@@ -33,7 +33,7 @@ use crate::streaming::movie::parse_tag_block_string;
 use swf_tree::text::FontAlignmentZone;
 
 // TODO: Result with `never` error?
-pub fn parse_tag(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Tag> {
+pub fn parse_tag(input: &[u8], swf_version: u8) -> NomResult<&[u8], Option<ast::Tag>> {
   match crate::streaming::tag::parse_tag(input, swf_version) {
     Ok(ok) => Ok(ok),
     Err((input, _e)) => Err(nom::Err::Error((input, nom::error::ErrorKind::Complete))),
