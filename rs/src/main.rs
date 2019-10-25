@@ -4,7 +4,7 @@ use std::io::prelude::*;
 
 extern crate swf_parser;
 
-use swf_parser::parsers;
+use swf_parser::complete::parse_swf;
 
 use swf_tree as ast;
 
@@ -24,14 +24,6 @@ fn main() {
 
   //  println!("Input:\n{:?}", &data);
 
-  let swf_file_parse_result: nom::IResult<&[u8], ast::Movie> = parsers::movie::parse_movie(&data[..]);
-
-  match swf_file_parse_result {
-    Ok((_, parsed)) => {
-      println!("{}", serde_json::to_string_pretty(&parsed).unwrap());
-    }
-    Err(error) => {
-      println!("Error:\n{:?}", error);
-    }
-  }
+  let movie: ast::Movie = parse_swf(&data[..]).expect("Failed to parse movie");
+  println!("{}", serde_json::to_string_pretty(&movie).unwrap());
 }
