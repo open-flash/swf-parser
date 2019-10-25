@@ -1,5 +1,4 @@
 use crate::complete::tag::parse_tag_body;
-use crate::state::ParseState;
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32};
 use nom::IResult as NomResult;
 use std::convert::TryFrom;
@@ -28,10 +27,7 @@ pub(crate) enum StreamingTagError {
 /// The minimum length of `input` for a tag is `2`.
 /// In case of success, returns the remaining input and `Tag`.
 /// In case of error, returns the original input and error description.
-pub(crate) fn parse_tag<'a>(
-  input: &'a [u8],
-  state: &ParseState,
-) -> Result<(&'a [u8], ast::Tag), (&'a [u8], StreamingTagError)> {
+pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], ast::Tag), (&[u8], StreamingTagError)> {
   let base_input = input; // Keep original input for errors.
   let (input, header) = match parse_tag_header(input) {
     Ok(ok) => ok,
@@ -44,13 +40,7 @@ pub(crate) fn parse_tag<'a>(
     return Err((base_input, StreamingTagError::IncompleteTag(tag_len)));
   }
   let (input, tag_body) = (&input[body_len..], &input[..body_len]);
-  let tag = parse_tag_body(tag_body, header.code, state);
-  if let ast::Tag::DefineFont(ref tag) = &tag {
-    match tag.glyphs {
-      Some(ref glyphs) => state.set_glyph_count(tag.id as usize, glyphs.len()),
-      None => state.set_glyph_count(tag.id as usize, 0),
-    }
-  }
+  let tag = parse_tag_body(tag_body, header.code, swf_version);
   Ok((input, tag))
 }
 

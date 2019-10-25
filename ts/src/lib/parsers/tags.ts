@@ -40,7 +40,6 @@ import { TextAlignment } from "swf-tree/text";
 import { EmSquareSize } from "swf-tree/text/em-square-size";
 import { VideoCodec } from "swf-tree/video/video-codec";
 import { VideoDeblocking } from "swf-tree/video/video-deblocking";
-import { GlyphCountProvider, ParseContext } from "../parse-context";
 import {
   parseBlockCString,
   parseColorTransform,
@@ -90,7 +89,7 @@ import { getVideoDeblockingFromCode, parseVideoCodec } from "./video";
 /**
  * Read tags until the end of the stream or "end-of-tags".
  */
-export function parseTagBlockString(byteStream: ReadableByteStream, context: ParseContext): Tag[] {
+export function parseTagBlockString(byteStream: ReadableByteStream, swfVersion: Uint8): Tag[] {
   const tags: Tag[] = [];
   while (byteStream.available() >= 2) {
     // A null byte indicates the end-of-tags
@@ -105,28 +104,15 @@ export function parseTagBlockString(byteStream: ReadableByteStream, context: Par
         byteStream.bytePos = oldBytePos;
       }
     }
-    const tag: Tag = parseTag(byteStream, context);
+    const tag: Tag = parseTag(byteStream, swfVersion);
     tags.push(tag);
   }
   return tags;
 }
 
-export function parseTag(byteStream: ReadableByteStream, context: ParseContext): Tag {
+export function parseTag(byteStream: ReadableByteStream, swfVersion: Uint8): Tag {
   const {code, length}: TagHeader = parseTagHeader(byteStream);
-  const tag: Tag = parseTagBody(byteStream.take(length), code, context);
-  switch (tag.type) {
-    case TagType.DefineFont:
-      if (tag.glyphs !== undefined) {
-        context.setGlyphCount(tag.id, tag.glyphs.length);
-      } else {
-        // TODO: Explain why we are using 0: does it make sense? Maybe `undefined` is better?
-        context.setGlyphCount(tag.id, 0);
-      }
-      break;
-    default:
-      break;
-  }
-  return tag;
+  return parseTagBody(byteStream.take(length), code, swfVersion);
 }
 
 function parseTagHeader(byteStream: ReadableByteStream): TagHeader {
@@ -143,7 +129,7 @@ function parseTagHeader(byteStream: ReadableByteStream): TagHeader {
 }
 
 // tslint:disable-next-line:cyclomatic-complexity
-function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: ParseContext): Tag {
+function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, swfVersion: Uint8): Tag {
   switch (tagCode) {
     case 1:
       return {type: TagType.ShowFrame};
@@ -154,11 +140,11 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
     case 5:
       return parseRemoveObject(byteStream);
     case 6:
-      return parseDefineBits(byteStream, context.getVersion());
+      return parseDefineBits(byteStream, swfVersion);
     case 7:
       return parseDefineButton(byteStream);
     case 8:
-      return parseDefineJpegTables(byteStream, context.getVersion());
+      return parseDefineJpegTables(byteStream, swfVersion);
     case 9:
       return parseSetBackgroundColor(byteStream);
     case 10:
@@ -182,7 +168,7 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
     case 20:
       return parseDefineBitsLossless(byteStream);
     case 21:
-      return parseDefineBitsJpeg2(byteStream, context.getVersion());
+      return parseDefineBitsJpeg2(byteStream, swfVersion);
     case 22:
       return parseDefineShape2(byteStream);
     case 23:
@@ -192,7 +178,7 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
     case 25:
       return {type: TagType.EnablePostscript};
     case 26:
-      return parsePlaceObject2(byteStream, context.getVersion());
+      return parsePlaceObject2(byteStream, swfVersion);
     case 28:
       return parseRemoveObject2(byteStream);
     case 32:
@@ -202,13 +188,13 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
     case 34:
       return parseDefineButton2(byteStream);
     case 35:
-      return parseDefineBitsJpeg3(byteStream, context.getVersion());
+      return parseDefineBitsJpeg3(byteStream, swfVersion);
     case 36:
       return parseDefineBitsLossless2(byteStream);
     case 37:
       return parseDefineEditText(byteStream);
     case 39:
-      return parseDefineSprite(byteStream, context);
+      return parseDefineSprite(byteStream, swfVersion);
     case 43:
       return parseFrameLabel(byteStream);
     case 45:
@@ -240,11 +226,11 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, context: P
     case 69:
       return parseFileAttributes(byteStream);
     case 70:
-      return parsePlaceObject3(byteStream, context.getVersion());
+      return parsePlaceObject3(byteStream, swfVersion);
     case 71:
       return parseImportAssets2(byteStream);
     case 73:
-      return parseDefineFontAlignZones(byteStream, context.getGlyphCount.bind(context));
+      return parseDefineFontAlignZones(byteStream);
     case 74:
       return parseCsmTextSettings(byteStream);
     case 75:
@@ -676,20 +662,13 @@ export function parseDefineFont4(byteStream: ReadableByteStream): tags.DefineCff
   };
 }
 
-export function parseDefineFontAlignZones(
-  byteStream: ReadableByteStream,
-  glyphCountProvider: GlyphCountProvider,
-): tags.DefineFontAlignZones {
+export function parseDefineFontAlignZones(byteStream: ReadableByteStream): tags.DefineFontAlignZones {
   const fontId: Uint16 = byteStream.readUint16LE();
-  const glyphCount: UintSize | undefined = glyphCountProvider(fontId);
-  if (glyphCount === undefined) {
-    throw new Incident("ParseError", `ParseDefineFontAlignZones: Unknown font for id: ${fontId}`);
-  }
   const bitStream: ReadableBitStream = byteStream.asBitStream();
   const csmTableHint: text.CsmTableHint = parseCsmTableHintBits(bitStream);
   bitStream.align();
   const zones: text.FontAlignmentZone[] = [];
-  for (let i: number = 0; i < glyphCount; i++) {
+  while (byteStream.available() > 0) {
     zones.push(parseFontAlignmentZone(byteStream));
   }
   return {type: TagType.DefineFontAlignZones, fontId, csmTableHint, zones};
@@ -903,10 +882,10 @@ function parseDefineSound(byteStream: ReadableByteStream): tags.DefineSound {
   return {type: TagType.DefineSound, id, soundType, soundSize, soundRate, format, sampleCount, data};
 }
 
-export function parseDefineSprite(byteStream: ReadableByteStream, context: ParseContext): tags.DefineSprite {
+export function parseDefineSprite(byteStream: ReadableByteStream, swfVersion: Uint8): tags.DefineSprite {
   const id: Uint16 = byteStream.readUint16LE();
   const frameCount: UintSize = byteStream.readUint16LE();
-  const tags: Tag[] = parseTagBlockString(byteStream, context);
+  const tags: Tag[] = parseTagBlockString(byteStream, swfVersion);
   return {
     type: TagType.DefineSprite,
     id,

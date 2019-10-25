@@ -1,5 +1,7 @@
 # Next
 
+- **[Breaking change]** Make the parsers stateless.
+
 ### Rust
 
 - **[Fix]** Remove `nom` macros.

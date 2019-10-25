@@ -7,7 +7,6 @@ import { JsonValueWriter } from "kryo/writers/json-value";
 import sysPath from "path";
 import { Tag } from "swf-tree";
 import { $Tag } from "swf-tree/tag";
-import { DefaultParseContext } from "../lib/parse-context";
 import { parseTag } from "../lib/parsers/tags";
 import meta from "./meta.js";
 import { readFile, readTextFile } from "./utils";
@@ -111,14 +110,11 @@ function* getSamplesFromGroup(group: SampleGroup): IterableIterator<Sample> {
         break;
     }
 
-    const ctx: DefaultParseContext = new DefaultParseContext(swfVersion);
-    ctx.setGlyphCount(1, 11);
-
     yield {
       name: testName,
       inputPath,
       valuePath,
-      parser: (stream: ReadableByteStream) => parseTag(stream, ctx),
+      parser: (stream: ReadableByteStream) => parseTag(stream, swfVersion),
     };
   }
 }

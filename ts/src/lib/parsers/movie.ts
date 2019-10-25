@@ -3,7 +3,6 @@ import { Incident } from "incident";
 import { inflate } from "pako";
 import { Uint8 } from "semantic-types";
 import { CompressionMethod, Header, Movie, SwfSignature, Tag } from "swf-tree";
-import { DefaultParseContext, ParseContext } from "../parse-context";
 import { parseHeader, parseSwfSignature } from "./header";
 import { parseTagBlockString } from "./tags";
 
@@ -25,8 +24,7 @@ export function parseMovie(byteStream: ReadableStream): Movie {
 }
 
 export function parsePayload(byteStream: ReadableStream, swfVersion: Uint8): Movie {
-  const context: ParseContext = new DefaultParseContext(swfVersion);
   const header: Header = parseHeader(byteStream, swfVersion);
-  const tags: Tag[] = parseTagBlockString(byteStream, context);
+  const tags: Tag[] = parseTagBlockString(byteStream, swfVersion);
   return {header, tags};
 }

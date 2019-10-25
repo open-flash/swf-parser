@@ -1,5 +1,4 @@
 use crate::parsers::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
-use crate::state::ParseState;
 use crate::streaming::tag::parse_tag;
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
@@ -73,14 +72,13 @@ pub fn parse_header(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Head
 }
 
 pub fn parse_movie_payload(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
-  let mut state = ParseState::new(swf_version);
   let (input, header) = parse_header(input, swf_version)?;
-  let (input, tags) = parse_tag_block_string(input, &mut state)?;
+  let (input, tags) = parse_tag_block_string(input, swf_version)?;
 
   Ok((input, ast::Movie { header, tags }))
 }
 
-pub fn parse_tag_block_string<'a>(mut input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], Vec<ast::Tag>> {
+pub fn parse_tag_block_string(mut input: &[u8], swf_version: u8) -> NomResult<&[u8], Vec<ast::Tag>> {
   let mut result: Vec<ast::Tag> = Vec::new();
   while input.len() > 0 {
     // TODO: Check two bytes ahead?
@@ -89,7 +87,7 @@ pub fn parse_tag_block_string<'a>(mut input: &'a [u8], state: &ParseState) -> No
       input = &input[1..];
       break;
     }
-    input = match parse_tag(input, state) {
+    input = match parse_tag(input, swf_version) {
       Ok((input, swf_tag)) => {
         result.push(swf_tag);
         input

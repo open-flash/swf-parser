@@ -29,33 +29,27 @@ use crate::parsers::text::{
   parse_text_alignment, parse_text_record_string, text_renderer_from_code, FontInfoVersion, FontVersion, TextVersion,
 };
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
-use crate::state::ParseState;
 use crate::streaming::movie::parse_tag_block_string;
+use swf_tree::text::FontAlignmentZone;
 
 // TODO: Result with `never` error?
-pub fn parse_tag<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::Tag> {
-  match crate::streaming::tag::parse_tag(input, state) {
+pub fn parse_tag(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Tag> {
+  match crate::streaming::tag::parse_tag(input, swf_version) {
     Ok(ok) => Ok(ok),
     Err((input, _e)) => Err(nom::Err::Error((input, nom::error::ErrorKind::Complete))),
   }
 }
 
-pub(crate) fn parse_tag_body(input: &[u8], code: u16, state: &ParseState) -> ast::Tag {
+pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> ast::Tag {
   use nom::combinator::map;
   let result = match code {
     1 => Ok((input, ast::Tag::ShowFrame)),
     2 => map(parse_define_shape, ast::Tag::DefineShape)(input),
     4 => map(parse_place_object, ast::Tag::PlaceObject)(input),
     5 => map(parse_remove_object, ast::Tag::RemoveObject)(input),
-    6 => map(
-      |i| parse_define_bits(i, state.get_swf_version()),
-      ast::Tag::DefineBitmap,
-    )(input),
+    6 => map(|i| parse_define_bits(i, swf_version), ast::Tag::DefineBitmap)(input),
     7 => map(parse_define_button, ast::Tag::DefineButton)(input),
-    8 => map(
-      |i| parse_define_jpeg_tables(i, state.get_swf_version()),
-      ast::Tag::DefineJpegTables,
-    )(input),
+    8 => map(|i| parse_define_jpeg_tables(i, swf_version), ast::Tag::DefineJpegTables)(input),
     9 => map(parse_set_background_color_tag, ast::Tag::SetBackgroundColor)(input),
     10 => map(parse_define_font, ast::Tag::DefineGlyphFont)(input),
     11 => map(parse_define_text, ast::Tag::DefineText)(input),
@@ -67,10 +61,7 @@ pub(crate) fn parse_tag_body(input: &[u8], code: u16, state: &ParseState) -> ast
     18 => map(parse_sound_stream_head, ast::Tag::SoundStreamHead)(input),
     19 => map(parse_sound_stream_block, ast::Tag::SoundStreamBlock)(input),
     20 => map(parse_define_bits_lossless, ast::Tag::DefineBitmap)(input),
-    21 => map(
-      |i| parse_define_bits_jpeg2(i, state.get_swf_version()),
-      ast::Tag::DefineBitmap,
-    )(input),
+    21 => map(|i| parse_define_bits_jpeg2(i, swf_version), ast::Tag::DefineBitmap)(input),
     22 => map(parse_define_shape2, ast::Tag::DefineShape)(input),
     23 => map(
       parse_define_button_color_transform,
@@ -78,21 +69,15 @@ pub(crate) fn parse_tag_body(input: &[u8], code: u16, state: &ParseState) -> ast
     )(input),
     24 => map(parse_protect, ast::Tag::Protect)(input),
     25 => Ok((input, ast::Tag::EnablePostscript)),
-    26 => map(
-      |i| parse_place_object2(i, state.get_swf_version() >= 6),
-      ast::Tag::PlaceObject,
-    )(input),
+    26 => map(|i| parse_place_object2(i, swf_version), ast::Tag::PlaceObject)(input),
     28 => map(parse_remove_object2, ast::Tag::RemoveObject)(input),
     32 => map(parse_define_shape3, ast::Tag::DefineShape)(input),
     33 => map(parse_define_text2, ast::Tag::DefineText)(input),
     34 => map(parse_define_button2, ast::Tag::DefineButton)(input),
-    35 => map(
-      |i| parse_define_bits_jpeg3(i, state.get_swf_version()),
-      ast::Tag::DefineBitmap,
-    )(input),
+    35 => map(|i| parse_define_bits_jpeg3(i, swf_version), ast::Tag::DefineBitmap)(input),
     36 => map(parse_define_bits_lossless2, ast::Tag::DefineBitmap)(input),
     37 => map(parse_define_edit_text, ast::Tag::DefineDynamicText)(input),
-    39 => map(|i| parse_define_sprite(i, state), ast::Tag::DefineSprite)(input),
+    39 => map(|i| parse_define_sprite(i, swf_version), ast::Tag::DefineSprite)(input),
     43 => map(parse_frame_label, ast::Tag::FrameLabel)(input),
     45 => map(parse_sound_stream_head2, ast::Tag::SoundStreamHead)(input),
     46 => map(parse_define_morph_shape, ast::Tag::DefineMorphShape)(input),
@@ -108,15 +93,9 @@ pub(crate) fn parse_tag_body(input: &[u8], code: u16, state: &ParseState) -> ast
     65 => map(parse_script_limits, ast::Tag::ScriptLimits)(input),
     66 => map(parse_set_tab_index, ast::Tag::SetTabIndex)(input),
     69 => map(parse_file_attributes_tag, ast::Tag::FileAttributes)(input),
-    70 => map(
-      |i| parse_place_object3(i, state.get_swf_version() >= 6),
-      ast::Tag::PlaceObject,
-    )(input),
+    70 => map(|i| parse_place_object3(i, swf_version), ast::Tag::PlaceObject)(input),
     71 => map(parse_import_assets2, ast::Tag::ImportAssets)(input),
-    73 => map(
-      |i| parse_define_font_align_zones(i, |font_id| state.get_glyph_count(font_id)),
-      ast::Tag::DefineFontAlignZones,
-    )(input),
+    73 => map(parse_define_font_align_zones, ast::Tag::DefineFontAlignZones)(input),
     74 => map(parse_csm_text_settings, ast::Tag::CsmTextSettings)(input),
     75 => map(parse_define_font3, ast::Tag::DefineFont)(input),
     76 => map(parse_symbol_class, ast::Tag::SymbolClass)(input),
@@ -649,22 +628,17 @@ pub fn parse_define_font4(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineCff
   ))
 }
 
-pub fn parse_define_font_align_zones<P>(
-  input: &[u8],
-  glyph_count_provider: P,
-) -> NomResult<&[u8], ast::tags::DefineFontAlignZones>
-where
-  P: Fn(usize) -> Option<usize>,
-{
+pub fn parse_define_font_align_zones(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineFontAlignZones> {
   use nom::bits::bits;
-  use nom::multi::count;
 
   let (input, font_id) = parse_le_u16(input)?;
-  // TODO(demurgos): Return an error if the glyph count is not found (instead of silently using default!)?
-  let glyph_count = glyph_count_provider(font_id.into()).unwrap_or_default();
-
-  let (input, csm_table_hint) = bits(parse_csm_table_hint_bits)(input)?;
-  let (input, zones) = count(parse_font_alignment_zone, glyph_count)(input)?;
+  let (mut input, csm_table_hint) = bits(parse_csm_table_hint_bits)(input)?;
+  let mut zones: Vec<FontAlignmentZone> = Vec::new();
+  while !input.is_empty() {
+    let (next_input, zone) = parse_font_alignment_zone(input)?;
+    input = next_input;
+    zones.push(zone);
+  }
 
   Ok((
     input,
@@ -929,19 +903,13 @@ fn parse_define_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineSound> 
   ))
 }
 
-// TODO: Readonly `state`?
-pub fn parse_define_sprite<'a>(input: &'a [u8], state: &ParseState) -> NomResult<&'a [u8], ast::tags::DefineSprite> {
+pub fn parse_define_sprite(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::tags::DefineSprite> {
+  use nom::combinator::map;
+
   let (input, id) = parse_le_u16(input)?;
-  let (input, frame_count) = parse_le_u16(input)?;
-  let (input, tags) = parse_tag_block_string(input, state)?;
-  Ok((
-    input,
-    ast::tags::DefineSprite {
-      id: id,
-      frame_count: frame_count as usize,
-      tags: tags,
-    },
-  ))
+  let (input, frame_count) = map(parse_le_u16, usize::from)(input)?;
+  let (input, tags) = parse_tag_block_string(input, swf_version)?;
+  Ok((input, ast::tags::DefineSprite { id, frame_count, tags }))
 }
 
 pub fn parse_define_text(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineText> {
@@ -1159,8 +1127,7 @@ pub fn parse_place_object(input: &[u8]) -> NomResult<&[u8], ast::tags::PlaceObje
   ))
 }
 
-/// `extended_events` corresponds to `swf_version >= 6`
-pub fn parse_place_object2(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::tags::PlaceObject> {
+pub fn parse_place_object2(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::tags::PlaceObject> {
   use nom::combinator::cond;
 
   let (input, flags) = parse_u8(input)?;
@@ -1179,7 +1146,7 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> NomResult<&[u
   let (input, ratio) = cond(has_ratio, parse_le_u16)(input)?;
   let (input, name) = cond(has_name, parse_c_string)(input)?;
   let (input, clip_depth) = cond(has_clip_depth, parse_le_u16)(input)?;
-  let (input, clip_actions) = cond(has_clip_actions, |i| parse_clip_actions_string(i, extended_events))(input)?;
+  let (input, clip_actions) = cond(has_clip_actions, |i| parse_clip_actions_string(i, swf_version >= 6))(input)?;
 
   Ok((
     input,
@@ -1203,8 +1170,7 @@ pub fn parse_place_object2(input: &[u8], extended_events: bool) -> NomResult<&[u
   ))
 }
 
-/// `extended_events` corresponds to `swf_version >= 6`
-pub fn parse_place_object3(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::tags::PlaceObject> {
+pub fn parse_place_object3(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::tags::PlaceObject> {
   use nom::combinator::{cond, map};
 
   let (input, flags) = parse_le_u16(input)?;
@@ -1239,7 +1205,7 @@ pub fn parse_place_object3(input: &[u8], extended_events: bool) -> NomResult<&[u
   let (input, is_visible) = cond(has_visibility, map(parse_u8, |x| x != 0))(input)?;
   // TODO(demurgos): Check if it is RGBA or ARGB
   let (input, background_color) = cond(has_background_color, parse_straight_s_rgba8)(input)?;
-  let (input, clip_actions) = cond(has_clip_actions, |i| parse_clip_actions_string(i, extended_events))(input)?;
+  let (input, clip_actions) = cond(has_clip_actions, |i| parse_clip_actions_string(i, swf_version >= 6))(input)?;
 
   Ok((
     input,
