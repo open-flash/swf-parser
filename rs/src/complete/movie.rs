@@ -1,5 +1,5 @@
+use crate::streaming::movie::{parse_movie_payload, parse_swf_signature};
 use swf_tree as ast;
-use crate::streaming::movie::{parse_swf_signature, parse_movie_payload};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SwfParseError {
@@ -20,18 +20,12 @@ pub fn parse_swf(input: &[u8]) -> Result<ast::Movie, SwfParseError> {
   let payload: &[u8] = match signature.compression_method {
     ast::CompressionMethod::None => input,
     ast::CompressionMethod::Deflate => {
-      use ::std::io::Write;
-      let mut decoder = ::inflate::InflateWriter::from_zlib(Vec::new());
-      match decoder.write(input) {
-        Ok(_) => (),
-        Err(_) => return Err(SwfParseError::InvalidPayload),
-      }
-      payload_memory = match decoder.finish() {
+      payload_memory = match inflate::inflate_bytes_zlib(input) {
         Ok(uncompressed) => uncompressed,
         Err(_) => return Err(SwfParseError::InvalidPayload),
       };
       &payload_memory
-    },
+    }
     ast::CompressionMethod::Lzma => {
       let mut payload_reader = std::io::BufReader::new(input);
       payload_memory = Vec::new();

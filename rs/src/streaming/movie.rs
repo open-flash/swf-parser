@@ -1,10 +1,10 @@
+use crate::parsers::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
 use crate::state::ParseState;
 use crate::streaming::tag::parse_tag;
+use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
-use swf_tree as ast;
 use std::convert::TryFrom;
-use crate::parsers::basic_data_types::{parse_rect, parse_le_ufixed8_p8};
-use nom::number::streaming::{le_u8 as parse_u8, le_u16 as parse_le_u16, le_u32 as parse_le_u32};
+use swf_tree as ast;
 
 pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
   use ::std::io::Write;
@@ -35,7 +35,14 @@ pub fn parse_swf_signature(input: &[u8]) -> NomResult<&[u8], ast::SwfSignature> 
   let (input, swf_version) = parse_u8(input)?;
   let (input, uncompressed_file_length) = map(parse_le_u32, |x| usize::try_from(x).unwrap())(input)?;
 
-  Ok((input, ast::SwfSignature { compression_method, swf_version, uncompressed_file_length }))
+  Ok((
+    input,
+    ast::SwfSignature {
+      compression_method,
+      swf_version,
+      uncompressed_file_length,
+    },
+  ))
 }
 
 pub fn parse_compression_method(input: &[u8]) -> NomResult<&[u8], ast::CompressionMethod> {
@@ -54,7 +61,15 @@ pub fn parse_header(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Head
   let (input, frame_rate) = parse_le_ufixed8_p8(input)?;
   let (input, frame_count) = parse_le_u16(input)?;
 
-  Ok((input, ast::Header { swf_version, frame_size, frame_rate, frame_count }))
+  Ok((
+    input,
+    ast::Header {
+      swf_version,
+      frame_size,
+      frame_rate,
+      frame_count,
+    },
+  ))
 }
 
 pub fn parse_movie_payload(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
