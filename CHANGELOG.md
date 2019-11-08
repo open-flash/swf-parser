@@ -4,8 +4,9 @@
 
 ### Rust
 
-- **[Fix]** Remove `nom` macros.
 - **[Feature]** Add experimental streaming parser.
+- **[Fix]** Remove `nom` macros.
+- **[Fix]** Add `clippy` support.
 
 # 0.9.0 (2019-10-17)
 

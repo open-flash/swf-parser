@@ -52,7 +52,7 @@ impl HeaderParser {
           Ok(ok) => ok,
           Err(nom::Err::Incomplete(_)) => return Err(Self(InnerHeaderParser::Signature(buffer))),
           Err(nom::Err::Error(_)) | Err(nom::Err::Failure(_)) => {
-            return Err(Self(InnerHeaderParser::Signature(buffer)))
+            return Err(Self(InnerHeaderParser::Signature(buffer)));
           }
         };
         let buffer: FlatBuffer = FlatBuffer::new();
@@ -96,6 +96,12 @@ impl HeaderParser {
       Ok((header, stream)) => Ok((header, TagParser(InnerTagParser::Deflate(stream)))),
       Err(stream) => Err(Self(InnerHeaderParser::Deflate(stream))),
     }
+  }
+}
+
+impl Default for HeaderParser {
+  fn default() -> Self {
+    Self::new()
   }
 }
 
@@ -160,7 +166,7 @@ impl<B: StreamBuffer> SimpleStream<B> {
   }
 
   /// Appends data to the internal buffer.
-  pub(crate) fn write(&mut self, bytes: &[u8]) -> () {
+  pub(crate) fn write(&mut self, bytes: &[u8]) {
     self.buffer.write(bytes);
   }
 
@@ -244,7 +250,7 @@ impl<B: StreamBuffer> DeflateStream<B> {
   }
 
   /// Appends data to the internal buffer.
-  pub(crate) fn write(&mut self, mut bytes: &[u8]) -> () {
+  pub(crate) fn write(&mut self, mut bytes: &[u8]) {
     while !bytes.is_empty() {
       match self.inflater.update(bytes) {
         Ok((read_count, chunk)) => {
@@ -308,7 +314,7 @@ impl<B: StreamBuffer> LzmaStream<B> {
     stream
   }
 
-  pub(crate) fn write(&mut self, mut _bytes: &[u8]) -> () {
+  pub(crate) fn write(&mut self, mut _bytes: &[u8]) {
     unimplemented!()
   }
 
@@ -327,7 +333,7 @@ mod tests {
   use swf_tree::Movie;
 
   #[test]
-  fn test_stream_parse_blank() -> () {
+  fn test_stream_parse_blank() {
     let movie_ast_bytes: &[u8] = include_bytes!("../../../tests/movies/blank/ast.json");
     let expected: Movie = serde_json_v8::from_slice::<Movie>(movie_ast_bytes).expect("Failed to read AST");
 

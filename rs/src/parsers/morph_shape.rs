@@ -3,7 +3,7 @@ use crate::parsers::basic_data_types::{
   parse_straight_s_rgba8, parse_u16_bits,
 };
 use crate::parsers::gradient::parse_morph_gradient;
-use crate::parsers::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits};
+use crate::parsers::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits, StyleBits};
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
@@ -29,11 +29,9 @@ pub fn parse_morph_shape_bits(
   version: MorphShapeVersion,
 ) -> NomResult<(&[u8], usize), ast::MorphShape> {
   let (input, styles) = parse_morph_shape_styles_bits(input, version)?;
-  let (input, start_records) =
-    parse_morph_shape_start_record_string_bits(input, styles.fill_bits, styles.line_bits, version)?;
+  let (input, start_records) = parse_morph_shape_start_record_string_bits(input, styles.bits, version)?;
   let (input, style_bits) = nom::bits::bytes(parse_style_bits_len)(input)?;
-  let (input, records) =
-    parse_morph_shape_end_record_string_bits(input, start_records, style_bits.0, style_bits.1, version)?;
+  let (input, records) = parse_morph_shape_end_record_string_bits(input, start_records, style_bits, version)?;
 
   Ok((
     input,
@@ -42,30 +40,29 @@ pub fn parse_morph_shape_bits(
         fill: styles.fill,
         line: styles.line,
       },
-      records: records,
+      records,
     },
   ))
 }
 
-fn parse_style_bits_len(input: &[u8]) -> NomResult<&[u8], (usize, usize)> {
+fn parse_style_bits_len(input: &[u8]) -> NomResult<&[u8], StyleBits> {
   use nom::bits::bits;;
   bits(parse_style_bits_len_bits)(input)
 }
 
-fn parse_style_bits_len_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), (usize, usize)> {
+fn parse_style_bits_len_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), StyleBits> {
   use nom::combinator::map;
 
-  let (input, fill_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
-  let (input, line_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let (input, fill) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let (input, line) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
 
-  Ok((input, (fill_bits, line_bits)))
+  Ok((input, StyleBits { fill, line }))
 }
 
 pub struct InternalMorphShapeStyles {
   pub fill: Vec<ast::MorphFillStyle>,
   pub line: Vec<ast::MorphLineStyle>,
-  pub fill_bits: usize,
-  pub line_bits: usize,
+  pub bits: StyleBits,
 }
 
 pub fn parse_morph_shape_styles_bits(
@@ -85,8 +82,10 @@ pub fn parse_morph_shape_styles_bits(
     InternalMorphShapeStyles {
       fill,
       line,
-      fill_bits,
-      line_bits,
+      bits: StyleBits {
+        fill: fill_bits,
+        line: line_bits,
+      },
     },
   ))
 }
@@ -98,8 +97,7 @@ enum MixedShapeRecord {
 
 fn parse_morph_shape_start_record_string_bits(
   input: (&[u8], usize),
-  mut fill_bits: usize,
-  mut line_bits: usize,
+  mut style_bits: StyleBits,
   version: MorphShapeVersion,
 ) -> NomResult<(&[u8], usize), Vec<MixedShapeRecord>> {
   let mut result: Vec<MixedShapeRecord> = Vec::new();
@@ -143,10 +141,9 @@ fn parse_morph_shape_start_record_string_bits(
       current_input = next_input;
       result.push(MixedShapeRecord::Edge(edge));
     } else {
-      let (next_input, (style_change, style_bits)) =
-        parse_morph_style_change_bits(current_input, fill_bits, line_bits, version)?;
-      fill_bits = style_bits.0;
-      line_bits = style_bits.1;
+      let (next_input, (style_change, next_style_bits)) =
+        parse_morph_style_change_bits(current_input, style_bits, version)?;
+      style_bits = next_style_bits;
       result.push(MixedShapeRecord::MorphStyleChange(style_change));
       current_input = next_input;
     }
@@ -182,8 +179,7 @@ fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> ast:
 fn parse_morph_shape_end_record_string_bits(
   input: (&[u8], usize),
   start_records: Vec<MixedShapeRecord>,
-  mut fill_bits: usize,
-  mut line_bits: usize,
+  mut style_bits: StyleBits,
   version: MorphShapeVersion,
 ) -> NomResult<(&[u8], usize), Vec<ast::MorphShapeRecord>> {
   let mut result: Vec<ast::MorphShapeRecord> = Vec::new();
@@ -236,10 +232,9 @@ fn parse_morph_shape_end_record_string_bits(
       current_input = next_input;
       MixedShapeRecord::Edge(edge)
     } else {
-      let (next_input, (style_change, style_bits)) =
-        parse_morph_style_change_bits(current_input, fill_bits, line_bits, version)?;
-      fill_bits = style_bits.0;
-      line_bits = style_bits.1;
+      let (next_input, (style_change, next_style_bits)) =
+        parse_morph_style_change_bits(current_input, style_bits, version)?;
+      style_bits = next_style_bits;
       current_input = next_input;
       MixedShapeRecord::MorphStyleChange(style_change)
     };
@@ -251,10 +246,9 @@ fn parse_morph_shape_end_record_string_bits(
 
 pub fn parse_morph_style_change_bits(
   input: (&[u8], usize),
-  fill_bits: usize,
-  line_bits: usize,
+  style_bits: StyleBits,
   version: MorphShapeVersion,
-) -> NomResult<(&[u8], usize), (ast::shape_records::MorphStyleChange, (usize, usize))> {
+) -> NomResult<(&[u8], usize), (ast::shape_records::MorphStyleChange, StyleBits)> {
   use nom::combinator::cond;
 
   let (input, has_new_styles) = parse_bool_bits(input)?;
@@ -270,10 +264,10 @@ pub fn parse_morph_style_change_bits(
   } else {
     (input, None)
   };
-  let (input, left_fill) = cond(change_left_fill, do_parse_u16_bits(fill_bits))(input)?;
-  let (input, right_fill) = cond(change_right_fill, do_parse_u16_bits(fill_bits))(input)?;
-  let (input, line_style) = cond(change_line_style, do_parse_u16_bits(line_bits))(input)?;
-  let (input, styles) = if has_new_styles {
+  let (input, left_fill) = cond(change_left_fill, do_parse_u16_bits(style_bits.fill))(input)?;
+  let (input, right_fill) = cond(change_right_fill, do_parse_u16_bits(style_bits.fill))(input)?;
+  let (input, line_style) = cond(change_line_style, do_parse_u16_bits(style_bits.line))(input)?;
+  let (input, (new_styles, style_bits)) = if has_new_styles {
     let (input, styles) = parse_morph_shape_styles_bits(input, version)?;
     (
       input,
@@ -282,26 +276,25 @@ pub fn parse_morph_style_change_bits(
           fill: styles.fill,
           line: styles.line,
         }),
-        styles.fill_bits,
-        styles.line_bits,
+        styles.bits,
       ),
     )
   } else {
-    (input, (None, fill_bits, line_bits))
+    (input, (None, style_bits))
   };
 
   Ok((
     input,
     (
       ast::shape_records::MorphStyleChange {
-        move_to: move_to,
+        move_to,
         morph_move_to: Option::None,
         left_fill: left_fill.map(|x| x as usize),
         right_fill: right_fill.map(|x| x as usize),
         line_style: line_style.map(|x| x as usize),
-        new_styles: styles.0,
+        new_styles,
       },
-      (styles.1, styles.2),
+      style_bits,
     ),
   ))
 }
@@ -327,7 +320,7 @@ pub fn parse_morph_fill_style(input: &[u8]) -> NomResult<&[u8], ast::MorphFillSt
       |i| parse_morph_bitmap_fill(i, false, false),
       ast::MorphFillStyle::Bitmap,
     )(input),
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
 }
 
@@ -459,6 +452,7 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
   let (input, width) = parse_le_u16(input)?;
   let (input, morph_width) = parse_le_u16(input)?;
   let (input, flags) = parse_le_u16(input)?;
+  #[allow(clippy::identity_op)]
   let pixel_hinting = (flags & (1 << 0)) != 0;
   let no_v_scale = (flags & (1 << 1)) != 0;
   let no_h_scale = (flags & (1 << 2)) != 0;

@@ -65,14 +65,11 @@ pub fn parse_font_alignment_zone(input: &[u8]) -> NomResult<&[u8], ast::text::Fo
   let (input, zone_count) = map(parse_u8, usize::from)(input)?;
   let (input, data) = count(parse_font_alignment_zone_data, zone_count)(input)?;
   let (input, flags) = parse_u8(input)?;
-  Ok((
-    input,
-    ast::text::FontAlignmentZone {
-      data,
-      has_x: (flags & (1 << 0)) != 0,
-      has_y: (flags & (1 << 1)) != 0,
-    },
-  ))
+  #[allow(clippy::identity_op)]
+  let has_x = (flags & (1 << 0)) != 0;
+  let has_y = (flags & (1 << 1)) != 0;
+  // Skip bits [2, 7]
+  Ok((input, ast::text::FontAlignmentZone { data, has_x, has_y }))
 }
 
 pub fn parse_font_alignment_zone_data(input: &[u8]) -> NomResult<&[u8], ast::text::FontAlignmentZoneData> {
@@ -89,7 +86,7 @@ pub fn parse_text_record_string(
 ) -> NomResult<&[u8], Vec<ast::text::TextRecord>> {
   let mut result: Vec<ast::text::TextRecord> = Vec::new();
   let mut current_input: &[u8] = input;
-  while current_input.len() > 0 {
+  while !current_input.is_empty() {
     // A null byte indicates the end of the string of actions
     if current_input[0] == 0 {
       current_input = &current_input[1..];
@@ -117,6 +114,7 @@ pub fn parse_text_record(
   use nom::combinator::{cond, map};
 
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let has_offset_x = (flags & (1 << 0)) != 0;
   let has_offset_y = (flags & (1 << 1)) != 0;
   let has_color = (flags & (1 << 2)) != 0;
@@ -241,9 +239,9 @@ pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> NomResult<&[u8], a
   Ok((
     input,
     ast::text::FontLayout {
-      ascent: ascent,
-      descent: descent,
-      leading: leading,
+      ascent,
+      descent,
+      leading,
       advances,
       bounds,
       kerning,

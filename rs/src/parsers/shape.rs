@@ -25,9 +25,10 @@ pub fn parse_glyph(input: &[u8]) -> NomResult<&[u8], ast::Glyph> {
 pub fn parse_glyph_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::Glyph> {
   use nom::combinator::map;
 
-  let (input, fill_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
-  let (input, line_bits) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
-  let (input, records) = parse_shape_record_string_bits(input, fill_bits, line_bits, ShapeVersion::Shape1)?;
+  let (input, fill) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let (input, line) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
+  let style_bits = StyleBits { fill, line };
+  let (input, records) = parse_shape_record_string_bits(input, style_bits, ShapeVersion::Shape1)?;
 
   Ok((input, ast::Glyph { records }))
 }
@@ -39,7 +40,7 @@ pub fn parse_shape(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], ast:
 
 pub fn parse_shape_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResult<(&[u8], usize), ast::Shape> {
   let (input, styles) = parse_shape_styles_bits(input, version)?;
-  let (input, records) = parse_shape_record_string_bits(input, styles.fill_bits, styles.line_bits, version)?;
+  let (input, records) = parse_shape_record_string_bits(input, styles.bits, version)?;
 
   Ok((
     input,
@@ -48,17 +49,22 @@ pub fn parse_shape_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResu
         fill: styles.fill,
         line: styles.line,
       },
-      records: records,
+      records,
     },
   ))
 }
 
-// TODO: Rename to InternalShapeStyles or ParserShapeStyles
+// TODO: Rename to ShapeStylesWithBits
 pub struct ShapeStyles {
   pub fill: Vec<ast::FillStyle>,
   pub line: Vec<ast::LineStyle>,
-  pub fill_bits: usize,
-  pub line_bits: usize,
+  pub bits: StyleBits,
+}
+
+#[derive(Copy, Clone)]
+pub struct StyleBits {
+  pub fill: usize,
+  pub line: usize,
 }
 
 pub fn parse_shape_styles_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResult<(&[u8], usize), ShapeStyles> {
@@ -75,16 +81,17 @@ pub fn parse_shape_styles_bits(input: (&[u8], usize), version: ShapeVersion) -> 
     ShapeStyles {
       fill,
       line,
-      fill_bits,
-      line_bits,
+      bits: StyleBits {
+        fill: fill_bits,
+        line: line_bits,
+      },
     },
   ))
 }
 
 pub fn parse_shape_record_string_bits(
   input: (&[u8], usize),
-  mut fill_bits: usize,
-  mut line_bits: usize,
+  mut style_bits: StyleBits,
   version: ShapeVersion,
 ) -> NomResult<(&[u8], usize), Vec<ast::ShapeRecord>> {
   let mut result: Vec<ast::ShapeRecord> = Vec::new();
@@ -128,10 +135,8 @@ pub fn parse_shape_record_string_bits(
       current_input = next_input;
       result.push(ast::ShapeRecord::Edge(edge));
     } else {
-      let (next_input, (style_change, style_bits)) =
-        parse_style_change_bits(current_input, fill_bits, line_bits, version)?;
-      fill_bits = style_bits.0;
-      line_bits = style_bits.1;
+      let (next_input, (style_change, next_style_bits)) = parse_style_change_bits(current_input, style_bits, version)?;
+      style_bits = next_style_bits;
       result.push(ast::ShapeRecord::StyleChange(style_change));
       current_input = next_input;
     }
@@ -192,10 +197,9 @@ pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usiz
 
 pub fn parse_style_change_bits(
   input: (&[u8], usize),
-  fill_bits: usize,
-  line_bits: usize,
+  style_bits: StyleBits,
   version: ShapeVersion,
-) -> NomResult<(&[u8], usize), (ast::shape_records::StyleChange, (usize, usize))> {
+) -> NomResult<(&[u8], usize), (ast::shape_records::StyleChange, StyleBits)> {
   use nom::combinator::cond;
 
   let (input, has_new_styles) = parse_bool_bits(input)?;
@@ -211,10 +215,10 @@ pub fn parse_style_change_bits(
   } else {
     (input, None)
   };
-  let (input, left_fill) = cond(change_left_fill, do_parse_u16_bits(fill_bits))(input)?;
-  let (input, right_fill) = cond(change_right_fill, do_parse_u16_bits(fill_bits))(input)?;
-  let (input, line_style) = cond(change_line_style, do_parse_u16_bits(line_bits))(input)?;
-  let (input, styles) = if has_new_styles {
+  let (input, left_fill) = cond(change_left_fill, do_parse_u16_bits(style_bits.fill))(input)?;
+  let (input, right_fill) = cond(change_right_fill, do_parse_u16_bits(style_bits.fill))(input)?;
+  let (input, line_style) = cond(change_line_style, do_parse_u16_bits(style_bits.line))(input)?;
+  let (input, (new_styles, next_style_bits)) = if has_new_styles {
     let (input, styles) = parse_shape_styles_bits(input, version)?;
     (
       input,
@@ -223,25 +227,24 @@ pub fn parse_style_change_bits(
           fill: styles.fill,
           line: styles.line,
         }),
-        styles.fill_bits,
-        styles.line_bits,
+        styles.bits,
       ),
     )
   } else {
-    (input, (None, fill_bits, line_bits))
+    (input, (None, style_bits))
   };
 
   Ok((
     input,
     (
       ast::shape_records::StyleChange {
-        move_to: move_to,
-        left_fill: left_fill.map(|x| x as usize),
-        right_fill: right_fill.map(|x| x as usize),
-        line_style: line_style.map(|x| x as usize),
-        new_styles: styles.0,
+        move_to,
+        left_fill: left_fill.map(usize::from),
+        right_fill: right_fill.map(usize::from),
+        line_style: line_style.map(usize::from),
+        new_styles,
       },
-      (styles.1, styles.2),
+      next_style_bits,
     ),
   ))
 }
@@ -282,7 +285,7 @@ pub fn parse_fill_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast:
     0x41 => map(|i| parse_bitmap_fill(i, false, true), ast::FillStyle::Bitmap)(input),
     0x42 => map(|i| parse_bitmap_fill(i, true, false), ast::FillStyle::Bitmap)(input),
     0x43 => map(|i| parse_bitmap_fill(i, false, false), ast::FillStyle::Bitmap)(input),
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
 }
 
@@ -405,6 +408,7 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
   let (input, width) = parse_le_u16(input)?;
 
   let (input, flags) = parse_le_u16(input)?;
+  #[allow(clippy::identity_op)]
   let pixel_hinting = (flags & (1 << 0)) != 0;
   let no_v_scale = (flags & (1 << 1)) != 0;
   let no_h_scale = (flags & (1 << 2)) != 0;
@@ -439,7 +443,7 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
   Ok((
     input,
     ast::LineStyle {
-      width: width,
+      width,
       fill,
       pixel_hinting,
       no_v_scale,

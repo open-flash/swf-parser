@@ -26,8 +26,7 @@ pub fn audio_coding_format_from_id(audio_coding_format_id: u8) -> ast::AudioCodi
   }
 }
 
-// TODO: Implement `Copy` on `AudioCodingFormat` and pass it by value
-pub fn is_uncompressed_audio_coding_format(format: &ast::AudioCodingFormat) -> bool {
+pub fn is_uncompressed_audio_coding_format(format: ast::AudioCodingFormat) -> bool {
   match format {
     ast::AudioCodingFormat::UncompressedNativeEndian => true,
     ast::AudioCodingFormat::UncompressedLittleEndian => true,
@@ -40,6 +39,7 @@ pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], ast::SoundInfo> {
   use nom::multi::count;
 
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let has_in_point = (flags & (1 << 0)) != 0;
   let has_out_point = (flags & (1 << 1)) != 0;
   let has_loops = (flags & (1 << 2)) != 0;

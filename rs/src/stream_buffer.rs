@@ -30,7 +30,7 @@ impl StreamBuffer for FlatBuffer {
     }
   }
 
-  fn write(&mut self, unparsed_bytes: &[u8]) -> () {
+  fn write(&mut self, unparsed_bytes: &[u8]) {
     self.inner.extend_from_slice(unparsed_bytes)
   }
 
@@ -38,7 +38,7 @@ impl StreamBuffer for FlatBuffer {
     &self.inner[self.parsed..]
   }
 
-  fn clear(&mut self, parsed_size: usize) -> () {
+  fn clear(&mut self, parsed_size: usize) {
     self.parsed += parsed_size;
   }
 }

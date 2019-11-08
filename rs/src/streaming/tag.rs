@@ -27,17 +27,14 @@ pub(crate) enum StreamingTagError {
 /// The minimum length of `input` for a tag is `1`.
 /// In case of success, returns the remaining input and `Tag`.
 /// In case of error, returns the original input and error description.
-pub(crate) fn parse_tag(
-  input: &[u8],
-  swf_version: u8,
-) -> Result<(&[u8], Option<ast::Tag>), (&[u8], StreamingTagError)> {
+pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], Option<ast::Tag>), StreamingTagError> {
+  let base_input = input; // Keep original input to compute lengths.
   if input.is_empty() {
-    return Err((input, StreamingTagError::IncompleteHeader));
+    return Err(StreamingTagError::IncompleteHeader);
   }
-  let base_input = input; // Keep original input for errors.
   let (input, header) = match parse_tag_header(input) {
     Ok(ok) => ok,
-    Err(_) => return Err((base_input, StreamingTagError::IncompleteHeader)),
+    Err(_) => return Err(StreamingTagError::IncompleteHeader),
   };
   if header.code == 0 {
     return Ok((&[], None));
@@ -46,7 +43,7 @@ pub(crate) fn parse_tag(
   if input.len() < body_len {
     let header_len = base_input.len() - input.len();
     let tag_len = header_len + body_len;
-    return Err((base_input, StreamingTagError::IncompleteTag(tag_len)));
+    return Err(StreamingTagError::IncompleteTag(tag_len));
   }
   let (input, tag_body) = (&input[body_len..], &input[..body_len]);
   let tag = parse_tag_body(tag_body, header.code, swf_version);

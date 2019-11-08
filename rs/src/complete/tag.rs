@@ -36,7 +36,7 @@ use swf_tree::text::FontAlignmentZone;
 pub fn parse_tag(input: &[u8], swf_version: u8) -> NomResult<&[u8], Option<ast::Tag>> {
   match crate::streaming::tag::parse_tag(input, swf_version) {
     Ok(ok) => Ok(ok),
-    Err((input, _e)) => Err(nom::Err::Error((input, nom::error::ErrorKind::Complete))),
+    Err(_e) => Err(nom::Err::Error((input, nom::error::ErrorKind::Complete))),
   }
 }
 
@@ -204,6 +204,7 @@ pub fn parse_define_button2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineB
 
   let (input, id) = parse_le_u16(input)?;
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let track_as_menu = (flags & (1 << 0)) != 0;
   // Skip bits [1, 7]
   // TODO: Assert action offset matches
@@ -403,6 +404,7 @@ pub fn parse_define_edit_text(input: &[u8]) -> NomResult<&[u8], ast::tags::Defin
   let (input, id) = parse_le_u16(input)?;
   let (input, bounds) = parse_rect(input)?;
   let (input, flags) = parse_le_u16(input)?;
+  #[allow(clippy::identity_op)]
   let has_font = (flags & (1 << 0)) != 0;
   let has_max_length = (flags & (1 << 1)) != 0;
   let has_color = (flags & (1 << 2)) != 0;
@@ -436,10 +438,10 @@ pub fn parse_define_edit_text(input: &[u8]) -> NomResult<&[u8], ast::tags::Defin
     (input, ast::text::TextAlignment::Left, 0, 0, 0, 0)
   };
   let (input, variable_name) = parse_c_string(input)?;
-  let variable_name = if variable_name.len() > 0 {
-    Some(variable_name)
-  } else {
+  let variable_name = if variable_name.is_empty() {
     None
+  } else {
+    Some(variable_name)
   };
   let (input, text) = cond(has_text, parse_c_string)(input)?;
 
@@ -529,6 +531,7 @@ fn parse_define_font_any(input: &[u8], version: FontVersion) -> NomResult<&[u8],
   let (input, id) = parse_le_u16(input)?;
 
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let is_bold = (flags & (1 << 0)) != 0;
   let is_italic = (flags & (1 << 1)) != 0;
   let use_wide_codes = (flags & (1 << 2)) != 0;
@@ -609,6 +612,7 @@ pub fn parse_define_font4(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineCff
   let (input, font_name) = parse_c_string(input)?;
 
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let is_bold = (flags & (1 << 0)) != 0;
   let is_italic = (flags & (1 << 1)) != 0;
   let has_data = (flags & (1 << 2)) != 0;
@@ -689,6 +693,7 @@ fn parse_define_font_info_any(input: &[u8], version: FontInfoVersion) -> NomResu
     (input, font_name)
   };
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let use_wide_codes = (flags & (1 << 0)) != 0;
   let is_bold = (flags & (1 << 1)) != 0;
   let is_italic = (flags & (1 << 2)) != 0;
@@ -765,6 +770,7 @@ fn parse_define_morph_shape_any(
 
   let (input, flags) = cond(version >= MorphShapeVersion::MorphShape2, parse_u8)(input)?;
   let flags = flags.unwrap_or(0);
+  #[allow(clippy::identity_op)]
   let has_scaling_strokes = (flags & (1 << 0)) != 0;
   let has_non_scaling_strokes = (flags & (1 << 1)) != 0;
   // (Skip bits [2, 7])
@@ -842,6 +848,7 @@ fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> NomResult<&[u8
 
   let (input, flags) = cond(version >= ShapeVersion::Shape4, parse_u8)(input)?;
   let flags = flags.unwrap_or(0);
+  #[allow(clippy::identity_op)]
   let has_scaling_strokes = (flags & (1 << 0)) != 0;
   let has_non_scaling_strokes = (flags & (1 << 1)) != 0;
   let has_fill_winding = (flags & (1 << 2)) != 0;
@@ -870,6 +877,7 @@ fn parse_bytes(input: &[u8]) -> NomResult<&[u8], Vec<u8>> {
 fn parse_define_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineSound> {
   let (input, id) = parse_le_u16(input)?;
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let sound_type = if (flags & (1 << 0)) != 0 {
     ast::SoundType::Stereo
   } else {
@@ -890,7 +898,7 @@ fn parse_define_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineSound> 
     ast::tags::DefineSound {
       id,
       sound_type,
-      sound_size: if is_uncompressed_audio_coding_format(&format) {
+      sound_size: if is_uncompressed_audio_coding_format(format) {
         sound_size
       } else {
         ast::SoundSize::SoundSize16
@@ -934,10 +942,10 @@ pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> NomResult<&[
   Ok((
     input,
     ast::tags::DefineText {
-      id: id,
-      bounds: bounds,
-      matrix: matrix,
-      records: records,
+      id,
+      bounds,
+      matrix,
+      records,
     },
   ))
 }
@@ -946,10 +954,11 @@ pub fn parse_define_video_stream(input: &[u8]) -> NomResult<&[u8], ast::tags::De
   use nom::combinator::map;
 
   let (input, id) = parse_le_u16(input)?;
-  let (input, frame_count) = map(parse_le_u16, |fc| usize::from(fc))(input)?;
+  let (input, frame_count) = map(parse_le_u16, usize::from)(input)?;
   let (input, width) = parse_le_u16(input)?;
   let (input, height) = parse_le_u16(input)?;
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let use_smoothing = (flags & (1 << 0)) != 0;
   let deblocking = video_deblocking_from_id((flags >> 1) & 0b111);
   // Bits [4, 7] are reserved
@@ -1023,6 +1032,7 @@ pub fn parse_export_assets(input: &[u8]) -> NomResult<&[u8], ast::tags::ExportAs
 
 pub fn parse_file_attributes_tag(input: &[u8]) -> NomResult<&[u8], ast::tags::FileAttributes> {
   let (input, flags) = parse_le_u32(input)?;
+  #[allow(clippy::identity_op)]
   let use_network = (flags & (1 << 0)) != 0;
   let use_relative_urls = (flags & (1 << 1)) != 0;
   let no_cross_domain_caching = (flags & (1 << 2)) != 0;
@@ -1034,25 +1044,24 @@ pub fn parse_file_attributes_tag(input: &[u8]) -> NomResult<&[u8], ast::tags::Fi
   Ok((
     input,
     ast::tags::FileAttributes {
-      use_network: use_network,
-      use_relative_urls: use_relative_urls,
-      no_cross_domain_caching: no_cross_domain_caching,
-      use_as3: use_as3,
-      has_metadata: has_metadata,
-      use_gpu: use_gpu,
-      use_direct_blit: use_direct_blit,
+      use_network,
+      use_relative_urls,
+      no_cross_domain_caching,
+      use_as3,
+      has_metadata,
+      use_gpu,
+      use_direct_blit,
     },
   ))
 }
 
 pub fn parse_frame_label(input: &[u8]) -> NomResult<&[u8], ast::tags::FrameLabel> {
-  // TODO: Use nom macros/atEof
   let (input, name) = parse_c_string(input)?;
-  let (input, is_anchor) = if input.len() > 0 {
+  let (input, is_anchor) = if input.is_empty() {
+    (input, false)
+  } else {
     let (input, anchor_flag) = parse_u8(input)?;
     (input, anchor_flag != 0)
-  } else {
-    (input, false)
   };
 
   Ok((input, ast::tags::FrameLabel { name, is_anchor }))
@@ -1092,7 +1101,7 @@ pub fn parse_place_object(input: &[u8]) -> NomResult<&[u8], ast::tags::PlaceObje
   let (input, depth) = parse_le_u16(input)?;
   let (input, matrix) = parse_matrix(input)?;
   let (input, color_transform) = cond(
-    input.len() > 0,
+    !input.is_empty(),
     map(parse_color_transform, |color_transform| ast::ColorTransformWithAlpha {
       red_mult: color_transform.red_mult,
       green_mult: color_transform.green_mult,
@@ -1131,6 +1140,7 @@ pub fn parse_place_object2(input: &[u8], swf_version: u8) -> NomResult<&[u8], as
   use nom::combinator::cond;
 
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let is_update = (flags & (1 << 0)) != 0;
   let has_character_id = (flags & (1 << 1)) != 0;
   let has_matrix = (flags & (1 << 2)) != 0;
@@ -1174,6 +1184,7 @@ pub fn parse_place_object3(input: &[u8], swf_version: u8) -> NomResult<&[u8], as
   use nom::combinator::{cond, map};
 
   let (input, flags) = parse_le_u16(input)?;
+  #[allow(clippy::identity_op)]
   let is_update = (flags & (1 << 0)) != 0;
   let has_character_id = (flags & (1 << 1)) != 0;
   let has_matrix = (flags & (1 << 2)) != 0;
@@ -1210,21 +1221,21 @@ pub fn parse_place_object3(input: &[u8], swf_version: u8) -> NomResult<&[u8], as
   Ok((
     input,
     ast::tags::PlaceObject {
-      is_update: is_update,
-      depth: depth,
-      character_id: character_id,
-      matrix: matrix,
-      color_transform: color_transform,
-      ratio: ratio,
-      name: name,
-      class_name: class_name,
-      clip_depth: clip_depth,
-      filters: filters,
-      blend_mode: blend_mode,
+      is_update,
+      depth,
+      character_id,
+      matrix,
+      color_transform,
+      ratio,
+      name,
+      class_name,
+      clip_depth,
+      filters,
+      blend_mode,
       bitmap_cache: use_bitmap_cache,
       visible: is_visible,
-      background_color: background_color,
-      clip_actions: clip_actions,
+      background_color,
+      clip_actions,
     },
   ))
 }
@@ -1291,6 +1302,7 @@ fn parse_sound_stream_head2(input: &[u8]) -> NomResult<&[u8], ast::tags::SoundSt
 fn parse_sound_stream_head_any(input: &[u8]) -> NomResult<&[u8], ast::tags::SoundStreamHead> {
   use nom::combinator::cond;
   let (input, flags) = parse_le_u16(input)?;
+  #[allow(clippy::identity_op)]
   let playback_sound_type = if (flags & (1 << 0)) != 0 {
     ast::SoundType::Stereo
   } else {
@@ -1324,7 +1336,7 @@ fn parse_sound_stream_head_any(input: &[u8]) -> NomResult<&[u8], ast::tags::Soun
       playback_sound_size,
       playback_sound_rate,
       stream_sound_type,
-      stream_sound_size: if is_uncompressed_audio_coding_format(&stream_format) {
+      stream_sound_size: if is_uncompressed_audio_coding_format(stream_format) {
         stream_sound_size
       } else {
         ast::SoundSize::SoundSize16

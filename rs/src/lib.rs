@@ -139,8 +139,39 @@ mod tests {
     };
   }
 
+  // A variant of the previous macro that uses `.is` instead of `.eq` to check for bit-pattern equality
+  macro_rules! test_various_parser_is_impl {
+    ($name:ident, $glob:expr, $parser:ident, $type:ty) => {
+      use crate::swf_tree::float_is::Is;
+
+      test_expand_paths! { $name; $glob }
+      fn $name(path: &str) {
+        let path: &Path = Path::new(path);
+        let _name = path
+          .components()
+          .last()
+          .unwrap()
+          .as_os_str()
+          .to_str()
+          .expect("Failed to retrieve sample name");
+        let input_path = path.join("input.bytes");
+        let input_bytes: Vec<u8> = ::std::fs::read(input_path).expect("Failed to read input");
+
+        let (remaining_bytes, actual_value): (&[u8], $type) = $parser(&input_bytes).expect("Failed to parse");
+
+        let expected_path = path.join("value.json");
+        let expected_file = ::std::fs::File::open(expected_path).expect("Failed to open expected value file");
+        let expected_reader = ::std::io::BufReader::new(expected_file);
+        let expected_value = serde_json_v8::from_reader::<_, $type>(expected_reader).expect("Failed to read AST");
+
+        assert!(actual_value.is(&expected_value));
+        assert_eq!(remaining_bytes, &[] as &[u8]);
+      }
+    };
+  }
+
   use crate::parsers::basic_data_types::parse_le_f16;
-  test_various_parser_impl!(test_parse_le_f16, "../tests/various/float16-le/*/", parse_le_f16, f32);
+  test_various_parser_is_impl!(test_parse_le_f16, "../tests/various/float16-le/*/", parse_le_f16, f32);
 
   use crate::streaming::movie::parse_header;
   use swf_tree::Header;

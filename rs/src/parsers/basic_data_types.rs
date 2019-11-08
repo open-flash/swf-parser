@@ -10,7 +10,7 @@ use swf_tree::LanguageCode;
 
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> NomResult<(&[u8], usize), bool> {
-  if input_slice.len() < 1 {
+  if input_slice.is_empty() {
     Err(::nom::Err::Incomplete(Needed::Size(1)))
   } else {
     let res: bool = input_slice[0] & (1 << (7 - bit_pos)) > 0;
@@ -443,76 +443,76 @@ mod tests {
   #[test]
   fn test_parse_i16_bits() {
     {
-      let input = vec![0b00000000, 0b00000000];
+      let input = vec![0b0000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 0), Ok(((&input[0..], 0), 0)));
     }
     {
-      let input = vec![0b00000000, 0b00000000];
+      let input = vec![0b0000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 1), Ok(((&input[0..], 1), 0)));
     }
     {
-      let input = vec![0b10000000, 0b00000000];
+      let input = vec![0b1000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 1), Ok(((&input[0..], 1), -1)));
     }
     {
-      let input = vec![0b00000000, 0b00000000];
+      let input = vec![0b0000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), 0)));
     }
     {
-      let input = vec![0b01000000, 0b00000000];
+      let input = vec![0b0100_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), 1)));
     }
     {
-      let input = vec![0b10000000, 0b00000000];
+      let input = vec![0b1000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), -2)));
     }
     {
-      let input = vec![0b11000000, 0b00000000];
+      let input = vec![0b1100_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 2), Ok(((&input[0..], 2), -1)));
     }
     {
-      let input = vec![0b00000000, 0b00000000];
+      let input = vec![0b0000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), 0)));
     }
     {
-      let input = vec![0b01111111, 0b11111110];
+      let input = vec![0b0111_1111, 0b1111_1110];
       assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), 16383)));
     }
     {
-      let input = vec![0b10000000, 0b00000000];
+      let input = vec![0b1000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), -16384)));
     }
     {
-      let input = vec![0b11111111, 0b11111110];
+      let input = vec![0b1111_1111, 0b1111_1110];
       assert_eq!(parse_i16_bits((&input[..], 0), 15), Ok(((&input[1..], 7), -1)));
     }
     {
-      let input = vec![0b00000000, 0b00000000];
+      let input = vec![0b0000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), 0)));
     }
     {
-      let input = vec![0b01111111, 0b11111111];
+      let input = vec![0b0111_1111, 0b1111_1111];
       assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), 32767)));
     }
     {
-      let input = vec![0b10000000, 0b00000000];
+      let input = vec![0b1000_0000, 0b0000_0000];
       assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), -32768)));
     }
     {
-      let input = vec![0b11111111, 0b11111111];
+      let input = vec![0b1111_1111, 0b1111_1111];
       assert_eq!(parse_i16_bits((&input[..], 0), 16), Ok(((&input[2..], 0), -1)));
     }
   }
 
   #[test]
   fn test_parse_u16_bits() {
-    let input = vec![0b10101010, 0b11110000, 0b00110011];
+    let input = vec![0b1010_1010, 0b1111_0000, 0b0011_0011];
     assert_eq!(parse_u16_bits((&input[..], 0), 5), Ok(((&input[0..], 5), 21)));
   }
 
   #[test]
   fn test_parse_fixed16_p16_bits() {
-    let input = vec![0b00000000, 0b00000000, 0b00000000, 0b00000000];
+    let input = vec![0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000];
     assert_eq!(
       parse_fixed16_p16_bits((&input[..], 0), 32),
       Ok(((&input[4..], 0), Sfixed16P16::from_epsilons(0)))
@@ -527,7 +527,13 @@ mod tests {
       // 01011 00001111111 00100000100 00000001111 01000000010
       // nBits xMin        xMax        yMin        yMax
       let input = vec![
-        0b01011000, 0b01111111, 0b00100000, 0b10000000, 0b00111101, 0b00000001, 0b00000000,
+        0b0101_1000,
+        0b0111_1111,
+        0b0010_0000,
+        0b1000_0000,
+        0b0011_1101,
+        0b0000_0001,
+        0b0000_0000,
       ];
       assert_eq!(
         parse_rect(&input[..]),
@@ -543,7 +549,7 @@ mod tests {
       );
     }
     {
-      let input = vec![0b00000000];
+      let input = vec![0b0000_0000];
       assert_eq!(
         parse_rect(&input[..]),
         Ok((
@@ -558,7 +564,7 @@ mod tests {
       );
     }
     {
-      let input = vec![0b00001000, 0b00000000];
+      let input = vec![0b0000_1000, 0b0000_0000];
       assert_eq!(
         parse_rect(&input[..]),
         Ok((
@@ -573,7 +579,7 @@ mod tests {
       );
     }
     {
-      let input = vec![0b00010000, 0b00000000];
+      let input = vec![0b0001_0000, 0b0000_0000];
       assert_eq!(
         parse_rect(&input[..]),
         Ok((
@@ -588,7 +594,7 @@ mod tests {
       );
     }
     {
-      let input = vec![0b00010010, 0b00000000];
+      let input = vec![0b0001_0010, 0b0000_0000];
       assert_eq!(
         parse_rect(&input[..]),
         Ok((
@@ -603,7 +609,7 @@ mod tests {
       );
     }
     {
-      let input = vec![0b00010000, 0b10000000];
+      let input = vec![0b0001_0000, 0b1000_0000];
       assert_eq!(
         parse_rect(&input[..]),
         Ok((
@@ -618,7 +624,7 @@ mod tests {
       );
     }
     {
-      let input = vec![0b00010000, 0b00100000];
+      let input = vec![0b0001_0000, 0b0010_0000];
       assert_eq!(
         parse_rect(&input[..]),
         Ok((
@@ -633,7 +639,7 @@ mod tests {
       );
     }
     {
-      let input = vec![0b00010000, 0b00001000];
+      let input = vec![0b0001_0000, 0b0000_1000];
       assert_eq!(
         parse_rect(&input[..]),
         Ok((

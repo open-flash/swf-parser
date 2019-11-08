@@ -10,7 +10,7 @@ pub const GIF_START: [u8; 6] = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61];
 pub const JPEG_START: [u8; 2] = [0xff, 0xd8];
 pub const ERRONEOUS_JPEG_START: [u8; 6] = [0xff, 0xd9, 0xff, 0xd8, 0xff, 0xd8];
 
-const PNG_IHDR_CHUNK_TYPE: u32 = 0x49484452;
+const PNG_IHDR_CHUNK_TYPE: u32 = 0x49_48_44_52;
 
 /// Reads image properties from a byte stream with the content of a PNG image.
 ///
@@ -115,5 +115,5 @@ pub fn get_gif_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
 }
 
 pub fn test_image_start(image_data: &[u8], start_bytes: &[u8]) -> bool {
-  return image_data[..start_bytes.len()] == *start_bytes;
+  image_data[..start_bytes.len()] == *start_bytes
 }

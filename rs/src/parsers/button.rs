@@ -15,7 +15,7 @@ pub fn parse_button_record_string(input: &[u8], version: ButtonVersion) -> NomRe
   let mut result: Vec<ast::ButtonRecord> = Vec::new();
   let mut current_input: &[u8] = input;
   loop {
-    if current_input.len() == 0 {
+    if current_input.is_empty() {
       return Err(::nom::Err::Incomplete(::nom::Needed::Unknown));
     }
     if current_input[0] == 0 {
@@ -39,6 +39,7 @@ pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[
   use nom::combinator::cond;
 
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let state_up = (flags & (1 << 0)) != 0;
   let state_over = (flags & (1 << 1)) != 0;
   let state_down = (flags & (1 << 2)) != 0;
@@ -129,6 +130,7 @@ pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
   }
 
   let (input, flags) = parse_le_u16(input)?;
+  #[allow(clippy::identity_op)]
   let idle_to_over_up = (flags & (1 << 0)) != 0;
   let over_up_to_idle = (flags & (1 << 1)) != 0;
   let over_up_to_over_down = (flags & (1 << 2)) != 0;

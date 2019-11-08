@@ -13,7 +13,7 @@ pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
     ast::CompressionMethod::None => parse_movie_payload(input, signature.swf_version),
     ast::CompressionMethod::Deflate => {
       let mut decoder = ::inflate::InflateWriter::from_zlib(Vec::new());
-      decoder.write(input).unwrap();
+      decoder.write_all(input).unwrap();
       let payload = decoder.finish().unwrap();
 
       match parse_movie_payload(&payload[..], signature.swf_version) {
@@ -51,7 +51,7 @@ pub fn parse_compression_method(input: &[u8]) -> NomResult<&[u8], ast::Compressi
     b"FWS" => Ok((input, ast::CompressionMethod::None)),
     b"CWS" => Ok((input, ast::CompressionMethod::Deflate)),
     b"ZWS" => Ok((input, ast::CompressionMethod::Lzma)),
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
 }
 

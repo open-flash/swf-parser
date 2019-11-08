@@ -20,9 +20,11 @@ matrix:
 #        - stable
       before_script:
         - cd rs
+        - rustup component add clippy
         - rustup component add rustfmt
       script:
         - cargo fmt --all -- --check
+        - cargo clippy --all-targets --all-features -- -D warnings
         - cargo build
         - cargo test
 

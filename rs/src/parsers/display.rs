@@ -77,6 +77,7 @@ pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> NomResult<
     map(parse_le_u16, u32::from)(input)?
   };
 
+  #[allow(clippy::identity_op)]
   Ok((
     input,
     ast::ClipEventFlags {
@@ -145,7 +146,7 @@ pub fn parse_filter(input: &[u8]) -> NomResult<&[u8], ast::Filter> {
     5 => map(parse_convolution_filter, ast::Filter::Convolution)(input),
     6 => map(parse_color_matrix_filter, ast::Filter::ColorMatrix)(input),
     7 => map(parse_gradient_bevel_filter, ast::Filter::GradientBevel)(input),
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
 }
 
@@ -195,10 +196,10 @@ pub fn parse_blur_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Blur> {
 
 pub fn parse_color_matrix_filter(mut input: &[u8]) -> NomResult<&[u8], ast::filters::ColorMatrix> {
   let mut matrix: [f32; 20] = [0f32; 20];
-  for i in 0..matrix.len() {
+  for matrix_value in &mut matrix {
     let (next_input, value) = parse_le_f32(input)?;
     input = next_input;
-    matrix[i] = value;
+    *matrix_value = value;
   }
   Ok((input, ast::filters::ColorMatrix { matrix }))
 }
@@ -214,6 +215,7 @@ pub fn parse_convolution_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::
   let (input, matrix) = count(parse_le_f32, matrix_width * matrix_height)(input)?;
   let (input, default_color) = parse_straight_s_rgba8(input)?;
   let (input, flags) = parse_u8(input)?;
+  #[allow(clippy::identity_op)]
   let preserve_alpha = (flags & (1 << 0)) != 0;
   let clamp = (flags & (1 << 1)) != 0;
   // Skip bits [2, 7]
@@ -296,7 +298,7 @@ fn parse_filter_gradient(input: &[u8], color_count: usize) -> NomResult<&[u8], V
   for _ in 0..color_count {
     match parse_straight_s_rgba8(current_input) {
       Ok((next_input, color)) => {
-        result.push(ast::ColorStop { ratio: 0, color: color });
+        result.push(ast::ColorStop { ratio: 0, color });
         current_input = next_input;
       }
       Err(e) => return Err(e),
@@ -371,17 +373,17 @@ pub fn parse_gradient_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters
   Ok((
     input,
     ast::filters::GradientGlow {
-      gradient: gradient,
-      blur_x: blur_x,
-      blur_y: blur_y,
-      angle: angle,
-      distance: distance,
-      strength: strength,
-      inner: inner,
-      knockout: knockout,
-      composite_source: composite_source,
-      on_top: on_top,
-      passes: passes,
+      gradient,
+      blur_x,
+      blur_y,
+      angle,
+      distance,
+      strength,
+      inner,
+      knockout,
+      composite_source,
+      on_top,
+      passes,
     },
   ))
 }
