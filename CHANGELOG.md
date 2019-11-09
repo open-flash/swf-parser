@@ -1,6 +1,7 @@
 # Next
 
 - **[Breaking change]** Make the parsers stateless by parsing font alignment zones based on available input instead of memorized glyph count.
+- **[Feature]** Add invalid tag error recovery.
 
 ### Rust
 

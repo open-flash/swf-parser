@@ -100,7 +100,7 @@ mod tests {
       _ => 10,
     };
 
-    let (remaining_bytes, actual_value) = parse_tag(&input_bytes, swf_version).expect("Failed to parse");
+    let (remaining_bytes, actual_value) = parse_tag(&input_bytes, swf_version);
 
     let expected_path = path.join("value.json");
     let expected_file = ::std::fs::File::open(expected_path).expect("Failed to open expected value file");

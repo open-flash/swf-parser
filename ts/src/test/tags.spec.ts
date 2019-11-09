@@ -114,7 +114,7 @@ function* getSamplesFromGroup(group: SampleGroup): IterableIterator<Sample> {
       name: testName,
       inputPath,
       valuePath,
-      parser: (stream: ReadableByteStream) => parseTag(stream, swfVersion),
+      parser: (stream: ReadableByteStream) => parseTag(stream, swfVersion)!,
     };
   }
 }

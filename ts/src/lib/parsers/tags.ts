@@ -91,28 +91,44 @@ import { getVideoDeblockingFromCode, parseVideoCodec } from "./video";
  */
 export function parseTagBlockString(byteStream: ReadableByteStream, swfVersion: Uint8): Tag[] {
   const tags: Tag[] = [];
-  while (byteStream.available() >= 2) {
-    // A null byte indicates the end-of-tags
-    // TODO: This is false. Example: empty `DoAction`. We should peek an Uint16.
-    if (byteStream.peekUint8() === 0) {
-      const oldBytePos: UintSize = byteStream.bytePos;
-      byteStream.skip(1);
-      if (byteStream.peekUint8() === 0) {
-        byteStream.skip(1);
-        break;
-      } else {
-        byteStream.bytePos = oldBytePos;
-      }
+  while (true) {
+    const tag: Tag | undefined = parseTag(byteStream, swfVersion);
+    if (tag === undefined) {
+      break;
     }
-    const tag: Tag = parseTag(byteStream, swfVersion);
     tags.push(tag);
   }
   return tags;
 }
 
-export function parseTag(byteStream: ReadableByteStream, swfVersion: Uint8): Tag {
-  const {code, length}: TagHeader = parseTagHeader(byteStream);
-  return parseTagBody(byteStream.take(length), code, swfVersion);
+export function parseTag(byteStream: ReadableByteStream, swfVersion: Uint8): Tag | undefined {
+  const basePos: UintSize = byteStream.bytePos;
+  if (byteStream.available() === 0) {
+    return undefined;
+  }
+  let header: TagHeader;
+  let bodyStream: ReadableByteStream;
+  try {
+    header = parseTagHeader(byteStream);
+    if (header.code === 0) {
+      return undefined;
+    }
+    bodyStream = byteStream.take(header.length);
+  } catch (e) {
+    console.warn("Non-fatal parse error (incomplete tag):");
+    console.warn(e);
+    byteStream.bytePos = basePos;
+    return {type: TagType.Raw, data: byteStream.tailBytes()};
+  }
+  try {
+    return parseTagBody(bodyStream, header.code, swfVersion);
+  } catch (e) {
+    console.warn("Non-fatal parse error (takeTagBody):");
+    console.warn(e);
+    const tagSize: UintSize = byteStream.bytePos - basePos;
+    byteStream.bytePos = basePos;
+    return {type: TagType.Raw, data: byteStream.takeBytes(tagSize)};
+  }
 }
 
 function parseTagHeader(byteStream: ReadableByteStream): TagHeader {
@@ -262,8 +278,7 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, swfVersion
     case 93:
       return parseEnableTelemetry(byteStream);
     default:
-      console.warn(`UnknownTagType: Code ${tagCode}`);
-      return {type: TagType.Unknown, code: tagCode, data: Uint8Array.from(byteStream.tailBytes())};
+      throw new Incident("UnknownTagCode", {code: tagCode});
   }
 }
 

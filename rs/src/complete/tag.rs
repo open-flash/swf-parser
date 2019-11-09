@@ -30,17 +30,30 @@ use crate::parsers::text::{
 };
 use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
 use crate::streaming::movie::parse_tag_block_string;
+use crate::streaming::tag::StreamingTagError;
 use swf_tree::text::FontAlignmentZone;
 
-// TODO: Result with `never` error?
-pub fn parse_tag(input: &[u8], swf_version: u8) -> NomResult<&[u8], Option<ast::Tag>> {
+/// Parses that tag at the start of `input`.
+///
+/// This parser assumes that `input` is complete: it has all the data until the end of the movie.
+///
+/// This function returns the remaining input and the tag.
+/// `None` indicates the end of tags (empty input or `End` raw tag).
+/// This function always succeeds. Malformed tags produce a `Tag::Raw` containing the invalid bytes.
+pub fn parse_tag(input: &[u8], swf_version: u8) -> (&[u8], Option<ast::Tag>) {
+  if input.is_empty() {
+    return (input, None);
+  }
+
   match crate::streaming::tag::parse_tag(input, swf_version) {
-    Ok(ok) => Ok(ok),
-    Err(_e) => Err(nom::Err::Error((input, nom::error::ErrorKind::Complete))),
+    Ok(ok) => ok,
+    Err(StreamingTagError::IncompleteHeader) | Err(StreamingTagError::IncompleteTag(_)) => {
+      (&[][..], Some(ast::Tag::Raw(ast::tags::Raw { data: input.to_vec() })))
+    }
   }
 }
 
-pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> ast::Tag {
+pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> Result<ast::Tag, ()> {
   use nom::combinator::map;
   let result = match code {
     1 => Ok((input, ast::Tag::ShowFrame)),
@@ -114,15 +127,11 @@ pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> ast::T
     90 => map(parse_define_bits_jpeg4, ast::Tag::DefineBitmap)(input),
     91 => map(parse_define_font4, ast::Tag::DefineCffFont)(input),
     93 => map(parse_enable_telemetry, ast::Tag::Telemetry)(input),
-    _ => map(parse_bytes, |data| ast::Tag::Unknown(ast::tags::Unknown { code, data }))(input),
+    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
   match result {
-    Ok((_, tag)) => tag,
-    // TODO: ast::Tag::Error
-    Err(_) => ast::Tag::Unknown(ast::tags::Unknown {
-      code,
-      data: input.to_vec(),
-    }),
+    Ok((_, tag)) => Ok(tag),
+    Err(_) => Err(()),
   }
 }
 
