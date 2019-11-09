@@ -3,11 +3,15 @@
 - **[Breaking change]** Make the parsers stateless by parsing font alignment zones based on available input instead of memorized glyph count.
 - **[Feature]** Add invalid tag error recovery.
 
-### Rust
+## Rust
 
 - **[Feature]** Add experimental streaming parser.
 - **[Fix]** Remove `nom` macros.
 - **[Fix]** Add `clippy` support.
+
+## Typescript
+
+- **[Fix]** Fix pre-release npm tag.
 
 # 0.9.0 (2019-10-17)
 

@@ -42,7 +42,7 @@ const lib: LibTarget = {
       return <any> {...old, version, scripts: undefined, private: false};
     },
     npmPublish: {
-      tag: options.devDist !== undefined ? "next" : "latest",
+      tag: options.next !== undefined ? "next" : "latest",
     },
   },
   customTypingsDir: "src/custom-typings",
