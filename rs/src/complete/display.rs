@@ -1,5 +1,5 @@
-use crate::parsers::basic_data_types::{parse_le_fixed16_p16, parse_le_fixed8_p8, parse_straight_s_rgba8};
-use nom::number::streaming::{
+use crate::streaming::basic_data_types::{parse_le_fixed16_p16, parse_le_fixed8_p8, parse_straight_s_rgba8};
+use nom::number::complete::{
   le_f32 as parse_le_f32, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
 use nom::IResult as NomResult;

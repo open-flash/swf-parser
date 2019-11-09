@@ -1,4 +1,4 @@
-use nom::number::streaming::{be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u32 as parse_le_u32};
+use nom::number::complete::{be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u32 as parse_le_u32};
 
 pub struct ImageDimensions {
   pub width: usize,

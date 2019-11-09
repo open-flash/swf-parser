@@ -1,10 +1,10 @@
-use crate::parsers::basic_data_types::{
+use crate::complete::gradient::parse_morph_gradient;
+use crate::complete::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits, StyleBits};
+use crate::streaming::basic_data_types::{
   do_parse_u16_bits, do_parse_u32_bits, parse_bool_bits, parse_i32_bits, parse_le_fixed8_p8, parse_matrix,
   parse_straight_s_rgba8, parse_u16_bits,
 };
-use crate::parsers::gradient::parse_morph_gradient;
-use crate::parsers::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits, StyleBits};
-use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
+use nom::number::complete::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
 use swf_tree as ast;

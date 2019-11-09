@@ -3,7 +3,6 @@ use nom::number::streaming::{
   be_u16 as parse_be_u16, le_i16 as parse_le_i16, le_i32 as parse_le_i32, le_u16 as parse_le_u16, le_u8 as parse_u8,
 };
 use nom::{IResult as NomResult, Needed};
-use std::f32;
 use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
 use swf_tree as ast;
 use swf_tree::LanguageCode;

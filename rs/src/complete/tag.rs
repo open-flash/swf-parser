@@ -1,37 +1,36 @@
+use crate::complete::button::{
+  parse_button2_cond_action_string, parse_button_record_string, parse_button_sound, ButtonVersion,
+};
+use crate::complete::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
+use crate::complete::image::get_gif_image_dimensions;
+use crate::complete::image::get_png_image_dimensions;
+use crate::complete::image::GIF_START;
+use crate::complete::image::PNG_START;
+use crate::complete::image::{get_jpeg_image_dimensions, test_image_start, ERRONEOUS_JPEG_START, JPEG_START};
+use crate::complete::morph_shape::{parse_morph_shape, MorphShapeVersion};
+use crate::complete::shape::{parse_glyph, parse_shape, ShapeVersion};
+use crate::complete::sound::{
+  audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id,
+};
+use crate::complete::text::{
+  grid_fitting_from_code, parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_offset_glyphs,
+  parse_text_alignment, parse_text_record_string, text_renderer_from_code, FontInfoVersion, FontVersion, TextVersion,
+};
+use crate::complete::video::{parse_videoc_codec, video_deblocking_from_id};
+use crate::streaming::basic_data_types::{
+  parse_block_c_string, parse_c_string, parse_color_transform, parse_color_transform_with_alpha, parse_language_code,
+  parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8, parse_straight_s_rgba8,
+};
+use crate::streaming::movie::parse_tag_block_string;
+use crate::streaming::tag::StreamingTagError;
 use nom::number::complete::{
   le_f32 as parse_le_f32, le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
 use nom::IResult as NomResult;
 use std::convert::TryFrom;
 use swf_tree as ast;
-use swf_tree::{ButtonCondAction, Glyph};
-
-use crate::parsers::basic_data_types::{
-  parse_block_c_string, parse_c_string, parse_color_transform, parse_color_transform_with_alpha, parse_language_code,
-  parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8, parse_straight_s_rgba8,
-};
-use crate::parsers::button::{
-  parse_button2_cond_action_string, parse_button_record_string, parse_button_sound, ButtonVersion,
-};
-use crate::parsers::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
-use crate::parsers::image::get_gif_image_dimensions;
-use crate::parsers::image::get_png_image_dimensions;
-use crate::parsers::image::GIF_START;
-use crate::parsers::image::PNG_START;
-use crate::parsers::image::{get_jpeg_image_dimensions, test_image_start, ERRONEOUS_JPEG_START, JPEG_START};
-use crate::parsers::morph_shape::{parse_morph_shape, MorphShapeVersion};
-use crate::parsers::shape::{parse_glyph, parse_shape, ShapeVersion};
-use crate::parsers::sound::{
-  audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id,
-};
-use crate::parsers::text::{
-  grid_fitting_from_code, parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_offset_glyphs,
-  parse_text_alignment, parse_text_record_string, text_renderer_from_code, FontInfoVersion, FontVersion, TextVersion,
-};
-use crate::parsers::video::{parse_videoc_codec, video_deblocking_from_id};
-use crate::streaming::movie::parse_tag_block_string;
-use crate::streaming::tag::StreamingTagError;
 use swf_tree::text::FontAlignmentZone;
+use swf_tree::{ButtonCondAction, Glyph};
 
 /// Parses that tag at the start of `input`.
 ///

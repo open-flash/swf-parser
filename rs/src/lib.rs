@@ -1,35 +1,8 @@
-extern crate inflate;
-extern crate nom;
-extern crate num_traits;
-extern crate swf_fixed;
-extern crate swf_tree;
-
+pub mod parsers {}
+pub mod complete;
 mod stream_buffer;
-
-pub mod parsers {
-  pub mod basic_data_types;
-  pub mod button;
-  pub mod display;
-  pub mod gradient;
-  pub mod image;
-  pub mod morph_shape;
-  pub mod shape;
-  pub mod sound;
-  pub mod text;
-  pub mod video;
-}
-pub mod complete {
-  pub(crate) mod movie;
-  pub(crate) mod tag;
-  pub use movie::parse_swf;
-  pub use movie::SwfParseError;
-  pub use tag::parse_tag;
-}
-pub mod streaming {
-  pub mod movie;
-  pub mod parser;
-  pub mod tag;
-}
+pub mod streaming;
+pub use swf_tree;
 
 #[cfg(test)]
 mod tests {
@@ -170,7 +143,7 @@ mod tests {
     };
   }
 
-  use crate::parsers::basic_data_types::parse_le_f16;
+  use crate::streaming::basic_data_types::parse_le_f16;
   test_various_parser_is_impl!(test_parse_le_f16, "../tests/various/float16-le/*/", parse_le_f16, f32);
 
   use crate::streaming::movie::parse_header;
@@ -181,11 +154,11 @@ mod tests {
   }
   test_various_parser_impl!(test_parse_header, "../tests/various/header/*/", parse_header34, Header);
 
-  use crate::parsers::basic_data_types::parse_matrix;
+  use crate::streaming::basic_data_types::parse_matrix;
   use swf_tree::Matrix;
   test_various_parser_impl!(test_parse_matrix, "../tests/various/matrix/*/", parse_matrix, Matrix);
 
-  use crate::parsers::basic_data_types::parse_rect;
+  use crate::streaming::basic_data_types::parse_rect;
   use swf_tree::Rect;
   test_various_parser_impl!(test_parse_rect, "../tests/various/rect/*/", parse_rect, Rect);
 
@@ -198,7 +171,7 @@ mod tests {
     SwfSignature
   );
 
-  use crate::parsers::basic_data_types::parse_leb128_u32;
+  use crate::streaming::basic_data_types::parse_leb128_u32;
   test_various_parser_impl!(
     test_parse_leb128_u32,
     "../tests/various/uint32-leb128/*/",

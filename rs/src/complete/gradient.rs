@@ -1,5 +1,5 @@
-use crate::parsers::basic_data_types::{parse_s_rgb8, parse_straight_s_rgba8};
-use nom::number::streaming::le_u8 as parse_u8;
+use crate::streaming::basic_data_types::{parse_s_rgb8, parse_straight_s_rgba8};
+use nom::number::complete::le_u8 as parse_u8;
 use nom::IResult as NomResult;
 use swf_tree as ast;
 

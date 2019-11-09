@@ -1,8 +1,8 @@
-use crate::parsers::basic_data_types::{
+use crate::complete::shape::parse_glyph;
+use crate::streaming::basic_data_types::{
   do_parse_u32_bits, parse_i32_bits, parse_le_f16, parse_rect, parse_s_rgb8, parse_straight_s_rgba8, parse_u32_bits,
 };
-use crate::parsers::shape::parse_glyph;
-use nom::number::streaming::{
+use nom::number::complete::{
   le_i16 as parse_le_i16, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
 use nom::IResult as NomResult;

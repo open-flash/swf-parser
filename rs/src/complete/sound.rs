@@ -1,4 +1,4 @@
-use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
+use nom::number::complete::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::IResult as NomResult;
 use swf_tree as ast;
 

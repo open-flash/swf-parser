@@ -1,4 +1,4 @@
-use crate::parsers::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
+use crate::streaming::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
 use crate::streaming::tag::parse_tag;
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};

@@ -1,13 +1,12 @@
-use nom::number::streaming::{le_u16 as parse_le_u16, le_u8 as parse_u8};
-use nom::{IResult as NomResult, Needed};
-use std::convert::TryFrom;
-use swf_tree as ast;
-
-use crate::parsers::basic_data_types::{
+use crate::complete::gradient::parse_gradient;
+use crate::streaming::basic_data_types::{
   do_parse_i32_bits, do_parse_u16_bits, do_parse_u32_bits, parse_bool_bits, parse_i32_bits, parse_le_fixed8_p8,
   parse_matrix, parse_s_rgb8, parse_straight_s_rgba8, parse_u16_bits,
 };
-use crate::parsers::gradient::parse_gradient;
+use nom::number::complete::{le_u16 as parse_le_u16, le_u8 as parse_u8};
+use nom::{IResult as NomResult, Needed};
+use std::convert::TryFrom;
+use swf_tree as ast;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum ShapeVersion {
