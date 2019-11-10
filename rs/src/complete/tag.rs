@@ -1,3 +1,4 @@
+use crate::complete::base::skip;
 use crate::complete::button::{
   parse_button2_cond_action_string, parse_button_record_string, parse_button_sound, ButtonVersion,
 };
@@ -31,7 +32,6 @@ use std::convert::TryFrom;
 use swf_tree as ast;
 use swf_tree::text::FontAlignmentZone;
 use swf_tree::{ButtonCondAction, Glyph};
-use crate::complete::base::skip;
 
 /// Parses that tag at the start of `input`.
 ///
@@ -336,12 +336,11 @@ pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> NomResult<&[u8]
 }
 
 pub fn parse_define_bits_jpeg4(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBitmap> {
-  use nom::bytes::complete::take;
   use nom::combinator::map;
 
   let (djpeg_data, id) = parse_le_u16(input)?;
   let (input, data_len) = map(parse_le_u32, |dl| usize::try_from(dl).unwrap())(djpeg_data)?;
-  let (input, _) = take(2usize)(input)?; // Skip deblock
+  let (input, _) = skip(2usize)(input)?; // Skip deblock
   let data = &input[..data_len];
 
   let (media_type, dimensions, data) = if test_image_start(data, &JPEG_START) {
@@ -1013,8 +1012,7 @@ pub fn parse_enable_debugger(input: &[u8]) -> NomResult<&[u8], ast::tags::Enable
 }
 
 pub fn parse_enable_debugger2(input: &[u8]) -> NomResult<&[u8], ast::tags::EnableDebugger> {
-  use nom::bytes::complete::take;
-  let (input, _) = take(2usize)(input)?;
+  let (input, _) = skip(2usize)(input)?;
   let (input, password) = parse_c_string(input)?;
   Ok((input, ast::tags::EnableDebugger { password }))
 }
@@ -1023,7 +1021,7 @@ pub fn parse_enable_telemetry(input: &[u8]) -> NomResult<&[u8], ast::tags::Telem
   use nom::bytes::complete::take;
   use nom::combinator::cond;
   const HASH_SIZE: usize = 32;
-  let (input, _) = take(2usize)(input)?;
+  let (input, _) = skip(2usize)(input)?;
   let (input, password) = cond(input.len() >= HASH_SIZE, take(HASH_SIZE))(input)?;
   Ok((
     input,
@@ -1089,12 +1087,11 @@ pub fn parse_import_assets(input: &[u8]) -> NomResult<&[u8], ast::tags::ImportAs
 
 #[allow(unused_variables)]
 pub fn parse_import_assets2(input: &[u8]) -> NomResult<&[u8], ast::tags::ImportAssets> {
-  use nom::bytes::complete::take;
   use nom::combinator::map;
   use nom::multi::count;
 
   let (input, url) = parse_c_string(input)?;
-  let (input, _) = take(2usize)(input)?;
+  let (input, _) = skip(2usize)(input)?;
   let (input, asset_count) = map(parse_le_u16, usize::from)(input)?;
   let (input, assets) = count(parse_named_id, asset_count)(input)?;
   Ok((input, ast::tags::ImportAssets { url, assets }))
@@ -1436,12 +1433,12 @@ mod tests {
     assert_eq!(remaining_bytes, &[] as &[u8]);
   }
 
-//  #[test]
-//  fn test_fuzzing() {
-//    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-90531a762dd2b32cdab0aeb7a0038696e71eecce");
-//
-//    let (swf_version, input_bytes) = artifact.split_first().unwrap();
-//
-//    let _ = parse_tag(input_bytes, *swf_version);
-//  }
+  //  #[test]
+  //  fn test_fuzzing() {
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-90531a762dd2b32cdab0aeb7a0038696e71eecce");
+  //
+  //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
+  //
+  //    let _ = parse_tag(input_bytes, *swf_version);
+  //  }
 }
