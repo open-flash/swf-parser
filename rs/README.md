@@ -39,6 +39,8 @@ git submodule update --init --recursive --remote
 This library is a standard Cargo project. You can test your changes with
 `cargo test`.  **The commands must be run from the `rs` directory.**
 
+## Fuzzing
+
 The Rust implementation supports fuzzing:
 
 ```

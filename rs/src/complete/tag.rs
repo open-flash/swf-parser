@@ -1396,3 +1396,40 @@ pub fn parse_video_frame(input: &[u8]) -> NomResult<&[u8], ast::tags::VideoFrame
     },
   ))
 }
+
+#[cfg(test)]
+mod tests {
+  use std::path::Path;
+  use super::parse_tag;
+  use swf_tree::Tag;
+  use ::test_generator::test_expand_paths;
+
+  test_expand_paths! { test_parse_tag; "../tests/tags/*/*/" }
+  fn test_parse_tag(path: &str) {
+    let path: &Path = Path::new(path);
+    let name = path
+      .components()
+      .last()
+      .unwrap()
+      .as_os_str()
+      .to_str()
+      .expect("Failed to retrieve sample name");
+    let input_path = path.join("input.bytes");
+    let input_bytes: Vec<u8> = ::std::fs::read(input_path).expect("Failed to read input");
+
+    let swf_version: u8 = match name {
+      "po2-swf5" => 5,
+      _ => 10,
+    };
+
+    let (remaining_bytes, actual_value) = parse_tag(&input_bytes, swf_version);
+
+    let expected_path = path.join("value.json");
+    let expected_file = ::std::fs::File::open(expected_path).expect("Failed to open expected value file");
+    let expected_reader = ::std::io::BufReader::new(expected_file);
+    let expected_value = serde_json_v8::from_reader::<_, Tag>(expected_reader).expect("Failed to read AST");
+
+    assert_eq!(actual_value, Some(expected_value));
+    assert_eq!(remaining_bytes, &[] as &[u8]);
+  }
+}
