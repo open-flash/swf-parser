@@ -1,3 +1,4 @@
+use crate::complete::base::skip;
 use crate::streaming::basic_data_types::{parse_le_fixed16_p16, parse_le_fixed8_p8, parse_straight_s_rgba8};
 use nom::number::complete::{
   le_f32 as parse_le_f32, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
@@ -32,8 +33,8 @@ pub fn parse_blend_mode(input: &[u8]) -> NomResult<&[u8], ast::BlendMode> {
 pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> NomResult<&[u8], Vec<ast::ClipAction>> {
   use nom::combinator::map;
 
-  let input = &input[2..]; // Skip `reserved`
-  let input = &input[(if extended_events { 4 } else { 2 })..]; // Skip `all_events`
+  let (input, _) = skip(2usize)(input)?; // Skip `reserved`
+  let (input, _) = skip(if extended_events { 4usize } else { 2usize })(input)?; // Skip `all_events`
 
   let mut result: Vec<ast::ClipAction> = Vec::new();
   let mut current_input = input;

@@ -13,6 +13,7 @@
 - **[Fix]** Fix panic on incomplete `DefineBitsLossless`.
 - **[Fix]** Fix panic on unknown audio codec code.
 - **[Fix]** Fix panic on invalid CSM text settings.
+- **[Fix]** Fix panic on incomplete clip action string.
 
 ## Typescript
 
