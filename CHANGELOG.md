@@ -8,6 +8,7 @@
 - **[Feature]** Add experimental streaming parser.
 - **[Fix]** Remove `nom` macros.
 - **[Fix]** Add `clippy` support.
+- **[Fix]** Propagate string encoding errors.
 
 ## Typescript
 

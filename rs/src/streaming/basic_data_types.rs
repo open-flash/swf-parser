@@ -23,12 +23,18 @@ pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> NomResult<(&[u
 
 /// Parse a sequence of bytes up to the end of input or first nul-byte. If there
 /// is a nul-byte, it is consumed but not included in the result.
+// TODO: Move to `crate::complete::basic_data_types`
+// TODO: Check encoding (assuming UTF-8)
 pub fn parse_block_c_string(input: &[u8]) -> NomResult<&[u8], String> {
-  let input = match memchr::memchr(0, input) {
+  let raw = match memchr::memchr(0, input) {
     Some(idx) => &input[0..idx],
     None => input,
   };
-  Ok((&[], String::from_utf8(input.to_vec()).unwrap()))
+
+  match std::str::from_utf8(raw) {
+    Ok(checked) => Ok((&[], checked.to_string())),
+    Err(_) => Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+  }
 }
 
 /// Parse a null-terminated sequence of bytes. The nul-byte is consumed but not included in the
@@ -36,10 +42,13 @@ pub fn parse_block_c_string(input: &[u8]) -> NomResult<&[u8], String> {
 pub fn parse_c_string(input: &[u8]) -> NomResult<&[u8], String> {
   const NUL_BYTE: &[u8] = b"\x00";
 
-  let (input, str) = nom::bytes::streaming::take_until(NUL_BYTE)(input)?;
+  let (input, raw) = nom::bytes::streaming::take_until(NUL_BYTE)(input)?;
   let (input, _) = nom::bytes::streaming::take(NUL_BYTE.len())(input)?;
 
-  Ok((input, String::from_utf8(str.to_vec()).unwrap()))
+  match std::str::from_utf8(raw) {
+    Ok(checked) => Ok((input, checked.to_string())),
+    Err(_) => Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+  }
 }
 
 /// Parse the variable-length encoded little-endian representation of an unsigned 32-bit integer

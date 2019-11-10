@@ -6,12 +6,12 @@ pub use swf_tree;
 
 #[cfg(test)]
 mod tests {
+  use crate::complete::parse_swf;
+  use ::swf_tree::Movie;
+  use ::test_generator::test_expand_paths;
+  use nom::IResult as NomResult;
   use std::io::{Read, Write};
   use std::path::Path;
-  use ::swf_tree::Movie;
-  use nom::IResult as NomResult;
-  use ::test_generator::test_expand_paths;
-  use crate::complete::parse_swf;
 
   test_expand_paths! { test_parse_movie; "../tests/movies/*/" }
   fn test_parse_movie(path: &str) {

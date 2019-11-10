@@ -1399,10 +1399,10 @@ pub fn parse_video_frame(input: &[u8]) -> NomResult<&[u8], ast::tags::VideoFrame
 
 #[cfg(test)]
 mod tests {
-  use std::path::Path;
   use super::parse_tag;
-  use swf_tree::Tag;
   use ::test_generator::test_expand_paths;
+  use std::path::Path;
+  use swf_tree::Tag;
 
   test_expand_paths! { test_parse_tag; "../tests/tags/*/*/" }
   fn test_parse_tag(path: &str) {
@@ -1432,4 +1432,13 @@ mod tests {
     assert_eq!(actual_value, Some(expected_value));
     assert_eq!(remaining_bytes, &[] as &[u8]);
   }
+
+  //  #[test]
+  //  fn test_fuzzing() {
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-11af1aace812a45645afba61530f849576e63669");
+  //
+  //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
+  //
+  //    let _ = parse_tag(input_bytes, *swf_version);
+  //  }
 }
