@@ -279,7 +279,8 @@ pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> NomResult<&[u8]
     } else if test_image_start(&data, &GIF_START) {
       (ast::ImageType::Gif, get_gif_image_dimensions(&data).unwrap())
     } else {
-      panic!("UnknownBitmapType");
+      // UnknownBitmapType
+      return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
     };
 
   Ok((
@@ -320,7 +321,8 @@ pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> NomResult<&[u8]
         data.to_vec(),
       )
     } else {
-      panic!("UnknownBitmapType");
+      // UnknownBitmapType
+      return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
     };
 
   let input: &[u8] = &[][..];
@@ -361,7 +363,8 @@ pub fn parse_define_bits_jpeg4(input: &[u8]) -> NomResult<&[u8], ast::tags::Defi
       data.to_vec(),
     )
   } else {
-    panic!("UnknownBitmapType");
+    // UnknownBitmapType
+    return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
   };
 
   let input: &[u8] = &[][..];
@@ -1442,7 +1445,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-e68e5e302143435eac15d06b9fa5c56bc13902d3");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-2936f4c99f00563c3e02f65fce6cacf968a0073a");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
