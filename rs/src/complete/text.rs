@@ -29,33 +29,36 @@ pub enum FontInfoVersion {
   FontInfo2,
 }
 
-pub(crate) fn grid_fitting_from_code(grid_fitting_code: u8) -> ast::text::GridFitting {
+pub(crate) fn grid_fitting_from_code(grid_fitting_code: u8) -> Result<ast::text::GridFitting, ()> {
   match grid_fitting_code {
-    0 => ast::text::GridFitting::None,
-    1 => ast::text::GridFitting::Pixel,
-    2 => ast::text::GridFitting::SubPixel,
-    _ => panic!("UnexpectedGridFittingCode: {}", grid_fitting_code),
+    0 => Ok(ast::text::GridFitting::None),
+    1 => Ok(ast::text::GridFitting::Pixel),
+    2 => Ok(ast::text::GridFitting::SubPixel),
+    _ => Err(()),
   }
 }
 
 pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::text::CsmTableHint> {
-  fn csm_table_hint_from_id(csm_table_hint_id: u32) -> ast::text::CsmTableHint {
-    match csm_table_hint_id {
-      0 => ast::text::CsmTableHint::Thin,
-      1 => ast::text::CsmTableHint::Medium,
-      2 => ast::text::CsmTableHint::Thick,
-      _ => panic!("UnexpectedCsmTableHintId: {}", csm_table_hint_id),
-    }
-  }
-
-  nom::combinator::map(|i| parse_u32_bits(i, 2), csm_table_hint_from_id)(input)
+  let (input, code) = parse_u32_bits(input, 2)?;
+  let csm_table_hint =
+    csm_table_hint_from_code(code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  Ok((input, csm_table_hint))
 }
 
-pub(crate) fn text_renderer_from_code(text_renderer_code: u8) -> ast::text::TextRenderer {
+fn csm_table_hint_from_code(code: u32) -> Result<ast::text::CsmTableHint, ()> {
+  match code {
+    0 => Ok(ast::text::CsmTableHint::Thin),
+    1 => Ok(ast::text::CsmTableHint::Medium),
+    2 => Ok(ast::text::CsmTableHint::Thick),
+    _ => Err(()),
+  }
+}
+
+pub(crate) fn text_renderer_from_code(text_renderer_code: u8) -> Result<ast::text::TextRenderer, ()> {
   match text_renderer_code {
-    0 => ast::text::TextRenderer::Normal,
-    1 => ast::text::TextRenderer::Advanced,
-    _ => panic!("UnexpectedTextRendererCode: {}", text_renderer_code),
+    0 => Ok(ast::text::TextRenderer::Normal),
+    1 => Ok(ast::text::TextRenderer::Advanced),
+    _ => Err(()),
   }
 }
 

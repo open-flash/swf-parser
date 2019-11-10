@@ -139,8 +139,10 @@ pub fn parse_csm_text_settings(input: &[u8]) -> NomResult<&[u8], ast::tags::CsmT
   let (input, text_id) = parse_le_u16(input)?;
   let (input, flags) = parse_u8(input)?;
   // Skip bits [0, 2]
-  let fitting = grid_fitting_from_code((flags >> 3) & 0b111);
-  let renderer = text_renderer_from_code((flags >> 6) & 0b11);
+  let fitting = grid_fitting_from_code((flags >> 3) & 0b111)
+    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  let renderer = text_renderer_from_code((flags >> 6) & 0b11)
+    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
   let (input, thickness) = parse_le_f32(input)?;
   let (input, sharpness) = parse_le_f32(input)?;
   // TODO: Skip 1 byte / assert 1 byte is available
@@ -1440,7 +1442,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../../tests/local-tags/raw/unknown-audio-codec/crash-dca088e48244ea9d0dc269a9be48d44502fd825a");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-e68e5e302143435eac15d06b9fa5c56bc13902d3");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
