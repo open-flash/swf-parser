@@ -115,5 +115,5 @@ pub fn get_gif_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
 }
 
 pub fn test_image_start(image_data: &[u8], start_bytes: &[u8]) -> bool {
-  image_data[..start_bytes.len()] == *start_bytes
+  image_data.len() >= start_bytes.len() && image_data[..start_bytes.len()] == *start_bytes
 }

@@ -9,6 +9,7 @@
 - **[Fix]** Remove `nom` macros.
 - **[Fix]** Add `clippy` support.
 - **[Fix]** Propagate string encoding errors.
+- **[Fix]** Fix panic on invalid image type.
 
 ## Typescript
 

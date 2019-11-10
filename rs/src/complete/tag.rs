@@ -182,7 +182,9 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast:
       },
     ))
   } else {
-    panic!("UnknownBitmapType");
+    // UnknownBitmapType
+    // TODO: Better error
+    Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)))
   }
 }
 
@@ -1433,12 +1435,12 @@ mod tests {
     assert_eq!(remaining_bytes, &[] as &[u8]);
   }
 
-  //  #[test]
-  //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-11af1aace812a45645afba61530f849576e63669");
-  //
-  //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
-  //
-  //    let _ = parse_tag(input_bytes, *swf_version);
-  //  }
+//  #[test]
+//  fn test_fuzzing() {
+//    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-7ba1a6a7ebb1cf2f1fb3883599dd82bd96e6b271");
+//
+//    let (swf_version, input_bytes) = artifact.split_first().unwrap();
+//
+//    let _ = parse_tag(input_bytes, *swf_version);
+//  }
 }
