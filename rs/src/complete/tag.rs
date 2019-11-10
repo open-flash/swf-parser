@@ -31,6 +31,7 @@ use std::convert::TryFrom;
 use swf_tree as ast;
 use swf_tree::text::FontAlignmentZone;
 use swf_tree::{ButtonCondAction, Glyph};
+use crate::complete::base::skip;
 
 /// Parses that tag at the start of `input`.
 ///
@@ -390,7 +391,7 @@ fn parse_define_bits_lossless_any(
 ) -> NomResult<&[u8], ast::tags::DefineBitmap> {
   let (input, id) = parse_le_u16(input)?;
   let data: Vec<u8> = input.to_vec();
-  let input = &input[1..]; // BitmapFormat
+  let (input, _) = skip(1usize)(input)?; // BitmapFormat
   let (input, width) = parse_le_u16(input)?;
   let (_, height) = parse_le_u16(input)?;
   let input: &[u8] = &[][..];
@@ -1437,7 +1438,7 @@ mod tests {
 
 //  #[test]
 //  fn test_fuzzing() {
-//    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-7ba1a6a7ebb1cf2f1fb3883599dd82bd96e6b271");
+//    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-90531a762dd2b32cdab0aeb7a0038696e71eecce");
 //
 //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
 //
