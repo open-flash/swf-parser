@@ -14,6 +14,7 @@
 - **[Fix]** Fix panic on unknown audio codec code.
 - **[Fix]** Fix panic on invalid CSM text settings.
 - **[Fix]** Fix panic on incomplete clip action string.
+- **[Fix]** Fix panic on failed image dimension detection.
 
 ## Typescript
 

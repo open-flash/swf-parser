@@ -114,6 +114,36 @@ pub fn get_gif_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
   })
 }
 
-pub fn test_image_start(image_data: &[u8], start_bytes: &[u8]) -> bool {
+pub(crate) enum SniffedImageType {
+  Jpeg,
+  Png,
+  Gif,
+}
+
+pub(crate) fn sniff_image_type(image_data: &[u8], allow_erroneous_jpeg: bool) -> Result<SniffedImageType, ()> {
+  if is_sniffed_jpeg(image_data, allow_erroneous_jpeg) {
+    Ok(SniffedImageType::Jpeg)
+  } else if is_sniffed_png(image_data) {
+    Ok(SniffedImageType::Png)
+  } else if is_sniffed_gif(image_data) {
+    Ok(SniffedImageType::Gif)
+  } else {
+    Err(())
+  }
+}
+
+pub(crate) fn is_sniffed_jpeg(image_data: &[u8], allow_erroneous: bool) -> bool {
+  test_image_start(image_data, &JPEG_START) || (allow_erroneous && test_image_start(image_data, &ERRONEOUS_JPEG_START))
+}
+
+pub(crate) fn is_sniffed_png(image_data: &[u8]) -> bool {
+  test_image_start(image_data, &PNG_START)
+}
+
+pub(crate) fn is_sniffed_gif(image_data: &[u8]) -> bool {
+  test_image_start(image_data, &GIF_START)
+}
+
+fn test_image_start(image_data: &[u8], start_bytes: &[u8]) -> bool {
   image_data.len() >= start_bytes.len() && image_data[..start_bytes.len()] == *start_bytes
 }

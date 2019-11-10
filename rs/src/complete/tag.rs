@@ -3,11 +3,10 @@ use crate::complete::button::{
   parse_button2_cond_action_string, parse_button_record_string, parse_button_sound, ButtonVersion,
 };
 use crate::complete::display::{parse_blend_mode, parse_clip_actions_string, parse_filter_list};
-use crate::complete::image::get_gif_image_dimensions;
-use crate::complete::image::get_png_image_dimensions;
-use crate::complete::image::GIF_START;
-use crate::complete::image::PNG_START;
-use crate::complete::image::{get_jpeg_image_dimensions, test_image_start, ERRONEOUS_JPEG_START, JPEG_START};
+use crate::complete::image::{
+  get_gif_image_dimensions, get_jpeg_image_dimensions, get_png_image_dimensions, is_sniffed_jpeg, sniff_image_type,
+  SniffedImageType,
+};
 use crate::complete::morph_shape::{parse_morph_shape, MorphShapeVersion};
 use crate::complete::shape::{parse_glyph, parse_shape, ShapeVersion};
 use crate::complete::sound::{
@@ -171,8 +170,9 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast:
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
 
-  if test_image_start(&data, &JPEG_START) || (swf_version < 8 && test_image_start(&data, &ERRONEOUS_JPEG_START)) {
-    let image_dimensions = get_jpeg_image_dimensions(&data).unwrap();
+  if is_sniffed_jpeg(&data, swf_version < 8) {
+    let image_dimensions =
+      get_jpeg_image_dimensions(&data).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
     // TODO: avoid conversions
     Ok((
       input,
@@ -271,17 +271,17 @@ pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> NomResult<&[u8]
   let data: Vec<u8> = input.to_vec();
   let input: &[u8] = &[][..];
 
-  let (media_type, dimensions) =
-    if test_image_start(&data, &JPEG_START) || (swf_version < 8 && test_image_start(&data, &ERRONEOUS_JPEG_START)) {
-      (ast::ImageType::Jpeg, get_jpeg_image_dimensions(&data).unwrap())
-    } else if test_image_start(&data, &PNG_START) {
-      (ast::ImageType::Png, get_png_image_dimensions(&data).unwrap())
-    } else if test_image_start(&data, &GIF_START) {
-      (ast::ImageType::Gif, get_gif_image_dimensions(&data).unwrap())
-    } else {
+  let (media_type, dimensions) = match sniff_image_type(&data, swf_version < 8) {
+    Ok(SniffedImageType::Jpeg) => (ast::ImageType::Jpeg, get_jpeg_image_dimensions(&data)),
+    Ok(SniffedImageType::Png) => (ast::ImageType::Png, get_png_image_dimensions(&data)),
+    Ok(SniffedImageType::Gif) => (ast::ImageType::Gif, get_gif_image_dimensions(&data)),
+    Err(()) => {
       // UnknownBitmapType
       return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
-    };
+    }
+  };
+
+  let dimensions = dimensions.map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
 
   Ok((
     input,
@@ -296,87 +296,73 @@ pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> NomResult<&[u8]
 }
 
 pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::tags::DefineBitmap> {
-  let (ajpeg_data, id) = parse_le_u16(input)?;
-  let (input, data_len) = parse_le_u32(ajpeg_data).map(|(i, dl)| (i, dl as usize))?;
-  let data = &input[..data_len];
+  use nom::bytes::complete::take;
+  use nom::combinator::map;
 
-  let (media_type, dimensions, data) =
-    if test_image_start(data, &JPEG_START) || (swf_version < 8 && test_image_start(data, &ERRONEOUS_JPEG_START)) {
-      let dimensions = get_jpeg_image_dimensions(&input[..data_len]).unwrap();
+  let (ajpeg_data, id) = parse_le_u16(input)?;
+  let (input, data_len) = map(parse_le_u32, |x| x as usize)(ajpeg_data)?;
+  let (_, data) = take(data_len)(input)?;
+
+  let (media_type, dimensions, img_data) = match sniff_image_type(data, swf_version < 8) {
+    Ok(SniffedImageType::Jpeg) => {
+      let dimensions = get_jpeg_image_dimensions(data);
       if input.len() > data_len {
-        (ast::ImageType::Ajpeg, dimensions, ajpeg_data.to_vec())
+        (ast::ImageType::Ajpeg, dimensions, ajpeg_data)
       } else {
-        (ast::ImageType::Jpeg, dimensions, data.to_vec())
+        (ast::ImageType::Jpeg, dimensions, data)
       }
-    } else if test_image_start(data, &PNG_START) {
-      (
-        ast::ImageType::Png,
-        get_png_image_dimensions(data).unwrap(),
-        data.to_vec(),
-      )
-    } else if test_image_start(data, &GIF_START) {
-      (
-        ast::ImageType::Gif,
-        get_gif_image_dimensions(data).unwrap(),
-        data.to_vec(),
-      )
-    } else {
+    }
+    Ok(SniffedImageType::Png) => (ast::ImageType::Png, get_png_image_dimensions(data), data),
+    Ok(SniffedImageType::Gif) => (ast::ImageType::Gif, get_gif_image_dimensions(data), data),
+    Err(()) => {
       // UnknownBitmapType
       return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
-    };
+    }
+  };
 
-  let input: &[u8] = &[][..];
+  let dimensions = dimensions.map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
 
   Ok((
-    input,
+    &[],
     ast::tags::DefineBitmap {
       id,
       width: dimensions.width as u16,
       height: dimensions.height as u16,
       media_type,
-      data,
+      data: img_data.to_vec(),
     },
   ))
 }
 
 pub fn parse_define_bits_jpeg4(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBitmap> {
+  use nom::bytes::complete::take;
   use nom::combinator::map;
 
   let (djpeg_data, id) = parse_le_u16(input)?;
   let (input, data_len) = map(parse_le_u32, |dl| usize::try_from(dl).unwrap())(djpeg_data)?;
   let (input, _) = skip(2usize)(input)?; // Skip deblock
-  let data = &input[..data_len];
+  let (_, data) = take(data_len)(input)?;
 
-  let (media_type, dimensions, data) = if test_image_start(data, &JPEG_START) {
-    let dimensions = get_jpeg_image_dimensions(&input[..data_len]).unwrap();
-    (ast::ImageType::Ajpegd, dimensions, djpeg_data.to_vec())
-  } else if test_image_start(data, &PNG_START) {
-    (
-      ast::ImageType::Png,
-      get_png_image_dimensions(data).unwrap(),
-      data.to_vec(),
-    )
-  } else if test_image_start(data, &GIF_START) {
-    (
-      ast::ImageType::Gif,
-      get_gif_image_dimensions(data).unwrap(),
-      data.to_vec(),
-    )
-  } else {
-    // UnknownBitmapType
-    return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+  let (media_type, dimensions, img_data) = match sniff_image_type(data, false) {
+    Ok(SniffedImageType::Jpeg) => (ast::ImageType::Ajpegd, get_jpeg_image_dimensions(data), djpeg_data),
+    Ok(SniffedImageType::Png) => (ast::ImageType::Png, get_png_image_dimensions(data), data),
+    Ok(SniffedImageType::Gif) => (ast::ImageType::Gif, get_gif_image_dimensions(data), data),
+    Err(()) => {
+      // UnknownBitmapType
+      return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+    }
   };
 
-  let input: &[u8] = &[][..];
+  let dimensions = dimensions.map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
 
   Ok((
-    input,
+    &[],
     ast::tags::DefineBitmap {
       id,
       width: dimensions.width as u16,
       height: dimensions.height as u16,
       media_type,
-      data,
+      data: img_data.to_vec(),
     },
   ))
 }
@@ -1445,7 +1431,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-885ee5a08a95d42dcab3d387c196885c38e64939");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-82937568c80f6dccdcd44fda9c7b89ec361cac6a");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
