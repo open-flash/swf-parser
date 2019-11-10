@@ -2,27 +2,27 @@ use nom::number::complete::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u
 use nom::IResult as NomResult;
 use swf_tree as ast;
 
-pub fn sound_rate_from_id(sound_rate_id: u8) -> ast::SoundRate {
-  match sound_rate_id {
-    0 => ast::SoundRate::SoundRate5500,
-    1 => ast::SoundRate::SoundRate11000,
-    2 => ast::SoundRate::SoundRate22000,
-    3 => ast::SoundRate::SoundRate44000,
-    _ => panic!("Unexpected sound rate id"),
+pub fn sound_rate_from_code(sound_rate_code: u8) -> Result<ast::SoundRate, ()> {
+  match sound_rate_code {
+    0 => Ok(ast::SoundRate::SoundRate5500),
+    1 => Ok(ast::SoundRate::SoundRate11000),
+    2 => Ok(ast::SoundRate::SoundRate22000),
+    3 => Ok(ast::SoundRate::SoundRate44000),
+    _ => Err(()),
   }
 }
 
-pub fn audio_coding_format_from_id(audio_coding_format_id: u8) -> ast::AudioCodingFormat {
-  match audio_coding_format_id {
-    0 => ast::AudioCodingFormat::UncompressedNativeEndian,
-    1 => ast::AudioCodingFormat::Adpcm,
-    2 => ast::AudioCodingFormat::Mp3,
-    3 => ast::AudioCodingFormat::UncompressedLittleEndian,
-    4 => ast::AudioCodingFormat::Nellymoser16,
-    5 => ast::AudioCodingFormat::Nellymoser8,
-    6 => ast::AudioCodingFormat::Nellymoser,
-    11 => ast::AudioCodingFormat::Speex,
-    _ => panic!("Unexpected audio coding format id"),
+pub fn audio_coding_format_from_code(audio_codec_code: u8) -> Result<ast::AudioCodingFormat, ()> {
+  match audio_codec_code {
+    0 => Ok(ast::AudioCodingFormat::UncompressedNativeEndian),
+    1 => Ok(ast::AudioCodingFormat::Adpcm),
+    2 => Ok(ast::AudioCodingFormat::Mp3),
+    3 => Ok(ast::AudioCodingFormat::UncompressedLittleEndian),
+    4 => Ok(ast::AudioCodingFormat::Nellymoser16),
+    5 => Ok(ast::AudioCodingFormat::Nellymoser8),
+    6 => Ok(ast::AudioCodingFormat::Nellymoser),
+    11 => Ok(ast::AudioCodingFormat::Speex),
+    _ => Err(()),
   }
 }
 

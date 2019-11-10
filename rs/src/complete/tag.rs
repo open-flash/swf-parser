@@ -11,7 +11,7 @@ use crate::complete::image::{get_jpeg_image_dimensions, test_image_start, ERRONE
 use crate::complete::morph_shape::{parse_morph_shape, MorphShapeVersion};
 use crate::complete::shape::{parse_glyph, parse_shape, ShapeVersion};
 use crate::complete::sound::{
-  audio_coding_format_from_id, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_id,
+  audio_coding_format_from_code, is_uncompressed_audio_coding_format, parse_sound_info, sound_rate_from_code,
 };
 use crate::complete::text::{
   grid_fitting_from_code, parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_offset_glyphs,
@@ -898,8 +898,10 @@ fn parse_define_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineSound> 
   } else {
     ast::SoundSize::SoundSize8
   };
-  let sound_rate = sound_rate_from_id((flags >> 2) & 0b11);
-  let format = audio_coding_format_from_id((flags >> 4) & 0b1111);
+  let sound_rate =
+    sound_rate_from_code((flags >> 2) & 0b11).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  let format = audio_coding_format_from_code((flags >> 4) & 0b1111)
+    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
   let (input, sample_count) = parse_le_u32(input)?;
   let (input, data) = parse_bytes(input)?;
 
@@ -1321,7 +1323,8 @@ fn parse_sound_stream_head_any(input: &[u8]) -> NomResult<&[u8], ast::tags::Soun
   } else {
     ast::SoundSize::SoundSize8
   };
-  let playback_sound_rate = sound_rate_from_id(((flags >> 2) & 0b11) as u8);
+  let playback_sound_rate = sound_rate_from_code(((flags >> 2) & 0b11) as u8)
+    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
   // Bits [4, 7] are reserved
   let stream_sound_type = if (flags & (1 << 8)) != 0 {
     ast::SoundType::Stereo
@@ -1333,8 +1336,10 @@ fn parse_sound_stream_head_any(input: &[u8]) -> NomResult<&[u8], ast::tags::Soun
   } else {
     ast::SoundSize::SoundSize8
   };
-  let stream_sound_rate = sound_rate_from_id(((flags >> 10) & 0b11) as u8);
-  let stream_format = audio_coding_format_from_id(((flags >> 12) & 0b1111) as u8);
+  let stream_sound_rate = sound_rate_from_code(((flags >> 10) & 0b11) as u8)
+    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  let stream_format = audio_coding_format_from_code(((flags >> 12) & 0b1111) as u8)
+    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
   let (input, stream_sample_count) = parse_le_u16(input)?;
   let (input, latency_seek) = cond(stream_format == ast::AudioCodingFormat::Mp3, parse_le_i16)(input)?;
   Ok((
@@ -1435,10 +1440,8 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-90531a762dd2b32cdab0aeb7a0038696e71eecce");
-  //
+  //    let artifact: &[u8] = include_bytes!("../../../tests/local-tags/raw/unknown-audio-codec/crash-dca088e48244ea9d0dc269a9be48d44502fd825a");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
-  //
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
 }

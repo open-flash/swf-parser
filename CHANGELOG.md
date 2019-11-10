@@ -11,6 +11,7 @@
 - **[Fix]** Propagate string encoding errors.
 - **[Fix]** Fix panic on invalid image type.
 - **[Fix]** Fix panic on incomplete `DefineBitsLossless`.
+- **[Fix]** Fix panic on unknown audio codec code.
 
 ## Typescript
 
