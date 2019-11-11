@@ -1,3 +1,4 @@
+use crate::complete::base::skip;
 use crate::complete::display::{parse_blend_mode, parse_filter_list};
 use crate::complete::sound::parse_sound_info;
 use crate::streaming::basic_data_types::{parse_color_transform_with_alpha, parse_matrix};
@@ -79,45 +80,29 @@ pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[
   ))
 }
 
-pub fn parse_button2_cond_action_string(input: &[u8]) -> NomResult<&[u8], Vec<ast::ButtonCondAction>> {
-  let mut result: Vec<ast::ButtonCondAction> = Vec::new();
-  let mut current_input: &[u8] = input;
+pub fn parse_button2_cond_action_string(mut input: &[u8]) -> NomResult<&[u8], Vec<ast::ButtonCondAction>> {
+  let mut actions: Vec<ast::ButtonCondAction> = Vec::new();
   loop {
-    let (input, next_action_offset) = parse_le_u16(current_input)?;
-
-    let (input, next_input) = if next_action_offset == 0 {
-      (input, &[] as &[u8])
-    } else {
-      let next_action_offset = next_action_offset as usize;
-      let le_u16_size = current_input.len() - input.len();
-      (
-        &current_input[le_u16_size..next_action_offset],
-        &current_input[next_action_offset..],
-      )
-    };
-
-    match parse_button2_cond_action(input) {
-      Ok((_, cond_action)) => {
-        current_input = next_input;
-        result.push(cond_action);
-      }
-      Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(::nom::Needed::Unknown)),
-      Err(e) => return Err(e),
-    };
+    let (_, (next_action_offset, cond_action)) = parse_button2_cond_action(input)?;
+    actions.push(cond_action);
     if next_action_offset == 0 {
       break;
     }
+    let (next_input, ()) = skip(next_action_offset)(input)?;
+    input = next_input;
   }
-  Ok((current_input, result))
+  Ok((input, actions))
 }
 
-pub fn parse_button2_cond_action(input: &[u8]) -> NomResult<&[u8], ast::ButtonCondAction> {
+pub fn parse_button2_cond_action(input: &[u8]) -> NomResult<&[u8], (usize, ast::ButtonCondAction)> {
+  use nom::combinator::map;
+  let (input, next_action_offset) = map(parse_le_u16, usize::from)(input)?;
   let (input, conditions) = parse_button_cond(input)?;
   let value = ast::ButtonCondAction {
     conditions: Some(conditions),
     actions: input.to_vec(),
   };
-  Ok((&[][..], value))
+  Ok((input, (next_action_offset, value)))
 }
 
 pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
