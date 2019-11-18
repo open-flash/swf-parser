@@ -478,6 +478,8 @@ pub fn parse_define_edit_text(input: &[u8]) -> NomResult<&[u8], ast::tags::Defin
 }
 
 pub fn parse_define_font(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineGlyphFont> {
+  use nom::bytes::complete::take;
+
   let (input, id) = parse_le_u16(input)?;
   let available = input.len();
   let mut glyphs: Vec<Glyph> = Vec::new();
@@ -501,12 +503,19 @@ pub fn parse_define_font(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineGlyp
       let start_offset = offsets[i];
       let glyph_input = if i + 1 < glyph_count {
         let end_offset = offsets[i + 1];
-        &saved_input[start_offset..end_offset]
+        let glyph_input_size: usize = match end_offset.checked_sub(start_offset) {
+          Some(x) => x,
+          None => return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+        };
+        let (input, ()) = skip(start_offset)(saved_input)?;
+        let (_, glyph_input) = take(glyph_input_size)(input)?;
+        glyph_input
       } else {
-        &saved_input[start_offset..]
+        let (glyph_input, ()) = skip(start_offset)(saved_input)?;
+        glyph_input
       };
       match parse_glyph(glyph_input) {
-        Ok((_, o)) => glyphs.push(o),
+        Ok((_, glyph)) => glyphs.push(glyph),
         Err(e) => return Err(e),
       };
     }
@@ -1432,7 +1441,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-ed17541294d26aba616db7f59265129b4bef68b3");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-0799ee5cf78687b6df63b9d19459e5a444677500");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
