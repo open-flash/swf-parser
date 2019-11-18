@@ -16,6 +16,7 @@
 - **[Fix]** Fix panic on incomplete clip action string.
 - **[Fix]** Fix panic on failed image dimension detection.
 - **[Fix]** Fix panic on invalid button cond action string.
+- **[Fix]** Fix panic on invalid video deblocking.
 
 ## Typescript
 

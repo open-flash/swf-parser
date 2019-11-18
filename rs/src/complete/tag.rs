@@ -16,7 +16,7 @@ use crate::complete::text::{
   grid_fitting_from_code, parse_csm_table_hint_bits, parse_font_alignment_zone, parse_font_layout, parse_offset_glyphs,
   parse_text_alignment, parse_text_record_string, text_renderer_from_code, FontInfoVersion, FontVersion, TextVersion,
 };
-use crate::complete::video::{parse_videoc_codec, video_deblocking_from_id};
+use crate::complete::video::{parse_videoc_codec, video_deblocking_from_code};
 use crate::streaming::basic_data_types::{
   parse_block_c_string, parse_c_string, parse_color_transform, parse_color_transform_with_alpha, parse_language_code,
   parse_leb128_u32, parse_matrix, parse_named_id, parse_rect, parse_s_rgb8, parse_straight_s_rgba8,
@@ -963,7 +963,8 @@ pub fn parse_define_video_stream(input: &[u8]) -> NomResult<&[u8], ast::tags::De
   let (input, flags) = parse_u8(input)?;
   #[allow(clippy::identity_op)]
   let use_smoothing = (flags & (1 << 0)) != 0;
-  let deblocking = video_deblocking_from_id((flags >> 1) & 0b111);
+  let deblocking = video_deblocking_from_code((flags >> 1) & 0b111)
+    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
   // Bits [4, 7] are reserved
   let (input, codec) = parse_videoc_codec(input)?;
 
@@ -1431,7 +1432,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-0081429e381eead3fc7862eef39977dd50743399");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-ed17541294d26aba616db7f59265129b4bef68b3");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
