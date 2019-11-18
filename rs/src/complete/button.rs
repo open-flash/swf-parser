@@ -106,11 +106,11 @@ pub fn parse_button2_cond_action(input: &[u8]) -> NomResult<&[u8], (usize, ast::
 }
 
 pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
-  fn key_press_from_id(key_press_id: u16) -> Option<u32> {
+  fn key_press_from_code(key_press_id: u16) -> Result<Option<u32>, ()> {
     match key_press_id {
-      0 => Option::None,
-      k @ 1..=6 | k @ 8 | k @ 13..=19 | k @ 32..=126 => Some(k as u32),
-      _ => panic!("InvalidKeyCode: {}", key_press_id),
+      0 => Ok(None),
+      k @ 1..=6 | k @ 8 | k @ 13..=19 | k @ 32..=126 => Ok(Some(u32::from(k))),
+      _ => Err(()),
     }
   }
 
@@ -125,7 +125,8 @@ pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
   let out_down_to_idle = (flags & (1 << 6)) != 0;
   let idle_to_over_down = (flags & (1 << 7)) != 0;
   let over_down_to_idle = (flags & (1 << 8)) != 0;
-  let key_press = key_press_from_id((flags >> 9) & 0x7f);
+  let key_press =
+    key_press_from_code((flags >> 9) & 0x7f).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
 
   Ok((
     input,

@@ -18,6 +18,7 @@
 - **[Fix]** Fix panic on invalid button cond action string.
 - **[Fix]** Fix panic on invalid video deblocking.
 - **[Fix]** Fix panic on invalid define font offset.
+- **[Fix]** Fix panic on invalid button cond key press code.
 
 ## Typescript
 
