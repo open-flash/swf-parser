@@ -23,6 +23,7 @@
 - **[Fix]** Fix panic on invalid morph gradient.
 - **[Fix]** Fix panic on invalid cap style.
 - **[Fix]** Fix panic on unmatched morph shape record pair.
+- **[Fix]** Fix panic on invalid GIF or PNG header.
 
 ## Typescript
 

@@ -1,4 +1,5 @@
-use nom::number::complete::{be_u16 as parse_be_u16, be_u32 as parse_be_u32, le_u32 as parse_le_u32};
+use crate::complete::base::skip;
+use nom::number::complete::{be_u16 as parse_be_u16, be_u32 as parse_be_u32};
 
 pub struct ImageDimensions {
   pub width: usize,
@@ -20,13 +21,15 @@ const PNG_IHDR_CHUNK_TYPE: u32 = 0x49_48_44_52;
 /// @see https://www.w3.org/TR/PNG/#5ChunkOrdering
 /// @see https://www.w3.org/TR/PNG/#11IHDR
 pub fn get_png_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
-  let input = &input[12..];
-  let (input, chunk_type) = parse_be_u32::<()>(input).unwrap();
+  // Skip PNG signature (8 bytes) and IHDR (Image Header) chunk size (4 bytes)
+  let (input, ()) = skip::<_, _, ()>(12usize)(input).map_err(|_| ())?;
+  let (input, chunk_type) = parse_be_u32::<()>(input).map_err(|_| ())?;
   if chunk_type != PNG_IHDR_CHUNK_TYPE {
-    panic!("InvalidPngFile");
+    // Expected chunk type to be IHDR (Image Header)
+    return Err(());
   }
-  let (input, width) = parse_be_u32::<()>(input).unwrap();
-  let (_, height) = parse_be_u32::<()>(input).unwrap();
+  let (input, width) = parse_be_u32::<()>(input).map_err(|_| ())?;
+  let (_, height) = parse_be_u32::<()>(input).map_err(|_| ())?;
 
   Ok(ImageDimensions {
     width: width as usize,
@@ -99,14 +102,10 @@ fn find_next_chunk(input: &[u8]) -> Option<&[u8]> {
 }
 
 pub fn get_gif_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
-  // Skip GIF header: "GIF89a" in ASCII for SWF
-  let input = &input[6..];
-  let (input, chunk_type) = parse_le_u32::<()>(input).unwrap();
-  if chunk_type != PNG_IHDR_CHUNK_TYPE {
-    panic!("InvalidPngFile");
-  }
-  let (input, width) = parse_be_u16::<()>(input).unwrap();
-  let (_, height) = parse_be_u16::<()>(input).unwrap();
+  // Skip GIF header (6 bytes): signature (3 bytes) and version (3 bytes)
+  let (input, ()) = skip::<_, _, ()>(6usize)(input).map_err(|_| ())?;
+  let (input, width) = parse_be_u16::<()>(input).map_err(|_| ())?;
+  let (_, height) = parse_be_u16::<()>(input).map_err(|_| ())?;
 
   Ok(ImageDimensions {
     width: width as usize,
