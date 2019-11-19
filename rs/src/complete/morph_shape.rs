@@ -154,17 +154,17 @@ fn parse_morph_shape_start_record_string_bits(
   Ok((current_input, result))
 }
 
-fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> ast::MorphShapeRecord {
+fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> Result<ast::MorphShapeRecord, ()> {
   match (start, end) {
     (MixedShapeRecord::Edge(s), MixedShapeRecord::Edge(e)) => {
-      ast::MorphShapeRecord::Edge(ast::shape_records::MorphEdge {
+      Ok(ast::MorphShapeRecord::Edge(ast::shape_records::MorphEdge {
         delta: s.delta,
         morph_delta: e.delta,
         control_delta: s.control_delta,
         morph_control_delta: e.control_delta,
-      })
+      }))
     }
-    (MixedShapeRecord::MorphStyleChange(s), MixedShapeRecord::MorphStyleChange(e)) => {
+    (MixedShapeRecord::MorphStyleChange(s), MixedShapeRecord::MorphStyleChange(e)) => Ok(
       ast::MorphShapeRecord::StyleChange(ast::shape_records::MorphStyleChange {
         move_to: s.move_to,
         morph_move_to: e.move_to,
@@ -172,9 +172,9 @@ fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> ast:
         right_fill: s.right_fill,
         line_style: s.line_style,
         new_styles: s.new_styles,
-      })
-    }
-    _ => panic!("NonMatchingEdges"),
+      }),
+    ),
+    _ => Err(()),
   }
 }
 
@@ -241,7 +241,9 @@ fn parse_morph_shape_end_record_string_bits(
       current_input = next_input;
       MixedShapeRecord::MorphStyleChange(style_change)
     };
-    result.push(as_morph_shape_record(start_record, end_record));
+    let morph_shape_record = as_morph_shape_record(start_record, end_record)
+      .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    result.push(morph_shape_record);
   }
 
   Ok((current_input, result))

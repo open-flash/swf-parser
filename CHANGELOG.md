@@ -22,6 +22,7 @@
 - **[Fix]** Fix panic on unpaired morph shape record.
 - **[Fix]** Fix panic on invalid morph gradient.
 - **[Fix]** Fix panic on invalid cap style.
+- **[Fix]** Fix panic on unmatched morph shape record pair.
 
 ## Typescript
 
