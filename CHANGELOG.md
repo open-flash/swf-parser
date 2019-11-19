@@ -21,6 +21,7 @@
 - **[Fix]** Fix panic on invalid button cond key press code.
 - **[Fix]** Fix panic on unpaired morph shape record.
 - **[Fix]** Fix panic on invalid morph gradient.
+- **[Fix]** Fix panic on invalid cap style.
 
 ## Typescript
 

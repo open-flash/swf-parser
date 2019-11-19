@@ -392,17 +392,17 @@ pub fn parse_line_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast:
   ))
 }
 
+pub(crate) fn cap_style_from_code(cap_style_code: u16) -> Result<ast::CapStyle, ()> {
+  match cap_style_code {
+    0 => Ok(ast::CapStyle::Round),
+    1 => Ok(ast::CapStyle::None),
+    2 => Ok(ast::CapStyle::Square),
+    _ => Err(()),
+  }
+}
+
 pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
   use nom::combinator::map;
-
-  fn cap_style_from_id(cap_style_id: u16) -> ast::CapStyle {
-    match cap_style_id {
-      0 => ast::CapStyle::Round,
-      1 => ast::CapStyle::None,
-      2 => ast::CapStyle::Square,
-      _ => panic!("UnexpectedCapStyleId: {}", cap_style_id),
-    }
-  }
 
   let (input, width) = parse_le_u16(input)?;
 
@@ -412,23 +412,25 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
   let no_v_scale = (flags & (1 << 1)) != 0;
   let no_h_scale = (flags & (1 << 2)) != 0;
   let has_fill = (flags & (1 << 3)) != 0;
-  let join_style_id = (flags >> 4) & 0b11;
-  let start_cap_style_id = (flags >> 6) & 0b11;
-  let end_cap_style_id = (flags >> 8) & 0b11;
+  let join_style_code = (flags >> 4) & 0b11;
+  let start_cap_style_code = (flags >> 6) & 0b11;
+  let end_cap_style_code = (flags >> 8) & 0b11;
   let no_close = (flags & (1 << 10)) != 0;
   // (Skip bits [11, 15])
 
-  let start_cap = cap_style_from_id(start_cap_style_id);
-  let end_cap = cap_style_from_id(end_cap_style_id);
+  let start_cap =
+    cap_style_from_code(start_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  let end_cap =
+    cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
 
-  let (input, join) = match join_style_id {
+  let (input, join) = match join_style_code {
     0 => (input, ast::JoinStyle::Round),
     1 => (input, ast::JoinStyle::Bevel),
     2 => {
       let (input, limit) = parse_le_u16(input)?;
       (input, ast::JoinStyle::Miter(ast::join_styles::Miter { limit }))
     }
-    _ => panic!("UnexpectedJoinStyleId: {}", join_style_id),
+    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
 
   let (input, fill) = if has_fill {

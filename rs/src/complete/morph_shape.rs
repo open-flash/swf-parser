@@ -1,5 +1,7 @@
 use crate::complete::gradient::parse_morph_gradient;
-use crate::complete::shape::{parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits, StyleBits};
+use crate::complete::shape::{
+  cap_style_from_code, parse_curved_edge_bits, parse_list_length, parse_straight_edge_bits, StyleBits,
+};
 use crate::streaming::basic_data_types::{
   do_parse_u16_bits, do_parse_u32_bits, parse_bool_bits, parse_i32_bits, parse_le_fixed8_p8, parse_matrix,
   parse_straight_s_rgba8, parse_u16_bits,
@@ -441,15 +443,6 @@ pub fn parse_morph_line_style1(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
 pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineStyle> {
   use nom::combinator::map;
 
-  fn cap_style_from_id(cap_style_id: u16) -> ast::CapStyle {
-    match cap_style_id {
-      0 => ast::CapStyle::Round,
-      1 => ast::CapStyle::None,
-      2 => ast::CapStyle::Square,
-      _ => panic!("Unexpected cap style id"),
-    }
-  }
-
   let (input, width) = parse_le_u16(input)?;
   let (input, morph_width) = parse_le_u16(input)?;
   let (input, flags) = parse_le_u16(input)?;
@@ -458,14 +451,16 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
   let no_v_scale = (flags & (1 << 1)) != 0;
   let no_h_scale = (flags & (1 << 2)) != 0;
   let has_fill = (flags & (1 << 3)) != 0;
-  let join_style_id = (flags >> 4) & 0b11;
-  let start_cap_style_id = (flags >> 6) & 0b11;
-  let end_cap_style_id = (flags >> 8) & 0b11;
+  let join_style_code = (flags >> 4) & 0b11;
+  let start_cap_style_code = (flags >> 6) & 0b11;
+  let end_cap_style_code = (flags >> 8) & 0b11;
   let no_close = (flags & (1 << 10)) != 0;
   // (Skip bits [11, 15])
-  let start_cap = cap_style_from_id(start_cap_style_id);
-  let end_cap = cap_style_from_id(end_cap_style_id);
-  let (input, join) = match join_style_id {
+  let start_cap =
+    cap_style_from_code(start_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  let end_cap =
+    cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  let (input, join) = match join_style_code {
     0 => (input, ast::JoinStyle::Round),
     1 => (input, ast::JoinStyle::Bevel),
     2 => map(parse_le_u16, |limit| {
