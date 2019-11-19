@@ -85,6 +85,7 @@ pub fn parse_fixed8_p8_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8]
 
 /// Generates a bits parser reading a `i16` over `n` bits.
 pub fn do_parse_i16_bits(n: usize) -> impl Fn((&[u8], usize)) -> NomResult<(&[u8], usize), i16> {
+  debug_assert!(n <= 16);
   move |input: (&[u8], usize)| {
     let (input, x) = nom::bits::streaming::take::<_, u16, _, _>(n)(input)?;
     let x = match n {
@@ -109,6 +110,7 @@ pub fn parse_i16_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usiz
 
 /// Generates a bits parser reading a `i32` over `n` bits.
 pub fn do_parse_i32_bits(n: usize) -> impl Fn((&[u8], usize)) -> NomResult<(&[u8], usize), i32> {
+  debug_assert!(n <= 32);
   move |input: (&[u8], usize)| {
     let (input, x) = nom::bits::streaming::take::<_, u32, _, _>(n)(input)?;
     let x = match n {
@@ -132,6 +134,7 @@ pub fn parse_i32_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usiz
 
 /// Generates a bits parser reading a `u32` over `n` bits.
 pub fn do_parse_u32_bits(n: usize) -> impl Fn((&[u8], usize)) -> NomResult<(&[u8], usize), u32> {
+  debug_assert!(n <= 32);
   move |input: (&[u8], usize)| nom::bits::streaming::take::<_, u32, _, _>(n)(input)
 }
 

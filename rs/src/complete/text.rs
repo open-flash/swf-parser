@@ -88,6 +88,9 @@ pub fn parse_text_record_string(
   index_bits: usize,
   advance_bits: usize,
 ) -> NomResult<&[u8], Vec<ast::text::TextRecord>> {
+  debug_assert!(index_bits <= 32);
+  debug_assert!(advance_bits <= 32);
+
   let mut result: Vec<ast::text::TextRecord> = Vec::new();
   let mut current_input: &[u8] = input;
   while !current_input.is_empty() {
@@ -101,7 +104,6 @@ pub fn parse_text_record_string(
         current_input = next_input;
         result.push(text_record);
       }
-      Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(::nom::Needed::Unknown)),
       Err(e) => return Err(e),
     };
   }
@@ -114,6 +116,9 @@ pub fn parse_text_record(
   index_bits: usize,
   advance_bits: usize,
 ) -> NomResult<&[u8], ast::text::TextRecord> {
+  debug_assert!(index_bits <= 32);
+  debug_assert!(advance_bits <= 32);
+
   use nom::bits::bits;
   use nom::combinator::{cond, map};
 
@@ -166,6 +171,9 @@ pub fn parse_glyph_entries(
   index_bits: usize,
   advance_bits: usize,
 ) -> NomResult<(&[u8], usize), Vec<ast::text::GlyphEntry>> {
+  debug_assert!(index_bits <= 32);
+  debug_assert!(advance_bits <= 32);
+
   nom::multi::count(|i| parse_glyph_entry(i, index_bits, advance_bits), entry_count as usize)(input)
 }
 
@@ -174,6 +182,9 @@ pub fn parse_glyph_entry(
   index_bits: usize,
   advance_bits: usize,
 ) -> NomResult<(&[u8], usize), ast::text::GlyphEntry> {
+  debug_assert!(index_bits <= 32);
+  debug_assert!(advance_bits <= 32);
+
   use nom::combinator::map;
   let (input, index) = map(do_parse_u32_bits(index_bits), |x| x as usize)(input)?;
   let (input, advance) = parse_i32_bits(input, advance_bits)?;

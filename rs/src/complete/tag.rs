@@ -940,9 +940,12 @@ pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> NomResult<&[
   let (input, id) = parse_le_u16(input)?;
   let (input, bounds) = parse_rect(input)?;
   let (input, matrix) = parse_matrix(input)?;
-  let (input, index_bits) = map(parse_u8, |x| x as usize)(input)?;
-  let (input, advance_bits) = map(parse_u8, |x| x as usize)(input)?;
+  let (input, index_bits) = map(parse_u8, usize::from)(input)?;
+  let (input, advance_bits) = map(parse_u8, usize::from)(input)?;
   let has_alpha = version >= TextVersion::Text2;
+  if index_bits > 32 || advance_bits > 32 {
+    return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+  }
   let (input, records) = parse_text_record_string(input, has_alpha, index_bits, advance_bits)?;
 
   Ok((
@@ -1435,7 +1438,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-4010bd249f7cb7cc86fa23e9060ce750cc1ff8ee");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-87047365479aae7fd5bf58fcfa95eea973e5dfde");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
