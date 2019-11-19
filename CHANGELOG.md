@@ -19,6 +19,7 @@
 - **[Fix]** Fix panic on invalid video deblocking.
 - **[Fix]** Fix panic on invalid define font offset.
 - **[Fix]** Fix panic on invalid button cond key press code.
+- **[Fix]** Fix panic on unpaired morph shape record.
 
 ## Typescript
 

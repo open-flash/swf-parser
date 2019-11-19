@@ -200,9 +200,11 @@ fn parse_morph_shape_end_record_string_bits(
     };
 
     match parse_u16_bits(current_input, 6) {
-      Ok((_, 0)) => panic!("MissingMorphShapeEndRecords"),
+      Ok((_, 0)) => {
+        // Missing morph shape end record
+        return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+      }
       Ok((_, _)) => {}
-      Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
       Err(e) => return Err(e),
     };
 
@@ -211,7 +213,6 @@ fn parse_morph_shape_end_record_string_bits(
         current_input = next_input;
         is_edge
       }
-      Err(::nom::Err::Incomplete(_)) => return Err(::nom::Err::Incomplete(Needed::Unknown)),
       Err(e) => return Err(e),
     };
 
