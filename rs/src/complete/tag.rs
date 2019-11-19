@@ -1,4 +1,4 @@
-use crate::complete::base::skip;
+use crate::complete::base::{offset_take, skip};
 use crate::complete::button::{
   parse_button2_cond_action_string, parse_button_record_string, parse_button_sound, ButtonVersion,
 };
@@ -478,8 +478,6 @@ pub fn parse_define_edit_text(input: &[u8]) -> NomResult<&[u8], ast::tags::Defin
 }
 
 pub fn parse_define_font(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineGlyphFont> {
-  use nom::bytes::complete::take;
-
   let (input, id) = parse_le_u16(input)?;
   let available = input.len();
   let mut glyphs: Vec<Glyph> = Vec::new();
@@ -498,20 +496,16 @@ pub fn parse_define_font(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineGlyp
       input = next_input;
       offsets.push(offset.into());
     }
-
+    let saved_input_len: usize = saved_input.len();
     for i in 0..glyph_count {
-      let start_offset = offsets[i];
-      let glyph_input = if i + 1 < glyph_count {
-        let end_offset = offsets[i + 1];
+      let glyph_input = {
+        let start_offset = offsets[i];
+        let end_offset = offsets.get(i + 1).cloned().unwrap_or(saved_input_len);
         let glyph_input_size: usize = match end_offset.checked_sub(start_offset) {
           Some(x) => x,
           None => return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
         };
-        let (input, ()) = skip(start_offset)(saved_input)?;
-        let (_, glyph_input) = take(glyph_input_size)(input)?;
-        glyph_input
-      } else {
-        let (glyph_input, ()) = skip(start_offset)(saved_input)?;
+        let (_, glyph_input) = offset_take(start_offset, glyph_input_size)(saved_input)?;
         glyph_input
       };
       match parse_glyph(glyph_input) {
@@ -1441,7 +1435,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-b77f79d0ffd12b8b4bd6ee99f7c090e7fc85584e");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-7e9944f60ce5c6f8b7c2c5678a38314d6c095ab4");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }

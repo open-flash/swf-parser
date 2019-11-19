@@ -1,3 +1,4 @@
+use crate::complete::base::{offset_take, skip};
 use crate::complete::shape::parse_glyph;
 use crate::streaming::basic_data_types::{
   do_parse_u32_bits, parse_i32_bits, parse_le_f16, parse_rect, parse_s_rgb8, parse_straight_s_rgba8, parse_u32_bits,
@@ -199,18 +200,23 @@ pub fn parse_offset_glyphs(
   };
   let mut glyphs: Vec<ast::Glyph> = Vec::with_capacity(glyph_count);
   for i in 0..glyph_count {
-    let start_offset = offsets[i];
-    let end_offset = if i + 1 < glyph_count {
-      offsets[i + 1]
-    } else {
-      end_offset
+    let glyph_input = {
+      let start_offset = offsets[i];
+      let end_offset = offsets.get(i + 1).cloned().unwrap_or(end_offset);
+      let glyph_input_size: usize = match end_offset.checked_sub(start_offset) {
+        Some(x) => x,
+        None => return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+      };
+      let (_, glyph_input) = offset_take(start_offset, glyph_input_size)(input)?;
+      glyph_input
     };
-    match parse_glyph(&input[start_offset..end_offset]) {
+    match parse_glyph(glyph_input) {
       Ok((_, o)) => glyphs.push(o),
       Err(e) => return Err(e),
     };
   }
-  Ok((&input[end_offset..], glyphs))
+  let (input, ()) = skip(end_offset)(input)?;
+  Ok((input, glyphs))
 }
 
 pub fn parse_kerning_record(input: &[u8]) -> NomResult<&[u8], ast::text::KerningRecord> {
