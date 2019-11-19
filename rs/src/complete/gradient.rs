@@ -72,21 +72,21 @@ pub fn parse_morph_color_stop(input: &[u8], with_alpha: bool) -> NomResult<&[u8]
 #[allow(unused_variables)]
 pub fn parse_morph_gradient(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::MorphGradient> {
   let (input, flags) = parse_u8(input)?;
-  let spread_id = flags >> 6;
-  let color_space_id = (flags & ((1 << 6) - 1)) >> 4;
+  let spread_code = flags >> 6;
+  let color_space_code = (flags & ((1 << 6) - 1)) >> 4;
   let color_count = flags & ((1 << 4) - 1);
 
-  let spread = match spread_id {
+  let spread = match spread_code {
     0 => ast::GradientSpread::Pad,
     1 => ast::GradientSpread::Reflect,
     2 => ast::GradientSpread::Repeat,
-    _ => panic!("UnexpectedSpreadId: {}", spread_id),
+    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
 
-  let color_space = match color_space_id {
+  let color_space = match color_space_code {
     0 => ast::ColorSpace::SRgb,
     1 => ast::ColorSpace::LinearRgb,
-    _ => panic!("UnexpectedColorSpaceId: {}", spread_id),
+    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
 
   let (input, colors) = nom::multi::count(|i| parse_morph_color_stop(i, with_alpha), color_count as usize)(input)?;
