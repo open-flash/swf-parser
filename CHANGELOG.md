@@ -25,6 +25,7 @@
 - **[Fix]** Fix panic on unmatched morph shape record pair.
 - **[Fix]** Fix panic on invalid GIF or PNG header.
 - **[Fix]** Fix panic on text definition with invalid index or advance bits.
+- **[Fix]** Fix panic on invalid JPEG data.
 
 ## Typescript
 

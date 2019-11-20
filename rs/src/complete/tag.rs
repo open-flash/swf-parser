@@ -1438,7 +1438,7 @@ mod tests {
 
   //  #[test]
   //  fn test_fuzzing() {
-  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-87047365479aae7fd5bf58fcfa95eea973e5dfde");
+  //    let artifact: &[u8] = include_bytes!("../../fuzz/artifacts/tag/crash-03fe96da7c46bbe615f27f3e6dbe7f481246e67f");
   //    let (swf_version, input_bytes) = artifact.split_first().unwrap();
   //    let _ = parse_tag(input_bytes, *swf_version);
   //  }
