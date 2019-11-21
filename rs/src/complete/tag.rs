@@ -52,7 +52,7 @@ pub fn parse_tag(input: &[u8], swf_version: u8) -> (&[u8], Option<ast::Tag>) {
   }
 }
 
-pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> Result<ast::Tag, ()> {
+pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> ast::Tag {
   use nom::combinator::map;
   let result = match code {
     1 => Ok((input, ast::Tag::ShowFrame)),
@@ -129,8 +129,11 @@ pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> Result
     _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
   match result {
-    Ok((_, tag)) => Ok(tag),
-    Err(_) => Err(()),
+    Ok((_, tag)) => tag,
+    Err(_) => ast::Tag::RawBody(ast::tags::RawBody {
+      code,
+      data: input.to_vec(),
+    }),
   }
 }
 
@@ -1429,9 +1432,6 @@ mod tests {
     let (remaining_bytes, actual_value) = parse_tag(&input_bytes, swf_version);
 
     let expected_path = path.join("value.json");
-    let mut actual_json = serde_json_v8::to_vec_pretty(&actual_value).unwrap();
-    actual_json.push(0x0a);
-    std::fs::write(&expected_path, actual_json).expect("Failed to write");
     let expected_file = ::std::fs::File::open(&expected_path).expect("Failed to open expected value file");
     let expected_reader = ::std::io::BufReader::new(expected_file);
     let expected_value = serde_json_v8::from_reader::<_, Tag>(expected_reader).expect("Failed to read AST");

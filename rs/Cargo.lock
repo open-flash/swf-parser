@@ -56,9 +56,9 @@ checksum = "9ff54597ea139063f4225f1ec47011b03c9de4a486957ff3fc506881dac951d0"
 
 [[package]]
 name = "hex"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
+checksum = "023b39be39e3a2da62a94feb433e91e8bcd37676fbc8bea371daf52b7a769a3e"
 
 [[package]]
 name = "inflate"
@@ -280,7 +280,7 @@ dependencies = [
 [[package]]
 name = "swf-tree"
 version = "0.9.0"
-source = "git+https://github.com/open-flash/swf-tree.git?rev=524f19adc098d83900e94bbe693887a63b50786d#524f19adc098d83900e94bbe693887a63b50786d"
+source = "git+https://github.com/open-flash/swf-tree.git?rev=ed31221d1e0751380d8fc16dc3ab0b50567dc1ec#ed31221d1e0751380d8fc16dc3ab0b50567dc1ec"
 dependencies = [
  "hex",
  "serde",

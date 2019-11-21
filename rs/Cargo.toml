@@ -26,7 +26,7 @@ lzma-rs = "^0.1.1"
 memchr = "^2.2.0"
 nom = "^5.0.0"
 serde_json_v8 = "^0.0.1"
-swf-tree = { git="https://github.com/open-flash/swf-tree.git", rev = "524f19adc098d83900e94bbe693887a63b50786d" }
+swf-tree = { git="https://github.com/open-flash/swf-tree.git", rev = "ed31221d1e0751380d8fc16dc3ab0b50567dc1ec" }
 swf-fixed = "^0.1.4"
 
 [dev-dependencies]

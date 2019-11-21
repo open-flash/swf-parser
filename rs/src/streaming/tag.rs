@@ -46,15 +46,7 @@ pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], Option<
     return Err(StreamingTagError::IncompleteTag(tag_len));
   }
   let (input, tag_body) = (&input[body_len..], &input[..body_len]);
-  let tag = match parse_tag_body(tag_body, header.code, swf_version) {
-    Ok(tag) => tag,
-    Err(()) => {
-      let tag_len = base_input.len() - input.len();
-      ast::Tag::Raw(ast::tags::Raw {
-        data: base_input[..tag_len].to_vec(),
-      })
-    }
-  };
+  let tag = parse_tag_body(tag_body, header.code, swf_version);
   Ok((input, Some(tag)))
 }
 

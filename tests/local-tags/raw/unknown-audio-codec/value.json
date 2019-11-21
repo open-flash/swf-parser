@@ -1,4 +1,5 @@
 {
-  "type": "raw",
-  "data": "8304008310"
+  "type": "raw-body",
+  "code": 18,
+  "data": "008310"
 }

@@ -1,4 +1,5 @@
 {
-  "type": "raw",
-  "data": "090f01850000004b4b02ff"
+  "type": "raw-body",
+  "code": 60,
+  "data": "01850000004b4b02ff"
 }
