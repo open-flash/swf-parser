@@ -8,12 +8,12 @@ pub use swf_tree;
 mod tests {
   use crate::complete::parse_swf;
   use ::swf_tree::Movie;
-  use ::test_generator::test_expand_paths;
+  use ::test_generator::test_resources;
   use nom::IResult as NomResult;
   use std::io::{Read, Write};
   use std::path::Path;
 
-  test_expand_paths! { test_parse_movie; "../tests/movies/*/" }
+  #[test_resources("../tests/movies/*/")]
   fn test_parse_movie(path: &str) {
     use serde::Serialize;
 
@@ -52,7 +52,7 @@ mod tests {
 
   macro_rules! test_various_parser_impl {
     ($name:ident, $glob:expr, $parser:ident, $type:ty) => {
-      test_expand_paths! { $name; $glob }
+      #[test_resources($glob)]
       fn $name(path: &str) {
         let path: &Path = Path::new(path);
         let _name = path
@@ -83,7 +83,7 @@ mod tests {
     ($name:ident, $glob:expr, $parser:ident, $type:ty) => {
       use crate::swf_tree::float_is::Is;
 
-      test_expand_paths! { $name; $glob }
+      #[test_resources($glob)]
       fn $name(path: &str) {
         let path: &Path = Path::new(path);
         let _name = path

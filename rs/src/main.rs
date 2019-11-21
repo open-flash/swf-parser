@@ -25,5 +25,5 @@ fn main() {
   //  println!("Input:\n{:?}", &data);
 
   let movie: ast::Movie = parse_swf(&data[..]).expect("Failed to parse movie");
-  println!("{}", serde_json::to_string_pretty(&movie).unwrap());
+  println!("{}", serde_json_v8::to_string_pretty(&movie).unwrap());
 }

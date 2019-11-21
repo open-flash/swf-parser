@@ -8,6 +8,7 @@
 - **[Feature]** Add experimental streaming parser.
 - **[Fix]** Remove `nom` macros.
 - **[Fix]** Add `clippy` support.
+- **[Fix]** **Fix panics found with fuzzing.**
 - **[Fix]** Propagate string encoding errors.
 - **[Fix]** Fix panic on invalid image type.
 - **[Fix]** Fix panic on incomplete `DefineBitsLossless`.
