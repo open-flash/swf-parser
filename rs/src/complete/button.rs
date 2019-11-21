@@ -4,7 +4,7 @@ use crate::complete::sound::parse_sound_info;
 use crate::streaming::basic_data_types::{parse_color_transform_with_alpha, parse_matrix};
 use nom::number::complete::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::IResult as NomResult;
-use swf_tree as ast;
+use swf_types as swf;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum ButtonVersion {
@@ -12,8 +12,8 @@ pub enum ButtonVersion {
   Button2,
 }
 
-pub fn parse_button_record_string(input: &[u8], version: ButtonVersion) -> NomResult<&[u8], Vec<ast::ButtonRecord>> {
-  let mut result: Vec<ast::ButtonRecord> = Vec::new();
+pub fn parse_button_record_string(input: &[u8], version: ButtonVersion) -> NomResult<&[u8], Vec<swf::ButtonRecord>> {
+  let mut result: Vec<swf::ButtonRecord> = Vec::new();
   let mut current_input: &[u8] = input;
   loop {
     if current_input.is_empty() {
@@ -36,7 +36,7 @@ pub fn parse_button_record_string(input: &[u8], version: ButtonVersion) -> NomRe
   Ok((current_input, result))
 }
 
-pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[u8], ast::ButtonRecord> {
+pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[u8], swf::ButtonRecord> {
   use nom::combinator::cond;
 
   let (input, flags) = parse_u8(input)?;
@@ -60,12 +60,12 @@ pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[
   let (input, blend_mode) = if version >= ButtonVersion::Button2 && has_blend_mode {
     parse_blend_mode(input)?
   } else {
-    (input, ast::BlendMode::Normal)
+    (input, swf::BlendMode::Normal)
   };
 
   Ok((
     input,
-    ast::ButtonRecord {
+    swf::ButtonRecord {
       state_up,
       state_over,
       state_down,
@@ -80,8 +80,8 @@ pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[
   ))
 }
 
-pub fn parse_button2_cond_action_string(mut input: &[u8]) -> NomResult<&[u8], Vec<ast::ButtonCondAction>> {
-  let mut actions: Vec<ast::ButtonCondAction> = Vec::new();
+pub fn parse_button2_cond_action_string(mut input: &[u8]) -> NomResult<&[u8], Vec<swf::ButtonCondAction>> {
+  let mut actions: Vec<swf::ButtonCondAction> = Vec::new();
   loop {
     let (_, (next_action_offset, cond_action)) = parse_button2_cond_action(input)?;
     actions.push(cond_action);
@@ -94,18 +94,18 @@ pub fn parse_button2_cond_action_string(mut input: &[u8]) -> NomResult<&[u8], Ve
   Ok((input, actions))
 }
 
-pub fn parse_button2_cond_action(input: &[u8]) -> NomResult<&[u8], (usize, ast::ButtonCondAction)> {
+pub fn parse_button2_cond_action(input: &[u8]) -> NomResult<&[u8], (usize, swf::ButtonCondAction)> {
   use nom::combinator::map;
   let (input, next_action_offset) = map(parse_le_u16, usize::from)(input)?;
   let (input, conditions) = parse_button_cond(input)?;
-  let value = ast::ButtonCondAction {
+  let value = swf::ButtonCondAction {
     conditions: Some(conditions),
     actions: input.to_vec(),
   };
   Ok((input, (next_action_offset, value)))
 }
 
-pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
+pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], swf::ButtonCond> {
   fn key_press_from_code(key_press_id: u16) -> Result<Option<u32>, ()> {
     match key_press_id {
       0 => Ok(None),
@@ -130,7 +130,7 @@ pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
 
   Ok((
     input,
-    ast::ButtonCond {
+    swf::ButtonCond {
       key_press,
       over_down_to_idle,
       idle_to_over_up,
@@ -145,12 +145,12 @@ pub fn parse_button_cond(input: &[u8]) -> NomResult<&[u8], ast::ButtonCond> {
   ))
 }
 
-pub fn parse_button_sound(input: &[u8]) -> NomResult<&[u8], Option<ast::ButtonSound>> {
+pub fn parse_button_sound(input: &[u8]) -> NomResult<&[u8], Option<swf::ButtonSound>> {
   let (input, sound_id) = parse_le_u16(input)?;
   if sound_id == 0 {
     Ok((input, None))
   } else {
     let (input, sound_info) = parse_sound_info(input)?;
-    Ok((input, Some(ast::ButtonSound { sound_id, sound_info })))
+    Ok((input, Some(swf::ButtonSound { sound_id, sound_info })))
   }
 }

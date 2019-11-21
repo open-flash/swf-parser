@@ -1,7 +1,7 @@
 use crate::complete::parse_tag;
 use crate::streaming::movie::parse_swf_signature;
 use nom::IResult as NomResult;
-use swf_tree as ast;
+use swf_types as ast;
 
 /// Represents the possible parse errors when parsing an SWF file.
 ///

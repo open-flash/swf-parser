@@ -9,7 +9,7 @@ use crate::streaming::basic_data_types::{
 use nom::number::complete::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
-use swf_tree as ast;
+use swf_types as swf;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum MorphShapeVersion {
@@ -17,7 +17,7 @@ pub enum MorphShapeVersion {
   MorphShape2,
 }
 
-pub fn parse_morph_shape(input: &[u8], version: MorphShapeVersion) -> NomResult<&[u8], ast::MorphShape> {
+pub fn parse_morph_shape(input: &[u8], version: MorphShapeVersion) -> NomResult<&[u8], swf::MorphShape> {
   use nom::bits::bits;
   use nom::bytes::complete::take;
   // Skip offset to end records
@@ -29,7 +29,7 @@ pub fn parse_morph_shape(input: &[u8], version: MorphShapeVersion) -> NomResult<
 pub fn parse_morph_shape_bits(
   input: (&[u8], usize),
   version: MorphShapeVersion,
-) -> NomResult<(&[u8], usize), ast::MorphShape> {
+) -> NomResult<(&[u8], usize), swf::MorphShape> {
   let (input, styles) = parse_morph_shape_styles_bits(input, version)?;
   let (input, start_records) = parse_morph_shape_start_record_string_bits(input, styles.bits, version)?;
   let (input, style_bits) = nom::bits::bytes(parse_style_bits_len)(input)?;
@@ -37,8 +37,8 @@ pub fn parse_morph_shape_bits(
 
   Ok((
     input,
-    ast::MorphShape {
-      initial_styles: ast::MorphShapeStyles {
+    swf::MorphShape {
+      initial_styles: swf::MorphShapeStyles {
         fill: styles.fill,
         line: styles.line,
       },
@@ -62,8 +62,8 @@ fn parse_style_bits_len_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize),
 }
 
 pub struct InternalMorphShapeStyles {
-  pub fill: Vec<ast::MorphFillStyle>,
-  pub line: Vec<ast::MorphLineStyle>,
+  pub fill: Vec<swf::MorphFillStyle>,
+  pub line: Vec<swf::MorphLineStyle>,
   pub bits: StyleBits,
 }
 
@@ -93,8 +93,8 @@ pub fn parse_morph_shape_styles_bits(
 }
 
 enum MixedShapeRecord {
-  Edge(ast::shape_records::Edge),
-  MorphStyleChange(ast::shape_records::MorphStyleChange),
+  Edge(swf::shape_records::Edge),
+  MorphStyleChange(swf::shape_records::MorphStyleChange),
 }
 
 fn parse_morph_shape_start_record_string_bits(
@@ -154,10 +154,10 @@ fn parse_morph_shape_start_record_string_bits(
   Ok((current_input, result))
 }
 
-fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> Result<ast::MorphShapeRecord, ()> {
+fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> Result<swf::MorphShapeRecord, ()> {
   match (start, end) {
     (MixedShapeRecord::Edge(s), MixedShapeRecord::Edge(e)) => {
-      Ok(ast::MorphShapeRecord::Edge(ast::shape_records::MorphEdge {
+      Ok(swf::MorphShapeRecord::Edge(swf::shape_records::MorphEdge {
         delta: s.delta,
         morph_delta: e.delta,
         control_delta: s.control_delta,
@@ -165,7 +165,7 @@ fn as_morph_shape_record(start: MixedShapeRecord, end: MixedShapeRecord) -> Resu
       }))
     }
     (MixedShapeRecord::MorphStyleChange(s), MixedShapeRecord::MorphStyleChange(e)) => Ok(
-      ast::MorphShapeRecord::StyleChange(ast::shape_records::MorphStyleChange {
+      swf::MorphShapeRecord::StyleChange(swf::shape_records::MorphStyleChange {
         move_to: s.move_to,
         morph_move_to: e.move_to,
         left_fill: s.left_fill,
@@ -183,8 +183,8 @@ fn parse_morph_shape_end_record_string_bits(
   start_records: Vec<MixedShapeRecord>,
   mut style_bits: StyleBits,
   version: MorphShapeVersion,
-) -> NomResult<(&[u8], usize), Vec<ast::MorphShapeRecord>> {
-  let mut result: Vec<ast::MorphShapeRecord> = Vec::new();
+) -> NomResult<(&[u8], usize), Vec<swf::MorphShapeRecord>> {
+  let mut result: Vec<swf::MorphShapeRecord> = Vec::new();
   let mut current_input = input;
 
   for start_record in start_records.into_iter() {
@@ -192,7 +192,7 @@ fn parse_morph_shape_end_record_string_bits(
       MixedShapeRecord::MorphStyleChange(sr) => {
         if sr.move_to.is_none() {
           // The end shape contains only edge (straight or curved) or moveTo records, it matches the start records
-          result.push(ast::MorphShapeRecord::StyleChange(sr));
+          result.push(swf::MorphShapeRecord::StyleChange(sr));
           continue;
         } else {
           MixedShapeRecord::MorphStyleChange(sr)
@@ -253,7 +253,7 @@ pub fn parse_morph_style_change_bits(
   input: (&[u8], usize),
   style_bits: StyleBits,
   version: MorphShapeVersion,
-) -> NomResult<(&[u8], usize), (ast::shape_records::MorphStyleChange, StyleBits)> {
+) -> NomResult<(&[u8], usize), (swf::shape_records::MorphStyleChange, StyleBits)> {
   use nom::combinator::cond;
 
   let (input, has_new_styles) = parse_bool_bits(input)?;
@@ -265,7 +265,7 @@ pub fn parse_morph_style_change_bits(
     let (input, move_to_bits) = parse_u16_bits(input, 5)?;
     let (input, x) = parse_i32_bits(input, move_to_bits as usize)?;
     let (input, y) = parse_i32_bits(input, move_to_bits as usize)?;
-    (input, Some(ast::Vector2D { x, y }))
+    (input, Some(swf::Vector2D { x, y }))
   } else {
     (input, None)
   };
@@ -277,7 +277,7 @@ pub fn parse_morph_style_change_bits(
     (
       input,
       (
-        Some(ast::MorphShapeStyles {
+        Some(swf::MorphShapeStyles {
           fill: styles.fill,
           line: styles.line,
         }),
@@ -291,7 +291,7 @@ pub fn parse_morph_style_change_bits(
   Ok((
     input,
     (
-      ast::shape_records::MorphStyleChange {
+      swf::shape_records::MorphStyleChange {
         move_to,
         morph_move_to: Option::None,
         left_fill: left_fill.map(|x| x as usize),
@@ -304,26 +304,26 @@ pub fn parse_morph_style_change_bits(
   ))
 }
 
-pub fn parse_morph_fill_style_list(input: &[u8]) -> NomResult<&[u8], Vec<ast::MorphFillStyle>> {
+pub fn parse_morph_fill_style_list(input: &[u8]) -> NomResult<&[u8], Vec<swf::MorphFillStyle>> {
   use nom::multi::count;
   let (input, style_count) = parse_list_length(input, true)?;
   count(parse_morph_fill_style, style_count)(input)
 }
 
-pub fn parse_morph_fill_style(input: &[u8]) -> NomResult<&[u8], ast::MorphFillStyle> {
+pub fn parse_morph_fill_style(input: &[u8]) -> NomResult<&[u8], swf::MorphFillStyle> {
   use nom::combinator::map;
   let (input, code) = parse_u8(input)?;
   match code {
-    0x00 => map(parse_morph_solid_fill, ast::MorphFillStyle::Solid)(input),
-    0x10 => map(parse_morph_linear_gradient_fill, ast::MorphFillStyle::LinearGradient)(input),
-    0x12 => map(parse_morph_radial_gradient_fill, ast::MorphFillStyle::RadialGradient)(input),
-    0x13 => map(parse_morph_focal_gradient_fill, ast::MorphFillStyle::FocalGradient)(input),
-    0x40 => map(|i| parse_morph_bitmap_fill(i, true, true), ast::MorphFillStyle::Bitmap)(input),
-    0x41 => map(|i| parse_morph_bitmap_fill(i, false, true), ast::MorphFillStyle::Bitmap)(input),
-    0x42 => map(|i| parse_morph_bitmap_fill(i, true, false), ast::MorphFillStyle::Bitmap)(input),
+    0x00 => map(parse_morph_solid_fill, swf::MorphFillStyle::Solid)(input),
+    0x10 => map(parse_morph_linear_gradient_fill, swf::MorphFillStyle::LinearGradient)(input),
+    0x12 => map(parse_morph_radial_gradient_fill, swf::MorphFillStyle::RadialGradient)(input),
+    0x13 => map(parse_morph_focal_gradient_fill, swf::MorphFillStyle::FocalGradient)(input),
+    0x40 => map(|i| parse_morph_bitmap_fill(i, true, true), swf::MorphFillStyle::Bitmap)(input),
+    0x41 => map(|i| parse_morph_bitmap_fill(i, false, true), swf::MorphFillStyle::Bitmap)(input),
+    0x42 => map(|i| parse_morph_bitmap_fill(i, true, false), swf::MorphFillStyle::Bitmap)(input),
     0x43 => map(
       |i| parse_morph_bitmap_fill(i, false, false),
-      ast::MorphFillStyle::Bitmap,
+      swf::MorphFillStyle::Bitmap,
     )(input),
     _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
@@ -333,13 +333,13 @@ pub fn parse_morph_bitmap_fill(
   input: &[u8],
   repeating: bool,
   smoothed: bool,
-) -> NomResult<&[u8], ast::fill_styles::MorphBitmap> {
+) -> NomResult<&[u8], swf::fill_styles::MorphBitmap> {
   let (input, bitmap_id) = parse_le_u16(input)?;
   let (input, matrix) = parse_matrix(input)?;
   let (input, morph_matrix) = parse_matrix(input)?;
   Ok((
     input,
-    ast::fill_styles::MorphBitmap {
+    swf::fill_styles::MorphBitmap {
       bitmap_id,
       matrix,
       morph_matrix,
@@ -349,7 +349,7 @@ pub fn parse_morph_bitmap_fill(
   ))
 }
 
-pub fn parse_morph_focal_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::fill_styles::MorphFocalGradient> {
+pub fn parse_morph_focal_gradient_fill(input: &[u8]) -> NomResult<&[u8], swf::fill_styles::MorphFocalGradient> {
   let (input, matrix) = parse_matrix(input)?;
   let (input, morph_matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_morph_gradient(input, true)?;
@@ -358,7 +358,7 @@ pub fn parse_morph_focal_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::fi
 
   Ok((
     input,
-    ast::fill_styles::MorphFocalGradient {
+    swf::fill_styles::MorphFocalGradient {
       matrix,
       morph_matrix,
       gradient,
@@ -368,14 +368,14 @@ pub fn parse_morph_focal_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::fi
   ))
 }
 
-pub fn parse_morph_linear_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::fill_styles::MorphLinearGradient> {
+pub fn parse_morph_linear_gradient_fill(input: &[u8]) -> NomResult<&[u8], swf::fill_styles::MorphLinearGradient> {
   let (input, matrix) = parse_matrix(input)?;
   let (input, morph_matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_morph_gradient(input, true)?;
 
   Ok((
     input,
-    ast::fill_styles::MorphLinearGradient {
+    swf::fill_styles::MorphLinearGradient {
       matrix,
       morph_matrix,
       gradient,
@@ -383,14 +383,14 @@ pub fn parse_morph_linear_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::f
   ))
 }
 
-pub fn parse_morph_radial_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::fill_styles::MorphRadialGradient> {
+pub fn parse_morph_radial_gradient_fill(input: &[u8]) -> NomResult<&[u8], swf::fill_styles::MorphRadialGradient> {
   let (input, matrix) = parse_matrix(input)?;
   let (input, morph_matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_morph_gradient(input, true)?;
 
   Ok((
     input,
-    ast::fill_styles::MorphRadialGradient {
+    swf::fill_styles::MorphRadialGradient {
       matrix,
       morph_matrix,
       gradient,
@@ -398,16 +398,16 @@ pub fn parse_morph_radial_gradient_fill(input: &[u8]) -> NomResult<&[u8], ast::f
   ))
 }
 
-pub fn parse_morph_solid_fill(input: &[u8]) -> NomResult<&[u8], ast::fill_styles::MorphSolid> {
+pub fn parse_morph_solid_fill(input: &[u8]) -> NomResult<&[u8], swf::fill_styles::MorphSolid> {
   let (input, color) = parse_straight_s_rgba8(input)?;
   let (input, morph_color) = parse_straight_s_rgba8(input)?;
-  Ok((input, ast::fill_styles::MorphSolid { color, morph_color }))
+  Ok((input, swf::fill_styles::MorphSolid { color, morph_color }))
 }
 
 pub fn parse_morph_line_style_list(
   input: &[u8],
   version: MorphShapeVersion,
-) -> NomResult<&[u8], Vec<ast::MorphLineStyle>> {
+) -> NomResult<&[u8], Vec<swf::MorphLineStyle>> {
   use nom::multi::count;
   let (input, style_count) = parse_list_length(input, true)?;
   count(
@@ -420,29 +420,29 @@ pub fn parse_morph_line_style_list(
   )(input)
 }
 
-pub fn parse_morph_line_style1(input: &[u8]) -> NomResult<&[u8], ast::MorphLineStyle> {
+pub fn parse_morph_line_style1(input: &[u8]) -> NomResult<&[u8], swf::MorphLineStyle> {
   let (input, width) = parse_le_u16(input)?;
   let (input, morph_width) = parse_le_u16(input)?;
   let (input, color) = parse_straight_s_rgba8(input)?;
   let (input, morph_color) = parse_straight_s_rgba8(input)?;
   Ok((
     input,
-    ast::MorphLineStyle {
+    swf::MorphLineStyle {
       width,
       morph_width,
-      start_cap: ast::CapStyle::Round,
-      end_cap: ast::CapStyle::Round,
-      join: ast::JoinStyle::Round,
+      start_cap: swf::CapStyle::Round,
+      end_cap: swf::CapStyle::Round,
+      join: swf::JoinStyle::Round,
       no_h_scale: false,
       no_v_scale: false,
       no_close: false,
       pixel_hinting: false,
-      fill: ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid { color, morph_color }),
+      fill: swf::MorphFillStyle::Solid(swf::fill_styles::MorphSolid { color, morph_color }),
     },
   ))
 }
 
-pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineStyle> {
+pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], swf::MorphLineStyle> {
   use nom::combinator::map;
 
   let (input, width) = parse_le_u16(input)?;
@@ -463,10 +463,10 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
   let end_cap =
     cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
   let (input, join) = match join_style_code {
-    0 => (input, ast::JoinStyle::Round),
-    1 => (input, ast::JoinStyle::Bevel),
+    0 => (input, swf::JoinStyle::Round),
+    1 => (input, swf::JoinStyle::Bevel),
     2 => map(parse_le_u16, |limit| {
-      ast::JoinStyle::Miter(ast::join_styles::Miter { limit })
+      swf::JoinStyle::Miter(swf::join_styles::Miter { limit })
     })(input)?,
     _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
@@ -477,13 +477,13 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], ast::MorphLineS
     let (input, morph_color) = parse_straight_s_rgba8(input)?;
     (
       input,
-      ast::MorphFillStyle::Solid(ast::fill_styles::MorphSolid { color, morph_color }),
+      swf::MorphFillStyle::Solid(swf::fill_styles::MorphSolid { color, morph_color }),
     )
   };
 
   Ok((
     input,
-    ast::MorphLineStyle {
+    swf::MorphLineStyle {
       width,
       morph_width,
       fill,

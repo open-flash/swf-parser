@@ -8,7 +8,7 @@ use nom::number::complete::{
 };
 use nom::IResult as NomResult;
 use std::convert::TryFrom;
-use swf_tree as ast;
+use swf_types as swf;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum FontVersion {
@@ -30,40 +30,40 @@ pub enum FontInfoVersion {
   FontInfo2,
 }
 
-pub(crate) fn grid_fitting_from_code(grid_fitting_code: u8) -> Result<ast::text::GridFitting, ()> {
+pub(crate) fn grid_fitting_from_code(grid_fitting_code: u8) -> Result<swf::text::GridFitting, ()> {
   match grid_fitting_code {
-    0 => Ok(ast::text::GridFitting::None),
-    1 => Ok(ast::text::GridFitting::Pixel),
-    2 => Ok(ast::text::GridFitting::SubPixel),
+    0 => Ok(swf::text::GridFitting::None),
+    1 => Ok(swf::text::GridFitting::Pixel),
+    2 => Ok(swf::text::GridFitting::SubPixel),
     _ => Err(()),
   }
 }
 
-pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::text::CsmTableHint> {
+pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::text::CsmTableHint> {
   let (input, code) = parse_u32_bits(input, 2)?;
   let csm_table_hint =
     csm_table_hint_from_code(code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
   Ok((input, csm_table_hint))
 }
 
-fn csm_table_hint_from_code(code: u32) -> Result<ast::text::CsmTableHint, ()> {
+fn csm_table_hint_from_code(code: u32) -> Result<swf::text::CsmTableHint, ()> {
   match code {
-    0 => Ok(ast::text::CsmTableHint::Thin),
-    1 => Ok(ast::text::CsmTableHint::Medium),
-    2 => Ok(ast::text::CsmTableHint::Thick),
+    0 => Ok(swf::text::CsmTableHint::Thin),
+    1 => Ok(swf::text::CsmTableHint::Medium),
+    2 => Ok(swf::text::CsmTableHint::Thick),
     _ => Err(()),
   }
 }
 
-pub(crate) fn text_renderer_from_code(text_renderer_code: u8) -> Result<ast::text::TextRenderer, ()> {
+pub(crate) fn text_renderer_from_code(text_renderer_code: u8) -> Result<swf::text::TextRenderer, ()> {
   match text_renderer_code {
-    0 => Ok(ast::text::TextRenderer::Normal),
-    1 => Ok(ast::text::TextRenderer::Advanced),
+    0 => Ok(swf::text::TextRenderer::Normal),
+    1 => Ok(swf::text::TextRenderer::Advanced),
     _ => Err(()),
   }
 }
 
-pub fn parse_font_alignment_zone(input: &[u8]) -> NomResult<&[u8], ast::text::FontAlignmentZone> {
+pub fn parse_font_alignment_zone(input: &[u8]) -> NomResult<&[u8], swf::text::FontAlignmentZone> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, zone_count) = map(parse_u8, usize::from)(input)?;
@@ -73,13 +73,13 @@ pub fn parse_font_alignment_zone(input: &[u8]) -> NomResult<&[u8], ast::text::Fo
   let has_x = (flags & (1 << 0)) != 0;
   let has_y = (flags & (1 << 1)) != 0;
   // Skip bits [2, 7]
-  Ok((input, ast::text::FontAlignmentZone { data, has_x, has_y }))
+  Ok((input, swf::text::FontAlignmentZone { data, has_x, has_y }))
 }
 
-pub fn parse_font_alignment_zone_data(input: &[u8]) -> NomResult<&[u8], ast::text::FontAlignmentZoneData> {
+pub fn parse_font_alignment_zone_data(input: &[u8]) -> NomResult<&[u8], swf::text::FontAlignmentZoneData> {
   let (input, origin) = parse_le_f16(input)?;
   let (input, size) = parse_le_f16(input)?;
-  Ok((input, ast::text::FontAlignmentZoneData { origin, size }))
+  Ok((input, swf::text::FontAlignmentZoneData { origin, size }))
 }
 
 pub fn parse_text_record_string(
@@ -87,11 +87,11 @@ pub fn parse_text_record_string(
   has_alpha: bool,
   index_bits: usize,
   advance_bits: usize,
-) -> NomResult<&[u8], Vec<ast::text::TextRecord>> {
+) -> NomResult<&[u8], Vec<swf::text::TextRecord>> {
   debug_assert!(index_bits <= 32);
   debug_assert!(advance_bits <= 32);
 
-  let mut result: Vec<ast::text::TextRecord> = Vec::new();
+  let mut result: Vec<swf::text::TextRecord> = Vec::new();
   let mut current_input: &[u8] = input;
   while !current_input.is_empty() {
     // A null byte indicates the end of the string of actions
@@ -115,7 +115,7 @@ pub fn parse_text_record(
   has_alpha: bool,
   index_bits: usize,
   advance_bits: usize,
-) -> NomResult<&[u8], ast::text::TextRecord> {
+) -> NomResult<&[u8], swf::text::TextRecord> {
   debug_assert!(index_bits <= 32);
   debug_assert!(advance_bits <= 32);
 
@@ -135,7 +135,7 @@ pub fn parse_text_record(
       map(parse_straight_s_rgba8, Some)(input)?
     } else {
       map(parse_s_rgb8, |c| {
-        Some(ast::StraightSRgba8 {
+        Some(swf::StraightSRgba8 {
           r: c.r,
           g: c.g,
           b: c.b,
@@ -154,7 +154,7 @@ pub fn parse_text_record(
 
   Ok((
     input,
-    ast::text::TextRecord {
+    swf::text::TextRecord {
       font_id,
       color,
       offset_x: offset_x.unwrap_or_default(),
@@ -170,7 +170,7 @@ pub fn parse_glyph_entries(
   entry_count: u8,
   index_bits: usize,
   advance_bits: usize,
-) -> NomResult<(&[u8], usize), Vec<ast::text::GlyphEntry>> {
+) -> NomResult<(&[u8], usize), Vec<swf::text::GlyphEntry>> {
   debug_assert!(index_bits <= 32);
   debug_assert!(advance_bits <= 32);
 
@@ -181,7 +181,7 @@ pub fn parse_glyph_entry(
   input: (&[u8], usize),
   index_bits: usize,
   advance_bits: usize,
-) -> NomResult<(&[u8], usize), ast::text::GlyphEntry> {
+) -> NomResult<(&[u8], usize), swf::text::GlyphEntry> {
   debug_assert!(index_bits <= 32);
   debug_assert!(advance_bits <= 32);
 
@@ -189,14 +189,14 @@ pub fn parse_glyph_entry(
   let (input, index) = map(do_parse_u32_bits(index_bits), |x| x as usize)(input)?;
   let (input, advance) = parse_i32_bits(input, advance_bits)?;
 
-  Ok((input, ast::text::GlyphEntry { index, advance }))
+  Ok((input, swf::text::GlyphEntry { index, advance }))
 }
 
 pub fn parse_offset_glyphs(
   input: &[u8],
   glyph_count: usize,
   use_wide_offsets: bool,
-) -> NomResult<&[u8], Vec<ast::Glyph>> {
+) -> NomResult<&[u8], Vec<swf::Glyph>> {
   use nom::combinator::map;
   use nom::multi::count;
 
@@ -209,7 +209,7 @@ pub fn parse_offset_glyphs(
     let (_, end_offset) = map(parse_le_u16, usize::from)(input)?;
     (offsets, end_offset)
   };
-  let mut glyphs: Vec<ast::Glyph> = Vec::with_capacity(glyph_count);
+  let mut glyphs: Vec<swf::Glyph> = Vec::with_capacity(glyph_count);
   for i in 0..glyph_count {
     let glyph_input = {
       let start_offset = offsets[i];
@@ -230,13 +230,13 @@ pub fn parse_offset_glyphs(
   Ok((input, glyphs))
 }
 
-pub fn parse_kerning_record(input: &[u8]) -> NomResult<&[u8], ast::text::KerningRecord> {
+pub fn parse_kerning_record(input: &[u8]) -> NomResult<&[u8], swf::text::KerningRecord> {
   let (input, left) = parse_le_u16(input)?;
   let (input, right) = parse_le_u16(input)?;
   let (input, adjustment) = parse_le_i16(input)?;
   Ok((
     input,
-    ast::text::KerningRecord {
+    swf::text::KerningRecord {
       left,
       right,
       adjustment,
@@ -244,7 +244,7 @@ pub fn parse_kerning_record(input: &[u8]) -> NomResult<&[u8], ast::text::Kerning
   ))
 }
 
-pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> NomResult<&[u8], ast::text::FontLayout> {
+pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> NomResult<&[u8], swf::text::FontLayout> {
   use nom::combinator::map;
   use nom::multi::count;
   let (input, ascent) = parse_le_u16(input)?;
@@ -258,7 +258,7 @@ pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> NomResult<&[u8], a
   };
   Ok((
     input,
-    ast::text::FontLayout {
+    swf::text::FontLayout {
       ascent,
       descent,
       leading,
@@ -269,13 +269,13 @@ pub fn parse_font_layout(input: &[u8], glyph_count: usize) -> NomResult<&[u8], a
   ))
 }
 
-pub fn parse_text_alignment(input: &[u8]) -> NomResult<&[u8], ast::text::TextAlignment> {
+pub fn parse_text_alignment(input: &[u8]) -> NomResult<&[u8], swf::text::TextAlignment> {
   let (input, code) = parse_u8(input)?;
   match code {
-    0 => Ok((input, ast::text::TextAlignment::Left)),
-    1 => Ok((input, ast::text::TextAlignment::Right)),
-    2 => Ok((input, ast::text::TextAlignment::Center)),
-    3 => Ok((input, ast::text::TextAlignment::Justify)),
+    0 => Ok((input, swf::text::TextAlignment::Left)),
+    1 => Ok((input, swf::text::TextAlignment::Right)),
+    2 => Ok((input, swf::text::TextAlignment::Center)),
+    3 => Ok((input, swf::text::TextAlignment::Justify)),
     _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
 }

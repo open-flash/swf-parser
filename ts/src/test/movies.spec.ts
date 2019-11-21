@@ -3,7 +3,7 @@ import fs from "fs";
 import { JsonReader } from "kryo/readers/json";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import sysPath from "path";
-import { $Movie, Movie } from "swf-tree/movie";
+import { $Movie, Movie } from "swf-types/movie";
 import { movieFromBytes } from "../lib";
 import meta from "./meta.js";
 import { readFile, readTextFile, writeTextFile } from "./utils";

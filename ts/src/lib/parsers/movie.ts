@@ -2,7 +2,7 @@ import { ReadableStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { inflate } from "pako";
 import { Uint8 } from "semantic-types";
-import { CompressionMethod, Header, Movie, SwfSignature, Tag } from "swf-tree";
+import { CompressionMethod, Header, Movie, SwfSignature, Tag } from "swf-types";
 import { parseHeader, parseSwfSignature } from "./header";
 import { parseTagBlockString } from "./tags";
 

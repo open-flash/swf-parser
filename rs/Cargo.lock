@@ -273,14 +273,15 @@ dependencies = [
  "serde",
  "serde_json_v8",
  "swf-fixed",
- "swf-tree",
+ "swf-types",
  "test-generator",
 ]
 
 [[package]]
-name = "swf-tree"
-version = "0.9.0"
-source = "git+https://github.com/open-flash/swf-tree.git?rev=ed31221d1e0751380d8fc16dc3ab0b50567dc1ec#ed31221d1e0751380d8fc16dc3ab0b50567dc1ec"
+name = "swf-types"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c05702364986055179557b04f797fecbc0cd1ef12c07536edd254b085b3540"
 dependencies = [
  "hex",
  "serde",

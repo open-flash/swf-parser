@@ -4,39 +4,39 @@ use nom::number::complete::{
   le_f32 as parse_le_f32, le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8,
 };
 use nom::IResult as NomResult;
-use swf_tree as ast;
+use swf_types as swf;
 
 #[allow(unused_variables)]
-pub fn parse_blend_mode(input: &[u8]) -> NomResult<&[u8], ast::BlendMode> {
+pub fn parse_blend_mode(input: &[u8]) -> NomResult<&[u8], swf::BlendMode> {
   let (input, code) = parse_u8(input)?;
-  let blend_mode: ast::BlendMode = match code {
-    0 => ast::BlendMode::Normal,
-    1 => ast::BlendMode::Normal,
-    2 => ast::BlendMode::Layer,
-    3 => ast::BlendMode::Multiply,
-    4 => ast::BlendMode::Screen,
-    5 => ast::BlendMode::Lighten,
-    6 => ast::BlendMode::Darken,
-    7 => ast::BlendMode::Difference,
-    8 => ast::BlendMode::Add,
-    9 => ast::BlendMode::Subtract,
-    10 => ast::BlendMode::Invert,
-    11 => ast::BlendMode::Alpha,
-    12 => ast::BlendMode::Erase,
-    13 => ast::BlendMode::Overlay,
-    14 => ast::BlendMode::Hardlight,
+  let blend_mode: swf::BlendMode = match code {
+    0 => swf::BlendMode::Normal,
+    1 => swf::BlendMode::Normal,
+    2 => swf::BlendMode::Layer,
+    3 => swf::BlendMode::Multiply,
+    4 => swf::BlendMode::Screen,
+    5 => swf::BlendMode::Lighten,
+    6 => swf::BlendMode::Darken,
+    7 => swf::BlendMode::Difference,
+    8 => swf::BlendMode::Add,
+    9 => swf::BlendMode::Subtract,
+    10 => swf::BlendMode::Invert,
+    11 => swf::BlendMode::Alpha,
+    12 => swf::BlendMode::Erase,
+    13 => swf::BlendMode::Overlay,
+    14 => swf::BlendMode::Hardlight,
     _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
   Ok((input, blend_mode))
 }
 
-pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> NomResult<&[u8], Vec<ast::ClipAction>> {
+pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> NomResult<&[u8], Vec<swf::ClipAction>> {
   use nom::combinator::map;
 
   let (input, _) = skip(2usize)(input)?; // Skip `reserved`
   let (input, _) = skip(if extended_events { 4usize } else { 2usize })(input)?; // Skip `all_events`
 
-  let mut result: Vec<ast::ClipAction> = Vec::new();
+  let mut result: Vec<swf::ClipAction> = Vec::new();
   let mut current_input = input;
 
   loop {
@@ -69,7 +69,7 @@ pub fn parse_clip_actions_string(input: &[u8], extended_events: bool) -> NomResu
 }
 
 #[allow(unused_variables)]
-pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::ClipEventFlags> {
+pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> NomResult<&[u8], swf::ClipEventFlags> {
   use nom::combinator::map;
 
   let (input, flags) = if extended_events {
@@ -81,7 +81,7 @@ pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> NomResult<
   #[allow(clippy::identity_op)]
   Ok((
     input,
-    ast::ClipEventFlags {
+    swf::ClipEventFlags {
       load: (flags & (1 << 0)) != 0,
       enter_frame: (flags & (1 << 1)) != 0,
       unload: (flags & (1 << 2)) != 0,
@@ -105,7 +105,7 @@ pub fn parse_clip_event_flags(input: &[u8], extended_events: bool) -> NomResult<
   ))
 }
 
-pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> NomResult<&[u8], ast::ClipAction> {
+pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> NomResult<&[u8], swf::ClipAction> {
   use nom::combinator::map;
 
   let (input, events) = parse_clip_event_flags(input, extended_events)?;
@@ -120,7 +120,7 @@ pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> NomResult<&[u8
 
   Ok((
     input,
-    ast::ClipAction {
+    swf::ClipAction {
       events,
       key_code,
       actions: actions.to_vec(),
@@ -128,30 +128,30 @@ pub fn parse_clip_actions(input: &[u8], extended_events: bool) -> NomResult<&[u8
   ))
 }
 
-pub fn parse_filter_list(input: &[u8]) -> NomResult<&[u8], Vec<ast::Filter>> {
+pub fn parse_filter_list(input: &[u8]) -> NomResult<&[u8], Vec<swf::Filter>> {
   use nom::multi::count;
   let (input, filter_count) = parse_u8(input)?;
   count(parse_filter, usize::from(filter_count))(input)
 }
 
 #[allow(unused_variables)]
-pub fn parse_filter(input: &[u8]) -> NomResult<&[u8], ast::Filter> {
+pub fn parse_filter(input: &[u8]) -> NomResult<&[u8], swf::Filter> {
   use nom::combinator::map;
   let (input, code) = parse_u8(input)?;
   match code {
-    0 => map(parse_drop_shadow_filter, ast::Filter::DropShadow)(input),
-    1 => map(parse_blur_filter, ast::Filter::Blur)(input),
-    2 => map(parse_glow_filter, ast::Filter::Glow)(input),
-    3 => map(parse_bevel_filter, ast::Filter::Bevel)(input),
-    4 => map(parse_gradient_glow_filter, ast::Filter::GradientGlow)(input),
-    5 => map(parse_convolution_filter, ast::Filter::Convolution)(input),
-    6 => map(parse_color_matrix_filter, ast::Filter::ColorMatrix)(input),
-    7 => map(parse_gradient_bevel_filter, ast::Filter::GradientBevel)(input),
+    0 => map(parse_drop_shadow_filter, swf::Filter::DropShadow)(input),
+    1 => map(parse_blur_filter, swf::Filter::Blur)(input),
+    2 => map(parse_glow_filter, swf::Filter::Glow)(input),
+    3 => map(parse_bevel_filter, swf::Filter::Bevel)(input),
+    4 => map(parse_gradient_glow_filter, swf::Filter::GradientGlow)(input),
+    5 => map(parse_convolution_filter, swf::Filter::Convolution)(input),
+    6 => map(parse_color_matrix_filter, swf::Filter::ColorMatrix)(input),
+    7 => map(parse_gradient_bevel_filter, swf::Filter::GradientBevel)(input),
     _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
 }
 
-pub fn parse_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Bevel> {
+pub fn parse_bevel_filter(input: &[u8]) -> NomResult<&[u8], swf::filters::Bevel> {
   let (input, shadow_color) = parse_straight_s_rgba8(input)?;
   let (input, highlight_color) = parse_straight_s_rgba8(input)?;
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
@@ -168,7 +168,7 @@ pub fn parse_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Bevel>
 
   Ok((
     input,
-    ast::filters::Bevel {
+    swf::filters::Bevel {
       shadow_color,
       highlight_color,
       blur_x,
@@ -185,27 +185,27 @@ pub fn parse_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Bevel>
   ))
 }
 
-pub fn parse_blur_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Blur> {
+pub fn parse_blur_filter(input: &[u8]) -> NomResult<&[u8], swf::filters::Blur> {
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
   let (input, blur_y) = parse_le_fixed16_p16(input)?;
   let (input, flags) = parse_u8(input)?;
   // Skip bits [0, 2]
   let passes = flags >> 3;
 
-  Ok((input, ast::filters::Blur { blur_x, blur_y, passes }))
+  Ok((input, swf::filters::Blur { blur_x, blur_y, passes }))
 }
 
-pub fn parse_color_matrix_filter(mut input: &[u8]) -> NomResult<&[u8], ast::filters::ColorMatrix> {
+pub fn parse_color_matrix_filter(mut input: &[u8]) -> NomResult<&[u8], swf::filters::ColorMatrix> {
   let mut matrix: [f32; 20] = [0f32; 20];
   for matrix_value in &mut matrix {
     let (next_input, value) = parse_le_f32(input)?;
     input = next_input;
     *matrix_value = value;
   }
-  Ok((input, ast::filters::ColorMatrix { matrix }))
+  Ok((input, swf::filters::ColorMatrix { matrix }))
 }
 
-pub fn parse_convolution_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Convolution> {
+pub fn parse_convolution_filter(input: &[u8]) -> NomResult<&[u8], swf::filters::Convolution> {
   use nom::combinator::map;
   use nom::multi::count;
 
@@ -223,7 +223,7 @@ pub fn parse_convolution_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::
 
   Ok((
     input,
-    ast::filters::Convolution {
+    swf::filters::Convolution {
       matrix_width,
       matrix_height,
       divisor,
@@ -236,7 +236,7 @@ pub fn parse_convolution_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::
   ))
 }
 
-pub fn parse_drop_shadow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::DropShadow> {
+pub fn parse_drop_shadow_filter(input: &[u8]) -> NomResult<&[u8], swf::filters::DropShadow> {
   let (input, color) = parse_straight_s_rgba8(input)?;
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
   let (input, blur_y) = parse_le_fixed16_p16(input)?;
@@ -251,7 +251,7 @@ pub fn parse_drop_shadow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::
 
   Ok((
     input,
-    ast::filters::DropShadow {
+    swf::filters::DropShadow {
       color,
       blur_x,
       blur_y,
@@ -266,7 +266,7 @@ pub fn parse_drop_shadow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::
   ))
 }
 
-pub fn parse_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Glow> {
+pub fn parse_glow_filter(input: &[u8]) -> NomResult<&[u8], swf::filters::Glow> {
   let (input, color) = parse_straight_s_rgba8(input)?;
   let (input, blur_x) = parse_le_fixed16_p16(input)?;
   let (input, blur_y) = parse_le_fixed16_p16(input)?;
@@ -279,7 +279,7 @@ pub fn parse_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Glow> {
 
   Ok((
     input,
-    ast::filters::Glow {
+    swf::filters::Glow {
       color,
       blur_x,
       blur_y,
@@ -292,14 +292,14 @@ pub fn parse_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::Glow> {
   ))
 }
 
-fn parse_filter_gradient(input: &[u8], color_count: usize) -> NomResult<&[u8], Vec<ast::ColorStop>> {
-  let mut result: Vec<ast::ColorStop> = Vec::with_capacity(color_count);
+fn parse_filter_gradient(input: &[u8], color_count: usize) -> NomResult<&[u8], Vec<swf::ColorStop>> {
+  let mut result: Vec<swf::ColorStop> = Vec::with_capacity(color_count);
   let mut current_input = input;
 
   for _ in 0..color_count {
     match parse_straight_s_rgba8(current_input) {
       Ok((next_input, color)) => {
-        result.push(ast::ColorStop { ratio: 0, color });
+        result.push(swf::ColorStop { ratio: 0, color });
         current_input = next_input;
       }
       Err(e) => return Err(e),
@@ -317,7 +317,7 @@ fn parse_filter_gradient(input: &[u8], color_count: usize) -> NomResult<&[u8], V
   Ok((current_input, result))
 }
 
-pub fn parse_gradient_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::GradientBevel> {
+pub fn parse_gradient_bevel_filter(input: &[u8]) -> NomResult<&[u8], swf::filters::GradientBevel> {
   use nom::combinator::map;
 
   let (input, color_count) = map(parse_u8, |x| x as usize)(input)?;
@@ -337,7 +337,7 @@ pub fn parse_gradient_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filter
 
   Ok((
     input,
-    ast::filters::GradientBevel {
+    swf::filters::GradientBevel {
       gradient,
       blur_x,
       blur_y,
@@ -353,7 +353,7 @@ pub fn parse_gradient_bevel_filter(input: &[u8]) -> NomResult<&[u8], ast::filter
   ))
 }
 
-pub fn parse_gradient_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters::GradientGlow> {
+pub fn parse_gradient_glow_filter(input: &[u8]) -> NomResult<&[u8], swf::filters::GradientGlow> {
   use nom::combinator::map;
 
   let (input, color_count) = map(parse_u8, |x| x as usize)(input)?;
@@ -373,7 +373,7 @@ pub fn parse_gradient_glow_filter(input: &[u8]) -> NomResult<&[u8], ast::filters
 
   Ok((
     input,
-    ast::filters::GradientGlow {
+    swf::filters::GradientGlow {
       gradient,
       blur_x,
       blur_y,

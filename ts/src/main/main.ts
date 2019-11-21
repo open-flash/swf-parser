@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import * as sysPath from "path";
-import { $Movie, Movie } from "swf-tree/movie";
+import { $Movie, Movie } from "swf-types/movie";
 import { movieFromBytes } from "../lib";
 
 async function main(): Promise<void> {

@@ -1,6 +1,6 @@
 use nom::number::complete::le_u8 as parse_u8;
 use nom::IResult as NomResult;
-use swf_tree as ast;
+use swf_types as ast;
 
 pub fn video_deblocking_from_code(video_deblocking_id: u8) -> Result<ast::VideoDeblocking, ()> {
   match video_deblocking_id {

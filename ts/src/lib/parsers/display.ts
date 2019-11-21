@@ -12,7 +12,7 @@ import {
   Sfixed16P16,
   Sfixed8P8,
   StraightSRgba8,
-} from "swf-tree";
+} from "swf-types";
 import { parseStraightSRgba8 } from "./basic-data-types";
 
 export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {

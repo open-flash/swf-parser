@@ -10,13 +10,13 @@
 [![Build status](https://img.shields.io/travis/com/open-flash/swf-parser/master.svg)](https://travis-ci.com/open-flash/swf-parser)
 
 SWF parser implemented in Typescript, for Node and browsers.
-Converts bytes to [`swf-tree` movies][swf-tree].
+Converts bytes to [`swf-types` movies][swf-types].
 
 ## Usage
 
 ```typescript
 import fs from "fs";
-import { Movie } from "swf-tree/movie";
+import { Movie } from "swf-types/movie";
 import { movieFromBytes } from "swf-parser";
 
 function main(): void {
@@ -55,4 +55,4 @@ CI must pass for changes to be accepted.
 
 **[Documentation for the available Gulp tasks](https://github.com/demurgos/turbo-gulp/blob/master/docs/usage.md#main-tasks)**
 
-[swf-tree]: https://github.com/open-flash/swf-tree
+[swf-types]: https://github.com/open-flash/swf-types

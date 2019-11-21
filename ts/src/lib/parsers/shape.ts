@@ -18,9 +18,9 @@ import {
   ShapeRecordType,
   StraightSRgba8,
   Vector2D,
-} from "swf-tree";
-import { JoinStyle } from "swf-tree/join-style";
-import { ShapeStyles } from "swf-tree/shape-styles";
+} from "swf-types";
+import { JoinStyle } from "swf-types/join-style";
+import { ShapeStyles } from "swf-types/shape-styles";
 import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGradient } from "./gradient";
 

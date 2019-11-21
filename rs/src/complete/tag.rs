@@ -28,9 +28,9 @@ use nom::number::complete::{
 };
 use nom::IResult as NomResult;
 use std::convert::TryFrom;
-use swf_tree as ast;
-use swf_tree::text::FontAlignmentZone;
-use swf_tree::{ButtonCondAction, Glyph};
+use swf_types as ast;
+use swf_types::text::FontAlignmentZone;
+use swf_types::{ButtonCondAction, Glyph};
 
 /// Parses that tag at the start of `input`.
 ///
@@ -1407,7 +1407,7 @@ pub fn parse_video_frame(input: &[u8]) -> NomResult<&[u8], ast::tags::VideoFrame
 mod tests {
   use super::parse_tag;
   use std::path::Path;
-  use swf_tree::Tag;
+  use swf_types::Tag;
   use test_generator::test_resources;
 
   // #[test_resources("../tests/tags/*/*/")]

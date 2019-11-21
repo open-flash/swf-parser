@@ -1,7 +1,7 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Uint16, Uint32, Uint8 } from "semantic-types";
-import { CompressionMethod, Header, Rect, SwfSignature, Ufixed8P8 } from "swf-tree";
+import { CompressionMethod, Header, Rect, SwfSignature, Ufixed8P8 } from "swf-types";
 import { createIncompleteStreamError } from "../errors/incomplete-stream";
 import { parseRect } from "./basic-data-types";
 

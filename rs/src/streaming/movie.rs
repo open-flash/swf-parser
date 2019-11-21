@@ -3,7 +3,7 @@ use crate::streaming::tag::parse_tag;
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
-use swf_tree as ast;
+use swf_types as ast;
 
 pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
   use ::std::io::Write;

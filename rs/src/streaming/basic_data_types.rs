@@ -4,8 +4,8 @@ use nom::number::streaming::{
 };
 use nom::{IResult as NomResult, Needed};
 use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
-use swf_tree as ast;
-use swf_tree::LanguageCode;
+use swf_types as swf;
+use swf_types::LanguageCode;
 
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> NomResult<(&[u8], usize), bool> {
@@ -174,12 +174,12 @@ pub fn parse_le_fixed16_p16(input: &[u8]) -> NomResult<&[u8], Sfixed16P16> {
   map(parse_le_i32, Sfixed16P16::from_epsilons)(input)
 }
 
-pub fn parse_rect(input: &[u8]) -> NomResult<&[u8], ast::Rect> {
+pub fn parse_rect(input: &[u8]) -> NomResult<&[u8], swf::Rect> {
   use nom::bits::bits;
   bits(parse_rect_bits)(input)
 }
 
-pub fn parse_rect_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::Rect> {
+pub fn parse_rect_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::Rect> {
   use nom::combinator::map;
 
   let (input, n_bits) = map(do_parse_u16_bits(5), |x| x as usize)(input)?;
@@ -189,7 +189,7 @@ pub fn parse_rect_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::
   let (input, y_max) = parse_i32_bits(input, n_bits)?;
   Ok((
     input,
-    ast::Rect {
+    swf::Rect {
       x_min,
       x_max,
       y_min,
@@ -198,19 +198,19 @@ pub fn parse_rect_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::
   ))
 }
 
-pub fn parse_s_rgb8(input: &[u8]) -> NomResult<&[u8], ast::SRgb8> {
+pub fn parse_s_rgb8(input: &[u8]) -> NomResult<&[u8], swf::SRgb8> {
   let (input, r) = parse_u8(input)?;
   let (input, g) = parse_u8(input)?;
   let (input, b) = parse_u8(input)?;
-  Ok((input, ast::SRgb8 { r, g, b }))
+  Ok((input, swf::SRgb8 { r, g, b }))
 }
 
-pub fn parse_straight_s_rgba8(input: &[u8]) -> NomResult<&[u8], ast::StraightSRgba8> {
+pub fn parse_straight_s_rgba8(input: &[u8]) -> NomResult<&[u8], swf::StraightSRgba8> {
   let (input, r) = parse_u8(input)?;
   let (input, g) = parse_u8(input)?;
   let (input, b) = parse_u8(input)?;
   let (input, a) = parse_u8(input)?;
-  Ok((input, ast::StraightSRgba8 { r, g, b, a }))
+  Ok((input, swf::StraightSRgba8 { r, g, b, a }))
 }
 
 /// Skip `n` bits
@@ -238,26 +238,26 @@ pub fn parse_u16_bits(input: (&[u8], usize), n: usize) -> NomResult<(&[u8], usiz
 }
 
 #[allow(unused_variables)]
-pub fn parse_language_code(input: &[u8]) -> NomResult<&[u8], ast::LanguageCode> {
+pub fn parse_language_code(input: &[u8]) -> NomResult<&[u8], swf::LanguageCode> {
   let (input, code) = parse_u8(input)?;
   let lang: LanguageCode = match code {
-    0 => ast::LanguageCode::Auto,
-    1 => ast::LanguageCode::Latin,
-    2 => ast::LanguageCode::Japanese,
-    3 => ast::LanguageCode::Korean,
-    4 => ast::LanguageCode::SimplifiedChinese,
-    5 => ast::LanguageCode::TraditionalChinese,
+    0 => swf::LanguageCode::Auto,
+    1 => swf::LanguageCode::Latin,
+    2 => swf::LanguageCode::Japanese,
+    3 => swf::LanguageCode::Korean,
+    4 => swf::LanguageCode::SimplifiedChinese,
+    5 => swf::LanguageCode::TraditionalChinese,
     _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
   Ok((input, lang))
 }
 
-pub fn parse_matrix(input: &[u8]) -> NomResult<&[u8], ast::Matrix> {
+pub fn parse_matrix(input: &[u8]) -> NomResult<&[u8], swf::Matrix> {
   use nom::bits::bits;
   bits(parse_matrix_bits)(input)
 }
 
-pub fn parse_matrix_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::Matrix> {
+pub fn parse_matrix_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::Matrix> {
   let (input, has_scale) = parse_bool_bits(input)?;
   let (input, (scale_x, scale_y)) = if has_scale {
     let (input, scale_bits) = parse_u16_bits(input, 5)?;
@@ -281,7 +281,7 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast
   let (input, translate_y) = parse_i32_bits(input, translate_bits as usize)?;
   Ok((
     input,
-    ast::Matrix {
+    swf::Matrix {
       scale_x,
       scale_y,
       rotate_skew0,
@@ -292,19 +292,19 @@ pub fn parse_matrix_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast
   ))
 }
 
-pub fn parse_named_id(input: &[u8]) -> NomResult<&[u8], ast::NamedId> {
+pub fn parse_named_id(input: &[u8]) -> NomResult<&[u8], swf::NamedId> {
   let (input, id) = parse_le_u16(input)?;
   let (input, name) = parse_c_string(input)?;
-  Ok((input, ast::NamedId { id, name }))
+  Ok((input, swf::NamedId { id, name }))
 }
 
-pub fn parse_color_transform(input: &[u8]) -> NomResult<&[u8], ast::ColorTransform> {
+pub fn parse_color_transform(input: &[u8]) -> NomResult<&[u8], swf::ColorTransform> {
   use nom::bits::bits;
   bits(parse_color_transform_bits)(input)
 }
 
 #[allow(unused_variables)]
-pub fn parse_color_transform_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::ColorTransform> {
+pub fn parse_color_transform_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::ColorTransform> {
   let (input, has_add) = parse_bool_bits(input)?;
   let (input, has_mult) = parse_bool_bits(input)?;
   let (input, n_bits) = parse_u16_bits(input, 4)?;
@@ -326,7 +326,7 @@ pub fn parse_color_transform_bits(input: (&[u8], usize)) -> NomResult<(&[u8], us
   };
   Ok((
     input,
-    ast::ColorTransform {
+    swf::ColorTransform {
       red_mult: mult.0,
       green_mult: mult.1,
       blue_mult: mult.2,
@@ -337,7 +337,7 @@ pub fn parse_color_transform_bits(input: (&[u8], usize)) -> NomResult<(&[u8], us
   ))
 }
 
-pub fn parse_color_transform_with_alpha(input: &[u8]) -> NomResult<&[u8], ast::ColorTransformWithAlpha> {
+pub fn parse_color_transform_with_alpha(input: &[u8]) -> NomResult<&[u8], swf::ColorTransformWithAlpha> {
   use nom::bits::bits;
   bits(parse_color_transform_with_alpha_bits)(input)
 }
@@ -345,7 +345,7 @@ pub fn parse_color_transform_with_alpha(input: &[u8]) -> NomResult<&[u8], ast::C
 #[allow(unused_variables)]
 pub fn parse_color_transform_with_alpha_bits(
   input: (&[u8], usize),
-) -> NomResult<(&[u8], usize), ast::ColorTransformWithAlpha> {
+) -> NomResult<(&[u8], usize), swf::ColorTransformWithAlpha> {
   let (input, has_add) = parse_bool_bits(input)?;
   let (input, has_mult) = parse_bool_bits(input)?;
   let (input, n_bits) = parse_u16_bits(input, 4)?;
@@ -369,7 +369,7 @@ pub fn parse_color_transform_with_alpha_bits(
   };
   Ok((
     input,
-    ast::ColorTransformWithAlpha {
+    swf::ColorTransformWithAlpha {
       red_mult: mult.0,
       green_mult: mult.1,
       blue_mult: mult.2,
@@ -440,12 +440,12 @@ mod tests {
       assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[5..], 1 << 28)));
     }
     {
-      // Do not extend past 5 bytes
+      // Do not extend pswf 5 bytes
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x80];
       assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[5..], 0)));
     }
     {
-      // Do not extend past 5 bytes
+      // Do not extend pswf 5 bytes
       let input = vec![0x80, 0x80, 0x80, 0x80, 0x80, 0x01];
       assert_eq!(parse_leb128_u32(&input[..]), Ok((&input[5..], 0)));
     }
@@ -550,7 +550,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 127,
             x_max: 260,
             y_min: 15,
@@ -565,7 +565,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 0,
             x_max: 0,
             y_min: 0,
@@ -580,7 +580,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 0,
             x_max: 0,
             y_min: 0,
@@ -595,7 +595,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 0,
             x_max: 0,
             y_min: 0,
@@ -610,7 +610,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 1,
             x_max: 0,
             y_min: 0,
@@ -625,7 +625,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 0,
             x_max: 1,
             y_min: 0,
@@ -640,7 +640,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 0,
             x_max: 0,
             y_min: 1,
@@ -655,7 +655,7 @@ mod tests {
         parse_rect(&input[..]),
         Ok((
           (&[][..]),
-          ast::Rect {
+          swf::Rect {
             x_min: 0,
             x_max: 0,
             y_min: 0,

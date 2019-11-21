@@ -1,7 +1,7 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Float16, Sint16, SintSize, Uint16, Uint8, UintSize } from "semantic-types";
-import { Glyph, LanguageCode, Rect, StraightSRgba8, text } from "swf-tree";
+import { Glyph, LanguageCode, Rect, StraightSRgba8, text } from "swf-types";
 import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 import { parseGlyph } from "./shape";
 

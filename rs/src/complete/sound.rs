@@ -1,40 +1,40 @@
 use nom::number::complete::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::IResult as NomResult;
-use swf_tree as ast;
+use swf_types as swf;
 
-pub fn sound_rate_from_code(sound_rate_code: u8) -> Result<ast::SoundRate, ()> {
+pub fn sound_rate_from_code(sound_rate_code: u8) -> Result<swf::SoundRate, ()> {
   match sound_rate_code {
-    0 => Ok(ast::SoundRate::SoundRate5500),
-    1 => Ok(ast::SoundRate::SoundRate11000),
-    2 => Ok(ast::SoundRate::SoundRate22000),
-    3 => Ok(ast::SoundRate::SoundRate44000),
+    0 => Ok(swf::SoundRate::SoundRate5500),
+    1 => Ok(swf::SoundRate::SoundRate11000),
+    2 => Ok(swf::SoundRate::SoundRate22000),
+    3 => Ok(swf::SoundRate::SoundRate44000),
     _ => Err(()),
   }
 }
 
-pub fn audio_coding_format_from_code(audio_codec_code: u8) -> Result<ast::AudioCodingFormat, ()> {
+pub fn audio_coding_format_from_code(audio_codec_code: u8) -> Result<swf::AudioCodingFormat, ()> {
   match audio_codec_code {
-    0 => Ok(ast::AudioCodingFormat::UncompressedNativeEndian),
-    1 => Ok(ast::AudioCodingFormat::Adpcm),
-    2 => Ok(ast::AudioCodingFormat::Mp3),
-    3 => Ok(ast::AudioCodingFormat::UncompressedLittleEndian),
-    4 => Ok(ast::AudioCodingFormat::Nellymoser16),
-    5 => Ok(ast::AudioCodingFormat::Nellymoser8),
-    6 => Ok(ast::AudioCodingFormat::Nellymoser),
-    11 => Ok(ast::AudioCodingFormat::Speex),
+    0 => Ok(swf::AudioCodingFormat::UncompressedNativeEndian),
+    1 => Ok(swf::AudioCodingFormat::Adpcm),
+    2 => Ok(swf::AudioCodingFormat::Mp3),
+    3 => Ok(swf::AudioCodingFormat::UncompressedLittleEndian),
+    4 => Ok(swf::AudioCodingFormat::Nellymoser16),
+    5 => Ok(swf::AudioCodingFormat::Nellymoser8),
+    6 => Ok(swf::AudioCodingFormat::Nellymoser),
+    11 => Ok(swf::AudioCodingFormat::Speex),
     _ => Err(()),
   }
 }
 
-pub fn is_uncompressed_audio_coding_format(format: ast::AudioCodingFormat) -> bool {
+pub fn is_uncompressed_audio_coding_format(format: swf::AudioCodingFormat) -> bool {
   match format {
-    ast::AudioCodingFormat::UncompressedNativeEndian => true,
-    ast::AudioCodingFormat::UncompressedLittleEndian => true,
+    swf::AudioCodingFormat::UncompressedNativeEndian => true,
+    swf::AudioCodingFormat::UncompressedLittleEndian => true,
     _ => false,
   }
 }
 
-pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], ast::SoundInfo> {
+pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], swf::SoundInfo> {
   use nom::combinator::cond;
   use nom::multi::count;
 
@@ -60,7 +60,7 @@ pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], ast::SoundInfo> {
 
   Ok((
     input,
-    ast::SoundInfo {
+    swf::SoundInfo {
       sync_stop,
       sync_no_multiple,
       in_point,
@@ -71,13 +71,13 @@ pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], ast::SoundInfo> {
   ))
 }
 
-pub fn parse_sound_envelope(input: &[u8]) -> NomResult<&[u8], ast::SoundEnvelope> {
+pub fn parse_sound_envelope(input: &[u8]) -> NomResult<&[u8], swf::SoundEnvelope> {
   let (input, pos44) = parse_le_u32(input)?;
   let (input, left_level) = parse_le_u16(input)?;
   let (input, right_level) = parse_le_u16(input)?;
   Ok((
     input,
-    ast::SoundEnvelope {
+    swf::SoundEnvelope {
       pos44,
       left_level,
       right_level,

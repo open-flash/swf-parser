@@ -9,7 +9,7 @@ import {
   Sfixed8P8,
   SRgb8,
   StraightSRgba8,
-} from "swf-tree";
+} from "swf-types";
 
 /// Parse a sequence of bytes up to the end of input or first nul-byte. If there
 /// is a nul-byte, it is consumed but not included in the result.

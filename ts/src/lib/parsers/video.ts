@@ -1,8 +1,8 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Uint3, Uint8 } from "semantic-types";
-import { VideoCodec } from "swf-tree/video/video-codec";
-import { VideoDeblocking } from "swf-tree/video/video-deblocking";
+import { VideoCodec } from "swf-types/video/video-codec";
+import { VideoDeblocking } from "swf-types/video/video-deblocking";
 
 export function getVideoDeblockingFromCode(videoDeblockingCode: Uint3): VideoDeblocking {
   switch (videoDeblockingCode) {

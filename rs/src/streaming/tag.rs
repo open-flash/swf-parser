@@ -2,7 +2,7 @@ use crate::complete::tag::parse_tag_body;
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32};
 use nom::IResult as NomResult;
 use std::convert::TryFrom;
-use swf_tree as ast;
+use swf_types as ast;
 
 /// Represents an error caused by incomplete input.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

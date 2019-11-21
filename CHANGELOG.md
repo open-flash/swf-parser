@@ -1,5 +1,6 @@
 # Next
 
+- **[Breaking change]** Update to `swf-types@0.10` (new `swf-tree`).
 - **[Breaking change]** Make the parsers stateless by parsing font alignment zones based on available input instead of memorized glyph count.
 - **[Feature]** Add invalid tag error recovery.
 

@@ -2,11 +2,9 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 
-extern crate swf_parser;
-
 use swf_parser::complete::parse_swf;
 
-use swf_tree as ast;
+use swf_types as swf;
 
 fn main() {
   let args: Vec<String> = env::args().collect();
@@ -24,6 +22,6 @@ fn main() {
 
   //  println!("Input:\n{:?}", &data);
 
-  let movie: ast::Movie = parse_swf(&data[..]).expect("Failed to parse movie");
+  let movie: swf::Movie = parse_swf(&data[..]).expect("Failed to parse movie");
   println!("{}", serde_json_v8::to_string_pretty(&movie).unwrap());
 }

@@ -11,7 +11,7 @@
 [![Build status](https://img.shields.io/travis/com/open-flash/swf-parser/master.svg)](https://travis-ci.com/open-flash/swf-parser)
 
 SWF parser implemented in Rust and Typescript (Node and browser).
-Converts bytes to [`swf-tree` movies][swf-tree].
+Converts bytes to [`swf-types` movies][swf-types].
 
 - [Rust implementation](./rs/README.md)
 - [Typescript implementation](./ts/README.md)
@@ -53,4 +53,4 @@ You can also use the library and report any issues you encounter on the Github
 issues page.
 
 [ofl]: https://github.com/open-flash/open-flash
-[swf-tree]: https://github.com/open-flash/swf-tree
+[swf-types]: https://github.com/open-flash/swf-types

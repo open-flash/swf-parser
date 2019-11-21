@@ -23,23 +23,23 @@ import {
   tags,
   TagType,
   text,
-} from "swf-tree";
-import { ButtonCondAction } from "swf-tree/button/button-cond-action";
-import { ButtonRecord } from "swf-tree/button/button-record";
-import { ButtonSound } from "swf-tree/button/button-sound";
-import { ImageType } from "swf-tree/image-type";
-import { MorphShape } from "swf-tree/morph-shape";
-import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
-import { SoundInfo } from "swf-tree/sound/sound-info";
-import { SoundRate } from "swf-tree/sound/sound-rate";
-import { SoundSize } from "swf-tree/sound/sound-size";
-import { SoundType } from "swf-tree/sound/sound-type";
-import { SpriteTag } from "swf-tree/sprite-tag";
-import { TagHeader } from "swf-tree/tag-header";
-import { TextAlignment } from "swf-tree/text";
-import { EmSquareSize } from "swf-tree/text/em-square-size";
-import { VideoCodec } from "swf-tree/video/video-codec";
-import { VideoDeblocking } from "swf-tree/video/video-deblocking";
+} from "swf-types";
+import { ButtonCondAction } from "swf-types/button/button-cond-action";
+import { ButtonRecord } from "swf-types/button/button-record";
+import { ButtonSound } from "swf-types/button/button-sound";
+import { ImageType } from "swf-types/image-type";
+import { MorphShape } from "swf-types/morph-shape";
+import { AudioCodingFormat } from "swf-types/sound/audio-coding-format";
+import { SoundInfo } from "swf-types/sound/sound-info";
+import { SoundRate } from "swf-types/sound/sound-rate";
+import { SoundSize } from "swf-types/sound/sound-size";
+import { SoundType } from "swf-types/sound/sound-type";
+import { SpriteTag } from "swf-types/sprite-tag";
+import { TagHeader } from "swf-types/tag-header";
+import { TextAlignment } from "swf-types/text";
+import { EmSquareSize } from "swf-types/text/em-square-size";
+import { VideoCodec } from "swf-types/video/video-codec";
+import { VideoDeblocking } from "swf-types/video/video-deblocking";
 import {
   parseBlockCString,
   parseColorTransform,
@@ -866,7 +866,7 @@ function parseDefineShapeAny(byteStream: ReadableByteStream, shapeVersion: Shape
   // (Skip bits [3, 7])
   const shape: Shape = parseShape(byteStream, shapeVersion);
 
-  // TODO: Update swf-tree to use this order for the properties
+  // TODO: Update swf-types to use this order for the properties
   return {
     type: TagType.DefineShape,
     id,

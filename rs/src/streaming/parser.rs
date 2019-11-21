@@ -2,8 +2,8 @@ use crate::stream_buffer::{FlatBuffer, StreamBuffer};
 use crate::streaming::movie::{parse_header, parse_swf_signature};
 use crate::streaming::tag::parse_tag;
 use inflate::InflateStream;
-use swf_tree::CompressionMethod;
-use swf_tree::{Header as SwfHeader, SwfSignature, Tag};
+use swf_types::CompressionMethod;
+use swf_types::{Header as SwfHeader, SwfSignature, Tag};
 
 /// Streaming parser currently parsing the SWF header
 ///
@@ -330,7 +330,7 @@ impl<B: StreamBuffer> LzmaStream<B> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use swf_tree::Movie;
+  use swf_types::Movie;
 
   #[test]
   fn test_stream_parse_blank() {

@@ -6,7 +6,7 @@ use crate::streaming::basic_data_types::{
 use nom::number::complete::{le_u16 as parse_le_u16, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
-use swf_tree as ast;
+use swf_types as swf;
 
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
 pub enum ShapeVersion {
@@ -16,12 +16,12 @@ pub enum ShapeVersion {
   Shape4,
 }
 
-pub fn parse_glyph(input: &[u8]) -> NomResult<&[u8], ast::Glyph> {
+pub fn parse_glyph(input: &[u8]) -> NomResult<&[u8], swf::Glyph> {
   use nom::bits::bits;
   bits(parse_glyph_bits)(input)
 }
 
-pub fn parse_glyph_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::Glyph> {
+pub fn parse_glyph_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::Glyph> {
   use nom::combinator::map;
 
   let (input, fill) = map(do_parse_u32_bits(4), |x| usize::try_from(x).unwrap())(input)?;
@@ -29,22 +29,22 @@ pub fn parse_glyph_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast:
   let style_bits = StyleBits { fill, line };
   let (input, records) = parse_shape_record_string_bits(input, style_bits, ShapeVersion::Shape1)?;
 
-  Ok((input, ast::Glyph { records }))
+  Ok((input, swf::Glyph { records }))
 }
 
-pub fn parse_shape(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], ast::Shape> {
+pub fn parse_shape(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], swf::Shape> {
   use nom::bits::bits;
   bits(|i| parse_shape_bits(i, version))(input)
 }
 
-pub fn parse_shape_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResult<(&[u8], usize), ast::Shape> {
+pub fn parse_shape_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResult<(&[u8], usize), swf::Shape> {
   let (input, styles) = parse_shape_styles_bits(input, version)?;
   let (input, records) = parse_shape_record_string_bits(input, styles.bits, version)?;
 
   Ok((
     input,
-    ast::Shape {
-      initial_styles: ast::ShapeStyles {
+    swf::Shape {
+      initial_styles: swf::ShapeStyles {
         fill: styles.fill,
         line: styles.line,
       },
@@ -55,8 +55,8 @@ pub fn parse_shape_bits(input: (&[u8], usize), version: ShapeVersion) -> NomResu
 
 // TODO: Rename to ShapeStylesWithBits
 pub struct ShapeStyles {
-  pub fill: Vec<ast::FillStyle>,
-  pub line: Vec<ast::LineStyle>,
+  pub fill: Vec<swf::FillStyle>,
+  pub line: Vec<swf::LineStyle>,
   pub bits: StyleBits,
 }
 
@@ -92,8 +92,8 @@ pub fn parse_shape_record_string_bits(
   input: (&[u8], usize),
   mut style_bits: StyleBits,
   version: ShapeVersion,
-) -> NomResult<(&[u8], usize), Vec<ast::ShapeRecord>> {
-  let mut result: Vec<ast::ShapeRecord> = Vec::new();
+) -> NomResult<(&[u8], usize), Vec<swf::ShapeRecord>> {
+  let mut result: Vec<swf::ShapeRecord> = Vec::new();
   let mut current_input = input;
 
   loop {
@@ -132,11 +132,11 @@ pub fn parse_shape_record_string_bits(
         parse_curved_edge_bits(current_input)?
       };
       current_input = next_input;
-      result.push(ast::ShapeRecord::Edge(edge));
+      result.push(swf::ShapeRecord::Edge(edge));
     } else {
       let (next_input, (style_change, next_style_bits)) = parse_style_change_bits(current_input, style_bits, version)?;
       style_bits = next_style_bits;
-      result.push(ast::ShapeRecord::StyleChange(style_change));
+      result.push(swf::ShapeRecord::StyleChange(style_change));
       current_input = next_input;
     }
   }
@@ -144,7 +144,7 @@ pub fn parse_shape_record_string_bits(
   Ok((current_input, result))
 }
 
-pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::shape_records::Edge> {
+pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::shape_records::Edge> {
   let (input, n_bits) = parse_u16_bits(input, 4).map(|(i, x)| (i, (x as usize) + 2))?;
   let (input, control_x) = parse_i32_bits(input, n_bits)?;
   let (input, control_y) = parse_i32_bits(input, n_bits)?;
@@ -153,12 +153,12 @@ pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize)
 
   Ok((
     input,
-    ast::shape_records::Edge {
-      delta: ast::Vector2D {
+    swf::shape_records::Edge {
+      delta: swf::Vector2D {
         x: control_x + anchor_x,
         y: control_y + anchor_y,
       },
-      control_delta: Some(ast::Vector2D {
+      control_delta: Some(swf::Vector2D {
         x: control_x,
         y: control_y,
       }),
@@ -166,7 +166,7 @@ pub fn parse_curved_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize)
   ))
 }
 
-pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), ast::shape_records::Edge> {
+pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::shape_records::Edge> {
   use nom::combinator::{cond, map};
 
   let (input, n_bits) = map(do_parse_u16_bits(4), |x| (x as usize) + 2)(input)?;
@@ -187,8 +187,8 @@ pub fn parse_straight_edge_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usiz
 
   Ok((
     input,
-    ast::shape_records::Edge {
-      delta: ast::Vector2D { x: delta_x, y: delta_y },
+    swf::shape_records::Edge {
+      delta: swf::Vector2D { x: delta_x, y: delta_y },
       control_delta: None,
     },
   ))
@@ -198,7 +198,7 @@ pub fn parse_style_change_bits(
   input: (&[u8], usize),
   style_bits: StyleBits,
   version: ShapeVersion,
-) -> NomResult<(&[u8], usize), (ast::shape_records::StyleChange, StyleBits)> {
+) -> NomResult<(&[u8], usize), (swf::shape_records::StyleChange, StyleBits)> {
   use nom::combinator::cond;
 
   let (input, has_new_styles) = parse_bool_bits(input)?;
@@ -210,7 +210,7 @@ pub fn parse_style_change_bits(
     let (input, move_to_bits) = parse_u16_bits(input, 5)?;
     let (input, x) = parse_i32_bits(input, move_to_bits as usize)?;
     let (input, y) = parse_i32_bits(input, move_to_bits as usize)?;
-    (input, Some(ast::Vector2D { x, y }))
+    (input, Some(swf::Vector2D { x, y }))
   } else {
     (input, None)
   };
@@ -222,7 +222,7 @@ pub fn parse_style_change_bits(
     (
       input,
       (
-        Some(ast::ShapeStyles {
+        Some(swf::ShapeStyles {
           fill: styles.fill,
           line: styles.line,
         }),
@@ -236,7 +236,7 @@ pub fn parse_style_change_bits(
   Ok((
     input,
     (
-      ast::shape_records::StyleChange {
+      swf::shape_records::StyleChange {
         move_to,
         left_fill: left_fill.map(usize::from),
         right_fill: right_fill.map(usize::from),
@@ -257,43 +257,43 @@ pub fn parse_list_length(input: &[u8], allow_extended: bool) -> NomResult<&[u8],
   }
 }
 
-pub fn parse_fill_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<ast::FillStyle>> {
+pub fn parse_fill_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<swf::FillStyle>> {
   use nom::multi::count;
   let (input, style_count) = parse_list_length(input, version >= ShapeVersion::Shape2)?;
   count(|i| parse_fill_style(i, version >= ShapeVersion::Shape3), style_count)(input)
 }
 
-pub fn parse_fill_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::FillStyle> {
+pub fn parse_fill_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], swf::FillStyle> {
   use nom::combinator::map;
   let (input, code) = parse_u8(input)?;
   match code {
-    0x00 => map(|i| parse_solid_fill(i, with_alpha), ast::FillStyle::Solid)(input),
+    0x00 => map(|i| parse_solid_fill(i, with_alpha), swf::FillStyle::Solid)(input),
     0x10 => map(
       |i| parse_linear_gradient_fill(i, with_alpha),
-      ast::FillStyle::LinearGradient,
+      swf::FillStyle::LinearGradient,
     )(input),
     0x12 => map(
       |i| parse_radial_gradient_fill(i, with_alpha),
-      ast::FillStyle::RadialGradient,
+      swf::FillStyle::RadialGradient,
     )(input),
     0x13 => map(
       |i| parse_focal_gradient_fill(i, with_alpha),
-      ast::FillStyle::FocalGradient,
+      swf::FillStyle::FocalGradient,
     )(input),
-    0x40 => map(|i| parse_bitmap_fill(i, true, true), ast::FillStyle::Bitmap)(input),
-    0x41 => map(|i| parse_bitmap_fill(i, false, true), ast::FillStyle::Bitmap)(input),
-    0x42 => map(|i| parse_bitmap_fill(i, true, false), ast::FillStyle::Bitmap)(input),
-    0x43 => map(|i| parse_bitmap_fill(i, false, false), ast::FillStyle::Bitmap)(input),
+    0x40 => map(|i| parse_bitmap_fill(i, true, true), swf::FillStyle::Bitmap)(input),
+    0x41 => map(|i| parse_bitmap_fill(i, false, true), swf::FillStyle::Bitmap)(input),
+    0x42 => map(|i| parse_bitmap_fill(i, true, false), swf::FillStyle::Bitmap)(input),
+    0x43 => map(|i| parse_bitmap_fill(i, false, false), swf::FillStyle::Bitmap)(input),
     _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   }
 }
 
-pub fn parse_bitmap_fill(input: &[u8], repeating: bool, smoothed: bool) -> NomResult<&[u8], ast::fill_styles::Bitmap> {
+pub fn parse_bitmap_fill(input: &[u8], repeating: bool, smoothed: bool) -> NomResult<&[u8], swf::fill_styles::Bitmap> {
   let (input, bitmap_id) = parse_le_u16(input)?;
   let (input, matrix) = parse_matrix(input)?;
   Ok((
     input,
-    ast::fill_styles::Bitmap {
+    swf::fill_styles::Bitmap {
       bitmap_id,
       matrix,
       repeating,
@@ -302,14 +302,14 @@ pub fn parse_bitmap_fill(input: &[u8], repeating: bool, smoothed: bool) -> NomRe
   ))
 }
 
-pub fn parse_focal_gradient_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::fill_styles::FocalGradient> {
+pub fn parse_focal_gradient_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], swf::fill_styles::FocalGradient> {
   let (input, matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_gradient(input, with_alpha)?;
   let (input, focal_point) = parse_le_fixed8_p8(input)?;
 
   Ok((
     input,
-    ast::fill_styles::FocalGradient {
+    swf::fill_styles::FocalGradient {
       matrix,
       gradient,
       focal_point,
@@ -320,39 +320,39 @@ pub fn parse_focal_gradient_fill(input: &[u8], with_alpha: bool) -> NomResult<&[
 pub fn parse_linear_gradient_fill(
   input: &[u8],
   with_alpha: bool,
-) -> NomResult<&[u8], ast::fill_styles::LinearGradient> {
+) -> NomResult<&[u8], swf::fill_styles::LinearGradient> {
   let (input, matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_gradient(input, with_alpha)?;
 
-  Ok((input, ast::fill_styles::LinearGradient { matrix, gradient }))
+  Ok((input, swf::fill_styles::LinearGradient { matrix, gradient }))
 }
 
 pub fn parse_radial_gradient_fill(
   input: &[u8],
   with_alpha: bool,
-) -> NomResult<&[u8], ast::fill_styles::RadialGradient> {
+) -> NomResult<&[u8], swf::fill_styles::RadialGradient> {
   let (input, matrix) = parse_matrix(input)?;
   let (input, gradient) = parse_gradient(input, with_alpha)?;
 
-  Ok((input, ast::fill_styles::RadialGradient { matrix, gradient }))
+  Ok((input, swf::fill_styles::RadialGradient { matrix, gradient }))
 }
 
-pub fn parse_solid_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::fill_styles::Solid> {
+pub fn parse_solid_fill(input: &[u8], with_alpha: bool) -> NomResult<&[u8], swf::fill_styles::Solid> {
   use nom::combinator::map;
   let (input, color) = if with_alpha {
     parse_straight_s_rgba8(input)?
   } else {
-    map(parse_s_rgb8, |c| ast::StraightSRgba8 {
+    map(parse_s_rgb8, |c| swf::StraightSRgba8 {
       r: c.r,
       g: c.g,
       b: c.b,
       a: 255,
     })(input)?
   };
-  Ok((input, ast::fill_styles::Solid { color }))
+  Ok((input, swf::fill_styles::Solid { color }))
 }
 
-pub fn parse_line_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<ast::LineStyle>> {
+pub fn parse_line_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&[u8], Vec<swf::LineStyle>> {
   use nom::multi::count;
   let (input, style_count) = parse_list_length(input, version >= ShapeVersion::Shape2)?;
 
@@ -363,13 +363,13 @@ pub fn parse_line_style_list(input: &[u8], version: ShapeVersion) -> NomResult<&
   }
 }
 
-pub fn parse_line_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast::LineStyle> {
+pub fn parse_line_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], swf::LineStyle> {
   use nom::combinator::map;
   let (input, width) = parse_le_u16(input)?;
   let (input, color) = if with_alpha {
     parse_straight_s_rgba8(input)?
   } else {
-    map(parse_s_rgb8, |c| ast::StraightSRgba8 {
+    map(parse_s_rgb8, |c| swf::StraightSRgba8 {
       r: c.r,
       g: c.g,
       b: c.b,
@@ -378,30 +378,30 @@ pub fn parse_line_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], ast:
   };
   Ok((
     input,
-    ast::LineStyle {
+    swf::LineStyle {
       width,
-      start_cap: ast::CapStyle::Round,
-      end_cap: ast::CapStyle::Round,
-      join: ast::JoinStyle::Round,
+      start_cap: swf::CapStyle::Round,
+      end_cap: swf::CapStyle::Round,
+      join: swf::JoinStyle::Round,
       no_h_scale: false,
       no_v_scale: false,
       no_close: false,
       pixel_hinting: false,
-      fill: ast::FillStyle::Solid(ast::fill_styles::Solid { color }),
+      fill: swf::FillStyle::Solid(swf::fill_styles::Solid { color }),
     },
   ))
 }
 
-pub(crate) fn cap_style_from_code(cap_style_code: u16) -> Result<ast::CapStyle, ()> {
+pub(crate) fn cap_style_from_code(cap_style_code: u16) -> Result<swf::CapStyle, ()> {
   match cap_style_code {
-    0 => Ok(ast::CapStyle::Round),
-    1 => Ok(ast::CapStyle::None),
-    2 => Ok(ast::CapStyle::Square),
+    0 => Ok(swf::CapStyle::Round),
+    1 => Ok(swf::CapStyle::None),
+    2 => Ok(swf::CapStyle::Square),
     _ => Err(()),
   }
 }
 
-pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
+pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], swf::LineStyle> {
   use nom::combinator::map;
 
   let (input, width) = parse_le_u16(input)?;
@@ -424,11 +424,11 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
     cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
 
   let (input, join) = match join_style_code {
-    0 => (input, ast::JoinStyle::Round),
-    1 => (input, ast::JoinStyle::Bevel),
+    0 => (input, swf::JoinStyle::Round),
+    1 => (input, swf::JoinStyle::Bevel),
     2 => {
       let (input, limit) = parse_le_u16(input)?;
-      (input, ast::JoinStyle::Miter(ast::join_styles::Miter { limit }))
+      (input, swf::JoinStyle::Miter(swf::join_styles::Miter { limit }))
     }
     _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
   };
@@ -437,13 +437,13 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], ast::LineStyle> {
     parse_fill_style(input, true)?
   } else {
     map(parse_straight_s_rgba8, |color| {
-      ast::FillStyle::Solid(ast::fill_styles::Solid { color })
+      swf::FillStyle::Solid(swf::fill_styles::Solid { color })
     })(input)?
   };
 
   Ok((
     input,
-    ast::LineStyle {
+    swf::LineStyle {
       width,
       fill,
       pixel_hinting,

@@ -10,17 +10,17 @@
 [![Build status](https://img.shields.io/travis/com/open-flash/swf-parser/master.svg)](https://travis-ci.com/open-flash/swf-parser)
 
 SWF parser implemented in Rust.
-Converts bytes to [`swf-tree` movies][swf-tree].
+Converts bytes to [`swf-types` movies][swf-types].
 
 ## Usage
 
 ```rust
 use swf_parser;
-use swf_tree;
+use swf_types;
 
 fn main() {
   let bytes: &[u8] = ...;
-  let (_, movie): (_, swf_tree::Movie) = swf_parser::complete::parse_movie(&bytes[..])
+  let (_, movie): (_, swf_types::Movie) = swf_parser::complete::parse_movie(&bytes[..])
     .expect("Failed to parse movie");
 }
 ```
@@ -54,4 +54,4 @@ Prefer non-`master` branches when sending a PR so your changes can be rebased if
 needed. All the commits must be made on top of `master` (fast-forward merge).
 CI must pass for changes to be accepted.
 
-[swf-tree]: https://github.com/open-flash/swf-tree
+[swf-types]: https://github.com/open-flash/swf-types

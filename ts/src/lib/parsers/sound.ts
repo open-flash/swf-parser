@@ -1,10 +1,10 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import { Incident } from "incident";
 import { Uint16, Uint2, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
-import { AudioCodingFormat } from "swf-tree/sound/audio-coding-format";
-import { SoundEnvelope } from "swf-tree/sound/sound-envelope";
-import { SoundInfo } from "swf-tree/sound/sound-info";
-import { SoundRate } from "swf-tree/sound/sound-rate";
+import { AudioCodingFormat } from "swf-types/sound/audio-coding-format";
+import { SoundEnvelope } from "swf-types/sound/sound-envelope";
+import { SoundInfo } from "swf-types/sound/sound-info";
+import { SoundRate } from "swf-types/sound/sound-rate";
 
 export function getSoundRateFromCode(soundRateCode: Uint2): SoundRate {
   switch (soundRateCode) {

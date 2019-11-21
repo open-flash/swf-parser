@@ -2,12 +2,12 @@ pub mod parsers {}
 pub mod complete;
 mod stream_buffer;
 pub mod streaming;
-pub use swf_tree;
+pub use swf_types;
 
 #[cfg(test)]
 mod tests {
   use crate::complete::parse_swf;
-  use ::swf_tree::Movie;
+  use ::swf_types::Movie;
   use ::test_generator::test_resources;
   use nom::IResult as NomResult;
   use std::io::{Read, Write};
@@ -81,7 +81,7 @@ mod tests {
   // A variant of the previous macro that uses `.is` instead of `.eq` to check for bit-pattern equality
   macro_rules! test_various_parser_is_impl {
     ($name:ident, $glob:expr, $parser:ident, $type:ty) => {
-      use crate::swf_tree::float_is::Is;
+      use crate::swf_types::float_is::Is;
 
       #[test_resources($glob)]
       fn $name(path: &str) {
@@ -113,7 +113,7 @@ mod tests {
   test_various_parser_is_impl!(test_parse_le_f16, "../tests/various/float16-le/*/", parse_le_f16, f32);
 
   use crate::streaming::movie::parse_header;
-  use swf_tree::Header;
+  use swf_types::Header;
 
   fn parse_header34(input: &[u8]) -> NomResult<&[u8], Header> {
     parse_header(input, 34)
@@ -121,15 +121,15 @@ mod tests {
   test_various_parser_impl!(test_parse_header, "../tests/various/header/*/", parse_header34, Header);
 
   use crate::streaming::basic_data_types::parse_matrix;
-  use swf_tree::Matrix;
+  use swf_types::Matrix;
   test_various_parser_impl!(test_parse_matrix, "../tests/various/matrix/*/", parse_matrix, Matrix);
 
   use crate::streaming::basic_data_types::parse_rect;
-  use swf_tree::Rect;
+  use swf_types::Rect;
   test_various_parser_impl!(test_parse_rect, "../tests/various/rect/*/", parse_rect, Rect);
 
   use crate::streaming::movie::parse_swf_signature;
-  use swf_tree::SwfSignature;
+  use swf_types::SwfSignature;
   test_various_parser_impl!(
     test_parse_swf_signature,
     "../tests/various/swf-signature/*/",

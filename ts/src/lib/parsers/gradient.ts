@@ -3,7 +3,7 @@ import { Uint2, Uint4, Uint8 } from "semantic-types";
 import {
   ColorSpace, ColorStop, Gradient, GradientSpread, MorphColorStop, MorphGradient,
   StraightSRgba8,
-} from "swf-tree";
+} from "swf-types";
 import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
 
 export function parseColorStop(byteStream: ReadableByteStream, withAlpha: boolean): ColorStop {
