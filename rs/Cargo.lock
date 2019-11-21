@@ -278,6 +278,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "swf-parser-bin"
+version = "0.1.0"
+dependencies = [
+ "serde_json_v8",
+ "swf-parser",
+ "swf-types",
+]
+
+[[package]]
 name = "swf-types"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
