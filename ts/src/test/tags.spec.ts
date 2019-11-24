@@ -19,6 +19,30 @@ const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 // `BLACKLIST` can be used to forcefully skip some tests.
 const BLACKLIST: ReadonlySet<string> = new Set([
   // "define-shape/shape1-squares",
+  "raw-body/empty-clip-actions-string",
+  "raw-body/incomplete-bitmap",
+  "raw-body/incomplete-bits-lossless",
+  "raw-body/invalid-button-cond-action-string",
+  "raw-body/invalid-cap-style",
+  "raw-body/invalid-csm-text-settings",
+  "raw-body/invalid-define-bits-jpeg2-type",
+  "raw-body/invalid-define-font-offset",
+  "raw-body/invalid-define-font2-offset",
+  "raw-body/invalid-define-text-index-bits-and-advance-bits",
+  "raw-body/invalid-gif-header",
+  "raw-body/invalid-gradient-flags",
+  "raw-body/invalid-image-data-size",
+  "raw-body/invalid-jpeg-data",
+  "raw-body/invalid-key-press-code",
+  "raw-body/invalid-morph-gradient",
+  "raw-body/invalid-video-deblocking",
+  "raw-body/jpeg-soi-only",
+  "raw-body/missing-morph-shape-end-record",
+  "raw-body/non-utf8-string",
+  "raw-body/unknown-audio-codec",
+  "raw-body/unknown-grid-fitting",
+  "raw-body/unknown-tag-code-and-empty-body",
+  "raw-body/unmatched-morph-shape-record-pair",
 ]);
 // `WHITELIST` can be used to only enable a few tests.
 const WHITELIST: ReadonlySet<string> = new Set([

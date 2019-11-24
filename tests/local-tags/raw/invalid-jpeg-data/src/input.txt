@@ -1,2 +1,0 @@
-# SWF version: 0x7e
-4805c318ffd883ffffe4

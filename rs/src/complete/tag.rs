@@ -1410,7 +1410,7 @@ mod tests {
   use swf_types::Tag;
   use test_generator::test_resources;
 
-  // #[test_resources("../tests/tags/*/*/")]
+  #[test_resources("../tests/tags/*/*/")]
   #[test_resources("../tests/local-tags/*/*/")]
   fn test_parse_tag(path: &str) {
     let path: &Path = Path::new(path);
