@@ -40,6 +40,8 @@ import { TextAlignment } from "swf-types/text";
 import { EmSquareSize } from "swf-types/text/em-square-size";
 import { VideoCodec } from "swf-types/video/video-codec";
 import { VideoDeblocking } from "swf-types/video/video-deblocking";
+import { createIncompleteTagError } from "../errors/incomplete-tag";
+import { createIncompleteTagHeaderError } from "../errors/incomplete-tag-header";
 import {
   parseBlockCString,
   parseColorTransform,
@@ -101,184 +103,262 @@ export function parseTagBlockString(byteStream: ReadableByteStream, swfVersion: 
   return tags;
 }
 
+/**
+ * Parses the next tag in the stream, without failure.
+ *
+ * This function never throws.
+ * If there is not enough data to parse the tag header or consume the tag body, returns a `Raw` tag.
+ *
+ * @param byteStream Byte stream to read, the read position will be updated.
+ * @param swfVersion SWF version to use when parsing the tag.
+ * @returns `undefined` if the `EndOfTag` is found, otherwise the `Tag` value.
+ */
 export function parseTag(byteStream: ReadableByteStream, swfVersion: Uint8): Tag | undefined {
+  if (byteStream.available() === 0) {
+    return undefined;
+  }
+  try {
+    return tryParseTag(byteStream, swfVersion);
+  } catch (e) {
+    if (e.name === "IncompleteTagHeaderError" || e.name === "IncompleteTagError") {
+      const data: Uint8Array = byteStream.tailBytes();
+      return {type: TagType.Raw, data};
+    } else {
+      // Unexpected error
+      throw e;
+    }
+  }
+}
+
+/**
+ * Parses the next tag in the stream, with failure.
+ *
+ * This function only throws if there is if there is not enough data to parse the tag header or
+ * consume the tag body.
+ *
+ * @param byteStream Byte stream to read, the read position will be updated.
+ * @param swfVersion SWF version to use when parsing the tag.
+ * @returns `undefined` if the `EndOfTag` is found, otherwise the `Tag` value.
+ * @throws IncompleteTagHeaderError If there is not enough data available to parse the header.
+ * @throws IncompleteTagError If there is not enough data available to parse the tag (header + body).
+ */
+export function tryParseTag(byteStream: ReadableByteStream, swfVersion: Uint8): Tag | undefined {
   const basePos: UintSize = byteStream.bytePos;
   if (byteStream.available() === 0) {
     return undefined;
   }
-  let header: TagHeader;
+
+  // Let `IncompleteTagHeaderError` bubble
+  const header: TagHeader = parseTagHeader(byteStream);
+
+  // `EndOfTags`
+  if (header.code === 0) {
+    return undefined;
+  }
+
   let bodyStream: ReadableByteStream;
   try {
-    header = parseTagHeader(byteStream);
-    if (header.code === 0) {
-      return undefined;
-    }
     bodyStream = byteStream.take(header.length);
   } catch (e) {
-    console.warn("Non-fatal parse error (incomplete tag):");
-    console.warn(e);
+    const headSize: UintSize = byteStream.bytePos - basePos;
+    const needed: UintSize = headSize + header.length;
     byteStream.bytePos = basePos;
-    return {type: TagType.Raw, data: byteStream.tailBytes()};
+    const available: UintSize = byteStream.available();
+    throw createIncompleteTagError(available, needed);
   }
-  try {
-    return parseTagBody(bodyStream, header.code, swfVersion);
-  } catch (e) {
-    console.warn("Non-fatal parse error (takeTagBody):");
-    console.warn(e);
-    const tagSize: UintSize = byteStream.bytePos - basePos;
-    byteStream.bytePos = basePos;
-    return {type: TagType.Raw, data: byteStream.takeBytes(tagSize)};
-  }
+
+  // Always succeeds
+  return parseTagBody(bodyStream, header.code, swfVersion);
 }
 
+/**
+ * Parses a (possibly incomplete) tag header.
+ *
+ * @param byteStream Byte stream to read, the read position will be updated.
+ * @returns Parsed tag header.
+ * @throws IncompleteTagHeaderError If there is not enough data available.
+ */
 function parseTagHeader(byteStream: ReadableByteStream): TagHeader {
+  const basePos: UintSize = byteStream.bytePos;
+
+  // TODO: Check if we should bail-out on `NUL` first byte.
+
+  if (byteStream.available() < 2) {
+    byteStream.bytePos = basePos;
+    throw createIncompleteTagHeaderError();
+  }
+
   const codeAndLength: Uint16 = byteStream.readUint16LE();
   const code: Uint16 = codeAndLength >>> 6;
-  const maxLength: number = (1 << 6) - 1;
-  const length: number = codeAndLength & maxLength;
+  const maxShortBodySize: number = (1 << 6) - 1;
+  const shortBodySize: number = codeAndLength & maxShortBodySize;
 
-  if (length === maxLength) {
-    return {code, length: byteStream.readUint32LE()};
+  if (shortBodySize === maxShortBodySize) {
+    if (byteStream.available() < 4) {
+      byteStream.bytePos = basePos;
+      throw createIncompleteTagHeaderError();
+    }
+    const bodySize: Uint32 = byteStream.readUint32LE();
+    return {code, length: bodySize};
   } else {
-    return {code, length};
+    return {code, length: shortBodySize};
   }
 }
 
+/**
+ * Parses a tag body.
+ *
+ * This function never throws.
+ * Unknown codes or invalid tag bodies produce a `RawBody` tag.
+ *
+ * @param byteStream Byte stream to read, the read position will be updated.
+ * @param tagCode Raw code of the tag.
+ * @param swfVersion SWF version to use.
+ * @returns Parsed tag body
+ */
 // tslint:disable-next-line:cyclomatic-complexity
 function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, swfVersion: Uint8): Tag {
-  switch (tagCode) {
-    case 1:
-      return {type: TagType.ShowFrame};
-    case 2:
-      return parseDefineShape(byteStream);
-    case 4:
-      return parsePlaceObject(byteStream);
-    case 5:
-      return parseRemoveObject(byteStream);
-    case 6:
-      return parseDefineBits(byteStream, swfVersion);
-    case 7:
-      return parseDefineButton(byteStream);
-    case 8:
-      return parseDefineJpegTables(byteStream, swfVersion);
-    case 9:
-      return parseSetBackgroundColor(byteStream);
-    case 10:
-      return parseDefineFont(byteStream);
-    case 11:
-      return parseDefineText(byteStream);
-    case 12:
-      return parseDoAction(byteStream);
-    case 13:
-      return parseDefineFontInfo(byteStream);
-    case 14:
-      return parseDefineSound(byteStream);
-    case 15:
-      return parseStartSound(byteStream);
-    case 17:
-      return parseDefineButtonSound(byteStream);
-    case 18:
-      return parseSoundStreamHead(byteStream);
-    case 19:
-      return parseSoundStreamBlock(byteStream);
-    case 20:
-      return parseDefineBitsLossless(byteStream);
-    case 21:
-      return parseDefineBitsJpeg2(byteStream, swfVersion);
-    case 22:
-      return parseDefineShape2(byteStream);
-    case 23:
-      return parseDefineButtonColorTransform(byteStream);
-    case 24:
-      return parseProtect(byteStream);
-    case 25:
-      return {type: TagType.EnablePostscript};
-    case 26:
-      return parsePlaceObject2(byteStream, swfVersion);
-    case 28:
-      return parseRemoveObject2(byteStream);
-    case 32:
-      return parseDefineShape3(byteStream);
-    case 33:
-      return parseDefineText2(byteStream);
-    case 34:
-      return parseDefineButton2(byteStream);
-    case 35:
-      return parseDefineBitsJpeg3(byteStream, swfVersion);
-    case 36:
-      return parseDefineBitsLossless2(byteStream);
-    case 37:
-      return parseDefineEditText(byteStream);
-    case 39:
-      return parseDefineSprite(byteStream, swfVersion);
-    case 43:
-      return parseFrameLabel(byteStream);
-    case 45:
-      return parseSoundStreamHead2(byteStream);
-    case 46:
-      return parseDefineMorphShape(byteStream);
-    case 48:
-      return parseDefineFont2(byteStream);
-    case 56:
-      return parseExportAssets(byteStream);
-    case 57:
-      return parseImportAssets(byteStream);
-    case 58:
-      return parseEnableDebugger(byteStream);
-    case 59:
-      return parseDoInitAction(byteStream);
-    case 60:
-      return parseDefineVideoStream(byteStream);
-    case 61:
-      return parseVideoFrame(byteStream);
-    case 62:
-      return parseDefineFontInfo2(byteStream);
-    case 64:
-      return parseEnableDebugger2(byteStream);
-    case 65:
-      return parseScriptLimits(byteStream);
-    case 66:
-      return parseSetTabIndex(byteStream);
-    case 69:
-      return parseFileAttributes(byteStream);
-    case 70:
-      return parsePlaceObject3(byteStream, swfVersion);
-    case 71:
-      return parseImportAssets2(byteStream);
-    case 73:
-      return parseDefineFontAlignZones(byteStream);
-    case 74:
-      return parseCsmTextSettings(byteStream);
-    case 75:
-      return parseDefineFont3(byteStream);
-    case 76:
-      return parseSymbolClass(byteStream);
-    case 77:
-      return parseMetadata(byteStream);
-    case 78:
-      return parseDefineScalingGrid(byteStream);
-    case 82:
-      return parseDoAbc(byteStream);
-    case 83:
-      return parseDefineShape4(byteStream);
-    case 84:
-      return parseDefineMorphShape2(byteStream);
-    case 86:
-      return parseDefineSceneAndFrameLabelData(byteStream);
-    case 87:
-      return parseDefineBinaryData(byteStream);
-    case 88:
-      return parseDefineFontName(byteStream);
-    case 89:
-      return parseStartSound2(byteStream);
-    case 90:
-      return parseDefineBitsJpeg4(byteStream);
-    case 91:
-      return parseDefineFont4(byteStream);
-    case 93:
-      return parseEnableTelemetry(byteStream);
-    default:
-      throw new Incident("UnknownTagCode", {code: tagCode});
+  const basePos: UintSize = byteStream.bytePos;
+  try {
+    switch (tagCode) {
+      case 1:
+        return {type: TagType.ShowFrame};
+      case 2:
+        return parseDefineShape(byteStream);
+      case 4:
+        return parsePlaceObject(byteStream);
+      case 5:
+        return parseRemoveObject(byteStream);
+      case 6:
+        return parseDefineBits(byteStream, swfVersion);
+      case 7:
+        return parseDefineButton(byteStream);
+      case 8:
+        return parseDefineJpegTables(byteStream, swfVersion);
+      case 9:
+        return parseSetBackgroundColor(byteStream);
+      case 10:
+        return parseDefineFont(byteStream);
+      case 11:
+        return parseDefineText(byteStream);
+      case 12:
+        return parseDoAction(byteStream);
+      case 13:
+        return parseDefineFontInfo(byteStream);
+      case 14:
+        return parseDefineSound(byteStream);
+      case 15:
+        return parseStartSound(byteStream);
+      case 17:
+        return parseDefineButtonSound(byteStream);
+      case 18:
+        return parseSoundStreamHead(byteStream);
+      case 19:
+        return parseSoundStreamBlock(byteStream);
+      case 20:
+        return parseDefineBitsLossless(byteStream);
+      case 21:
+        return parseDefineBitsJpeg2(byteStream, swfVersion);
+      case 22:
+        return parseDefineShape2(byteStream);
+      case 23:
+        return parseDefineButtonColorTransform(byteStream);
+      case 24:
+        return parseProtect(byteStream);
+      case 25:
+        return {type: TagType.EnablePostscript};
+      case 26:
+        return parsePlaceObject2(byteStream, swfVersion);
+      case 28:
+        return parseRemoveObject2(byteStream);
+      case 32:
+        return parseDefineShape3(byteStream);
+      case 33:
+        return parseDefineText2(byteStream);
+      case 34:
+        return parseDefineButton2(byteStream);
+      case 35:
+        return parseDefineBitsJpeg3(byteStream, swfVersion);
+      case 36:
+        return parseDefineBitsLossless2(byteStream);
+      case 37:
+        return parseDefineEditText(byteStream);
+      case 39:
+        return parseDefineSprite(byteStream, swfVersion);
+      case 43:
+        return parseFrameLabel(byteStream);
+      case 45:
+        return parseSoundStreamHead2(byteStream);
+      case 46:
+        return parseDefineMorphShape(byteStream);
+      case 48:
+        return parseDefineFont2(byteStream);
+      case 56:
+        return parseExportAssets(byteStream);
+      case 57:
+        return parseImportAssets(byteStream);
+      case 58:
+        return parseEnableDebugger(byteStream);
+      case 59:
+        return parseDoInitAction(byteStream);
+      case 60:
+        return parseDefineVideoStream(byteStream);
+      case 61:
+        return parseVideoFrame(byteStream);
+      case 62:
+        return parseDefineFontInfo2(byteStream);
+      case 64:
+        return parseEnableDebugger2(byteStream);
+      case 65:
+        return parseScriptLimits(byteStream);
+      case 66:
+        return parseSetTabIndex(byteStream);
+      case 69:
+        return parseFileAttributes(byteStream);
+      case 70:
+        return parsePlaceObject3(byteStream, swfVersion);
+      case 71:
+        return parseImportAssets2(byteStream);
+      case 73:
+        return parseDefineFontAlignZones(byteStream);
+      case 74:
+        return parseCsmTextSettings(byteStream);
+      case 75:
+        return parseDefineFont3(byteStream);
+      case 76:
+        return parseSymbolClass(byteStream);
+      case 77:
+        return parseMetadata(byteStream);
+      case 78:
+        return parseDefineScalingGrid(byteStream);
+      case 82:
+        return parseDoAbc(byteStream);
+      case 83:
+        return parseDefineShape4(byteStream);
+      case 84:
+        return parseDefineMorphShape2(byteStream);
+      case 86:
+        return parseDefineSceneAndFrameLabelData(byteStream);
+      case 87:
+        return parseDefineBinaryData(byteStream);
+      case 88:
+        return parseDefineFontName(byteStream);
+      case 89:
+        return parseStartSound2(byteStream);
+      case 90:
+        return parseDefineBitsJpeg4(byteStream);
+      case 91:
+        return parseDefineFont4(byteStream);
+      case 93:
+        return parseEnableTelemetry(byteStream);
+      default: {
+        throw new Incident("UnknownTagCode", {code: tagCode});
+      }
+    }
+  } catch (e) {
+    byteStream.bytePos = basePos;
+    const data: Uint8Array = byteStream.tailBytes();
+    return {type: TagType.RawBody, code: tagCode, data};
   }
 }
 

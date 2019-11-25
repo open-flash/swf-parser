@@ -24,7 +24,6 @@ pub(crate) enum StreamingTagError {
 
 /// Parses the tag at the start of the (possibly incomplete) input.
 ///
-/// The minimum length of `input` for a tag is `1`.
 /// In case of success, returns the remaining input and `Tag`.
 /// In case of error, returns the original input and error description.
 pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], Option<ast::Tag>), StreamingTagError> {
@@ -36,9 +35,12 @@ pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], Option<
     Ok(ok) => ok,
     Err(_) => return Err(StreamingTagError::IncompleteHeader),
   };
+
+  // `EndOfTags`
   if header.code == 0 {
     return Ok((&[], None));
   }
+
   let body_len = usize::try_from(header.length).unwrap();
   if input.len() < body_len {
     let header_len = base_input.len() - input.len();
