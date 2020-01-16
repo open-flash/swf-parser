@@ -19,7 +19,7 @@ const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 // `BLACKLIST` can be used to forcefully skip some tests.
 const BLACKLIST: ReadonlySet<string> = new Set([
   // "define-shape/shape1-squares",
-  "raw-body/invalid-define-font-offset",
+  // "raw-body/invalid-define-font-offset",
   // "raw-body/non-utf8-string",
 ]);
 // `WHITELIST` can be used to only enable a few tests.

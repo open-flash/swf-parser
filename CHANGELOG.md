@@ -34,6 +34,7 @@
 
 - **[Fix]** Fix pre-release npm tag.
 - **[Fix]** Detect invalid UTF-8.
+- **[Fix]** Detect invalid `DefineGlyphFont` offsets.
 
 # 0.9.0 (2019-10-17)
 

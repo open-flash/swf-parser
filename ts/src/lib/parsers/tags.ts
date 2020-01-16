@@ -636,22 +636,28 @@ export function parseDefineFont(byteStream: ReadableByteStream): tags.DefineGlyp
   const available: UintSize = byteStream.available();
   if (available > 0) {
     const startPos: UintSize = byteStream.bytePos;
+    const startLen: UintSize = available;
 
-    const offsetToFirstGlyph: Uint16 = byteStream.readUint16LE();
+    const firstOffset: Uint16 = byteStream.readUint16LE();
     // Dividing by 2 since each glyph offset takes 2 bytes.
     // TODO: Assert that `offsetToFirstGlyph` is even
-    const glyphCount: UintSize = Math.floor(offsetToFirstGlyph / 2);
-    const offsets: UintSize[] = [offsetToFirstGlyph];
+    const glyphCount: UintSize = Math.floor(firstOffset / 2);
+    const offsets: UintSize[] = [firstOffset];
     for (let i: UintSize = 1; i < glyphCount; i++) {
       offsets.push(byteStream.readUint16LE());
     }
-    offsets.push(available);
-
-    for (let i: number = 1; i < offsets.length; i++) {
-      const length: UintSize = offsets[i] - (byteStream.bytePos - startPos);
+    for (let i: number = 0; i < offsets.length; i++) {
+      const startOffset: UintSize = offsets[i];
+      const endOffset: UintSize = (i + 1) < offsets.length ? offsets[i + 1] : startLen;
+      if (endOffset < startOffset) {
+        throw new Incident("InvalidGlyphFontOffset", {startOffset, endOffset});
+      }
+      const glyphSize: UintSize = endOffset - startOffset;
+      byteStream.bytePos = startPos + startOffset;
+      const glyphStream: ReadableByteStream = byteStream.take(glyphSize);
       // TODO: special mode when parsing the shape: the first changeStyle is
       //       forced to have stateFillStyle0 and stateFill0
-      glyphs.push(parseGlyph(byteStream.take(length)));
+      glyphs.push(parseGlyph(glyphStream));
     }
   }
 
