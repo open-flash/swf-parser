@@ -198,7 +198,7 @@ dependencies = [
 
 [[package]]
 name = "swf-parser"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "half 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "inflate 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -214,7 +214,7 @@ name = "swf-parser-fuzz"
 version = "0.0.1"
 dependencies = [
  "libfuzzer-sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "swf-parser 0.9.0",
+ "swf-parser 0.10.0",
 ]
 
 [[package]]

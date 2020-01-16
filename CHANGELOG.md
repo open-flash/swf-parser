@@ -1,4 +1,4 @@
-# Next
+# 0.10.0 (2020-01-16)
 
 - **[Breaking change]** Refactor consumer API. The library now exports a function named
   `parseSwf` (TS) or `parse_swf` (Rust) at its root ([#11](https://github.com/open-flash/swf-parser/issues/11)).
