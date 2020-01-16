@@ -15,13 +15,12 @@ Converts bytes to [`swf-types` movies][swf-types].
 ## Usage
 
 ```rust
-use swf_parser;
-use swf_types;
+use swf_parser::parse_swf;
+use swf_types::Movie;
 
 fn main() {
-  let bytes: &[u8] = ...;
-  let (_, movie): (_, swf_types::Movie) = swf_parser::complete::parse_movie(&bytes[..])
-    .expect("Failed to parse movie");
+  let swf_bytes: Vec<u8> = ::std::fs::read("movie.swf").expect("Failed to read movie");
+  let movie: Movie = parse_swf(&swf_bytes).expect("Failed to parse SWF");
 }
 ```
 

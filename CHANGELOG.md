@@ -1,5 +1,7 @@
 # Next
 
+- **[Breaking change]** Refactor consumer API. The library now exports a function named
+  `parseSwf` (TS) or `parse_swf` (Rust) at its root ([#11](https://github.com/open-flash/swf-parser/issues/11)).
 - **[Breaking change]** Update to `swf-types@0.10` (new `swf-tree`).
 - **[Breaking change]** Make the parsers stateless by parsing font alignment zones based on available input instead of memorized glyph count.
 - **[Feature]** Add invalid tag error recovery.

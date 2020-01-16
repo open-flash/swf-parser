@@ -32,7 +32,7 @@ pub enum SwfParseError {
   InvalidHeader,
 }
 
-/// Parse a completely loaded SWF file.
+/// Parses a completely loaded SWF file.
 ///
 /// See [[SwfParseError]] for details on the possible errors.
 ///
@@ -43,29 +43,29 @@ pub fn parse_swf(input: &[u8]) -> Result<ast::Movie, SwfParseError> {
     Err(_) => return Err(SwfParseError::InvalidSignature),
   };
 
-  let mut payload_memory: Vec<u8>;
+  let mut movie_buffer: Vec<u8>;
 
-  let payload: &[u8] = match signature.compression_method {
+  let movie_bytes: &[u8] = match signature.compression_method {
     ast::CompressionMethod::None => input,
     ast::CompressionMethod::Deflate => {
-      payload_memory = match inflate::inflate_bytes_zlib(input) {
+      movie_buffer = match inflate::inflate_bytes_zlib(input) {
         Ok(uncompressed) => uncompressed,
         Err(_) => return Err(SwfParseError::InvalidPayload),
       };
-      &payload_memory
+      &movie_buffer
     }
     ast::CompressionMethod::Lzma => {
       let mut payload_reader = std::io::BufReader::new(input);
-      payload_memory = Vec::new();
-      match lzma_rs::lzma_decompress(&mut payload_reader, &mut payload_memory) {
+      movie_buffer = Vec::new();
+      match lzma_rs::lzma_decompress(&mut payload_reader, &mut movie_buffer) {
         Ok(_) => (),
         Err(_) => return Err(SwfParseError::InvalidPayload),
       }
-      &payload_memory
+      &movie_buffer
     }
   };
 
-  let (_, movie) = match parse_movie_payload(payload, signature.swf_version) {
+  let (_, movie) = match parse_movie(movie_bytes, signature.swf_version) {
     Ok(ok) => ok,
     Err(_) => return Err(SwfParseError::InvalidHeader),
   };
@@ -73,8 +73,10 @@ pub fn parse_swf(input: &[u8]) -> Result<ast::Movie, SwfParseError> {
   Ok(movie)
 }
 
-/// Parses a completely loaded input into a movie.
-fn parse_movie_payload(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
+/// Parses a completely loaded movie.
+///
+/// The movie is the uncompressed payload of the SWF.
+fn parse_movie(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
   let (input, header) = parse_header(input, swf_version)?;
   let tags = parse_tag_block_string(input, swf_version);
 

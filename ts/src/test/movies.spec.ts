@@ -4,7 +4,7 @@ import { JsonReader } from "kryo/readers/json";
 import { JsonValueWriter } from "kryo/writers/json-value";
 import sysPath from "path";
 import { $Movie, Movie } from "swf-types/movie";
-import { movieFromBytes } from "../lib";
+import { parseSwf } from "../lib";
 import meta from "./meta.js";
 import { readFile, readTextFile, writeTextFile } from "./utils";
 
@@ -27,7 +27,7 @@ describe("movies", function () {
   for (const sample of getSamples()) {
     it(sample.name, async function () {
       const inputBytes: Buffer = await readFile(sample.moviePath);
-      const actualMovie: Movie = movieFromBytes(inputBytes);
+      const actualMovie: Movie = parseSwf(inputBytes);
       const testErr: Error | undefined = $Movie.testError!(actualMovie);
       try {
         chai.assert.isUndefined(testErr, "InvalidMovie");

@@ -1,12 +1,14 @@
-pub mod parsers {}
 pub mod complete;
 mod stream_buffer;
 pub mod streaming;
 pub use swf_types;
 
+pub use complete::tag::parse_tag;
+pub use complete::{parse_swf, SwfParseError};
+
 #[cfg(test)]
 mod tests {
-  use crate::complete::parse_swf;
+  use crate::parse_swf;
   use ::swf_types::Movie;
   use ::test_generator::test_resources;
   use nom::IResult as NomResult;

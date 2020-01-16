@@ -32,7 +32,7 @@ use swf_types as ast;
 use swf_types::text::FontAlignmentZone;
 use swf_types::{ButtonCondAction, Glyph};
 
-/// Parses that tag at the start of `input`.
+/// Parses the tag at the start of `input`.
 ///
 /// This parser assumes that `input` is complete: it has all the data until the end of the movie.
 ///
