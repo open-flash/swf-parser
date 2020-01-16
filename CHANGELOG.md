@@ -33,6 +33,7 @@
 ## Typescript
 
 - **[Fix]** Fix pre-release npm tag.
+- **[Fix]** Detect invalid UTF-8.
 
 # 0.9.0 (2019-10-17)
 
@@ -82,7 +83,7 @@
 # 0.5.4 (2019-05-20)
 
 - **[Feature]** Implement parser for `DefineFont2` ([#38](https://github.com/open-flash/swf-parser/issues/38)).
-- **[Internal]** Update `Contributing` sections in `README.md`. 
+- **[Internal]** Update `Contributing` sections in `README.md`.
 
 ### Typescript
 

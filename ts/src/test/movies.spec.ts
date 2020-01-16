@@ -54,10 +54,6 @@ describe("movies", function () {
 
 interface Sample {
   name: string;
-}
-
-interface Sample {
-  name: string;
   moviePath: string;
   astPath: string;
 }

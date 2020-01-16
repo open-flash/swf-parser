@@ -6,7 +6,7 @@ matrix:
       #- osx
       #- windows
       node_js:
-        - 12
+        - 13
       before_script:
         - cd ts
       script:

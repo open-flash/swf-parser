@@ -20,7 +20,7 @@ const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 const BLACKLIST: ReadonlySet<string> = new Set([
   // "define-shape/shape1-squares",
   "raw-body/invalid-define-font-offset",
-  "raw-body/non-utf8-string",
+  // "raw-body/non-utf8-string",
 ]);
 // `WHITELIST` can be used to only enable a few tests.
 const WHITELIST: ReadonlySet<string> = new Set([

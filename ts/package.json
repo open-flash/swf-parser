@@ -15,6 +15,9 @@
       "url": "https://spdx.org/licenses/AGPL-3.0-or-later.html"
     }
   ],
+  "engines": {
+    "node": ">=13.2"
+  },
   "scripts": {
     "build": "gulp lib:build",
     "watch": "gulp lib:watch",
@@ -30,7 +33,7 @@
     "start": "node build/main/main/main.js"
   },
   "dependencies": {
-    "@open-flash/stream": "^0.1.1",
+    "@open-flash/stream": "^0.2.1",
     "@types/pako": "^1.0.1",
     "incident": "^3.2.0",
     "pako": "^1.0.10",
@@ -38,21 +41,20 @@
     "swf-types": "^0.10.0"
   },
   "devDependencies": {
-    "@types/chai": "^4.2.5",
+    "@types/chai": "^4.2.7",
     "@types/gulp": "^4.0.6",
     "@types/minimist": "^1.2.0",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^12.12.11",
-    "bson": "^4.0.1",
+    "@types/node": "^13.1.7",
     "chai": "^4.2.0",
     "gulp": "^4.0.2",
     "gulp-cli": "^2.2.0",
     "kryo": "^0.8.1",
     "minimist": "^1.2.0",
-    "ts-node": "^8.5.2",
+    "ts-node": "^8.6.2",
     "tslint": "^5.20.1",
-    "turbo-gulp": "^0.20.2",
-    "typescript": "^3.7.2"
+    "turbo-gulp": "^0.21.1",
+    "typescript": "^3.7.4"
   },
   "c88": {
     "match": [
