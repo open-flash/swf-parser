@@ -1,4 +1,4 @@
-# Next
+# 0.11.0 (2020-02-05)
 
 - **[Breaking change]** Update to `swf-types@0.11`.
 - **[Fix]** Update dependencies.
