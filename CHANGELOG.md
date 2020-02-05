@@ -1,3 +1,8 @@
+# Next
+
+- **[Breaking change]** Update to `swf-types@0.11`.
+- **[Fix]** Update dependencies.
+
 # 0.10.0 (2020-01-16)
 
 - **[Breaking change]** Refactor consumer API. The library now exports a function named

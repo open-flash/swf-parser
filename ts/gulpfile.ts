@@ -45,7 +45,6 @@ const lib: LibTarget = {
       tag: options.next !== undefined ? "next" : "latest",
     },
   },
-  customTypingsDir: "src/custom-typings",
   tscOptions: {
     declaration: true,
     skipLibCheck: true,
@@ -68,7 +67,6 @@ const test: MochaTarget = {
   name: "test",
   srcDir: "src",
   scripts: ["test/**/*.ts", "lib/**/*.ts"],
-  customTypingsDir: "src/custom-typings",
   tscOptions: {
     skipLibCheck: true,
   },
@@ -84,7 +82,6 @@ const main: NodeTarget = {
   scripts: ["main/**/*.ts", "lib/**/*.ts"],
   tsconfigJson: "src/main/tsconfig.json",
   mainModule: "main/main",
-  customTypingsDir: "src/custom-typings",
   tscOptions: {
     skipLibCheck: true,
   },

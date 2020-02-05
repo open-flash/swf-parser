@@ -21,14 +21,14 @@ path = "src/lib.rs"
 [dependencies]
 half = "^1.4.0"
 inflate = "^0.4.5"
-lzma-rs = "^0.1.1"
-memchr = "^2.2.0"
-nom = "^5.0.0"
+lzma-rs = "^0.1.2"
+memchr = "^2.3.0"
+nom = "^5.1.0"
 swf-fixed = "^0.1.4"
-swf-types = "^0.10.0"
+swf-types = "^0.11.0"
 
 [dev-dependencies]
-serde = "^1.0.102"
+serde = "^1.0.104"
 serde_json_v8 = "^0.0.1"
 test-generator = "^0.3.0"
 

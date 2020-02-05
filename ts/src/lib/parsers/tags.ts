@@ -27,6 +27,7 @@ import {
 import { ButtonCondAction } from "swf-types/button/button-cond-action";
 import { ButtonRecord } from "swf-types/button/button-record";
 import { ButtonSound } from "swf-types/button/button-sound";
+import { AbcHeader } from "swf-types/control/abc-header";
 import { ImageType } from "swf-types/image-type";
 import { MorphShape } from "swf-types/morph-shape";
 import { AudioCodingFormat } from "swf-types/sound/audio-coding-format";
@@ -319,6 +320,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, swfVersion
         return parsePlaceObject3(byteStream, swfVersion);
       case 71:
         return parseImportAssets2(byteStream);
+      case 72:
+        return parseDoAbc(byteStream, false);
       case 73:
         return parseDefineFontAlignZones(byteStream);
       case 74:
@@ -332,7 +335,7 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, swfVersion
       case 78:
         return parseDefineScalingGrid(byteStream);
       case 82:
-        return parseDoAbc(byteStream);
+        return parseDoAbc(byteStream, true);
       case 83:
         return parseDefineShape4(byteStream);
       case 84:
@@ -393,7 +396,7 @@ export function parseDefineBits(byteStream: ReadableByteStream, swfVersion: Uint
     throw new Incident("UnknownBitmapType");
   }
 
-  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType: "image/x-partial-jpeg", data};
+  return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType: "image/x-swf-partial-jpeg", data};
 }
 
 export function parseDefineBitsJpeg2(byteStream: ReadableByteStream, swfVersion: Uint8): tags.DefineBitmap {
@@ -433,7 +436,7 @@ export function parseDefineBitsJpeg3(byteStream: ReadableByteStream, swfVersion:
     mediaType = "image/jpeg";
     imageDimensions = getJpegImageDimensions(new ReadableStream(data));
     if (byteStream.available() > 0) {
-      mediaType = "image/x-ajpeg";
+      mediaType = "image/x-swf-jpeg3";
       byteStream.bytePos = bytePos;
       data = byteStream.tailBytes();
     }
@@ -464,7 +467,7 @@ export function parseDefineBitsJpeg4(byteStream: ReadableByteStream): tags.Defin
 
   if (testImageStart(data, JPEG_START)) {
     imageDimensions = getJpegImageDimensions(new ReadableStream(data));
-    mediaType = "image/x-ajpegd";
+    mediaType = "image/x-swf-jpeg4";
     byteStream.bytePos = bytePos;
     data = byteStream.tailBytes();
   } else if (testImageStart(data, PNG_START)) {
@@ -481,16 +484,16 @@ export function parseDefineBitsJpeg4(byteStream: ReadableByteStream): tags.Defin
 }
 
 export function parseDefineBitsLossless(byteStream: ReadableByteStream): tags.DefineBitmap {
-  return parseDefineBitsLosslessAny(byteStream, "image/x-swf-bmp");
+  return parseDefineBitsLosslessAny(byteStream, "image/x-swf-lossless1");
 }
 
 export function parseDefineBitsLossless2(byteStream: ReadableByteStream): tags.DefineBitmap {
-  return parseDefineBitsLosslessAny(byteStream, "image/x-swf-abmp");
+  return parseDefineBitsLosslessAny(byteStream, "image/x-swf-lossless2");
 }
 
 function parseDefineBitsLosslessAny(
   byteStream: ReadableByteStream,
-  mediaType: "image/x-swf-abmp" | "image/x-swf-bmp",
+  mediaType: "image/x-swf-lossless1" | "image/x-swf-lossless2",
 ): tags.DefineBitmap {
   const id: Uint16 = byteStream.readUint16LE();
 
@@ -587,7 +590,7 @@ export function parseDefineEditText(byteStream: ReadableByteStream): tags.Define
   // TODO: Assert that !(hasFont && hasFontClass) (mutual exclusion)
 
   const fontId: Uint16 | undefined = hasFont ? byteStream.readUint16LE() : undefined;
-  const fontClass: string | undefined = hasFontClass ? byteStream.readNulTerminatedUtf8() : undefined;
+  const fontClass: string | undefined = hasFontClass ? byteStream.readNulUtf8() : undefined;
   const fontSize: Uint16 | undefined = (hasFont || hasFontClass) ? byteStream.readUint16LE() : undefined;
   const color: StraightSRgba8 | undefined = hasColor ? parseStraightSRgba8(byteStream) : undefined;
   const maxLength: UintSize | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
@@ -596,9 +599,9 @@ export function parseDefineEditText(byteStream: ReadableByteStream): tags.Define
   const marginRight: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const indent: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const leading: Sint16 = hasLayout ? byteStream.readSint16LE() : 0;
-  const rawVariableName: string = byteStream.readNulTerminatedUtf8();
+  const rawVariableName: string = byteStream.readNulUtf8();
   const variableName: string | undefined = rawVariableName.length > 0 ? rawVariableName : undefined;
-  const text: string | undefined = hasText ? byteStream.readNulTerminatedUtf8() : undefined;
+  const text: string | undefined = hasText ? byteStream.readNulUtf8() : undefined;
 
   return {
     type: TagType.DefineDynamicText,
@@ -749,7 +752,7 @@ export function parseDefineFont4(byteStream: ReadableByteStream): tags.DefineCff
   const hasData: boolean = (flags & (1 << 2)) !== 0;
   // Bits [3, 7] are reserved
 
-  const fontName: string = byteStream.readNulTerminatedUtf8();
+  const fontName: string = byteStream.readNulUtf8();
 
   const data: Uint8Array | undefined = hasData ? byteStream.tailBytes() : undefined;
 
@@ -840,8 +843,8 @@ function parseDefineFontInfoAny(byteStream: ReadableByteStream, version: FontInf
 
 export function parseDefineFontName(byteStream: ReadableByteStream): tags.DefineFontName {
   const fontId: Uint16 = byteStream.readUint16LE();
-  const name: string = byteStream.readNulTerminatedUtf8();
-  const copyright: string = byteStream.readNulTerminatedUtf8();
+  const name: string = byteStream.readNulUtf8();
+  const copyright: string = byteStream.readNulUtf8();
   return {type: TagType.DefineFontName, fontId, name, copyright};
 }
 
@@ -907,14 +910,14 @@ export function parseDefineSceneAndFrameLabelData(byteStream: ReadableByteStream
   const scenes: Scene[] = [];
   for (let i: number = 0; i < sceneCount; i++) {
     const offset: number = byteStream.readUint32Leb128();
-    const name: string = byteStream.readNulTerminatedUtf8();
+    const name: string = byteStream.readNulUtf8();
     scenes.push({offset, name});
   }
   const labelCount: Uint32 = byteStream.readUint32Leb128();
   const labels: Label[] = [];
   for (let i: number = 0; i < labelCount; i++) {
     const frame: number = byteStream.readUint32Leb128();
-    const name: string = byteStream.readNulTerminatedUtf8();
+    const name: string = byteStream.readNulUtf8();
     labels.push({frame, name});
   }
 
@@ -1037,11 +1040,15 @@ export function parseDefineVideoStream(byteStream: ReadableByteStream): tags.Def
   };
 }
 
-export function parseDoAbc(byteStream: ReadableByteStream): tags.DoAbc {
-  const flags: Uint32 = byteStream.readUint32LE();
-  const name: string = byteStream.readNulTerminatedUtf8();
+export function parseDoAbc(byteStream: ReadableByteStream, hasHeader: boolean): tags.DoAbc {
+  let header: AbcHeader | undefined;
+  if (hasHeader) {
+    const flags: Uint32 = byteStream.readUint32LE();
+    const name: string = byteStream.readNulUtf8();
+    header = {flags, name};
+  }
   const data: Uint8Array = Uint8Array.from(byteStream.tailBytes());
-  return {type: TagType.DoAbc, flags, name, data};
+  return {type: TagType.DoAbc, header, data};
 }
 
 export function parseDoAction(byteStream: ReadableByteStream): tags.DoAction {
@@ -1056,13 +1063,13 @@ export function parseDoInitAction(byteStream: ReadableByteStream): tags.DoInitAc
 }
 
 export function parseEnableDebugger(byteStream: ReadableByteStream): tags.EnableDebugger {
-  const password: string = byteStream.readNulTerminatedUtf8();
+  const password: string = byteStream.readNulUtf8();
   return {type: TagType.EnableDebugger, password};
 }
 
 export function parseEnableDebugger2(byteStream: ReadableByteStream): tags.EnableDebugger {
   byteStream.skip(2);
-  const password: string = byteStream.readNulTerminatedUtf8();
+  const password: string = byteStream.readNulUtf8();
   return {type: TagType.EnableDebugger, password};
 }
 
@@ -1079,7 +1086,7 @@ export function parseExportAssets(byteStream: ReadableByteStream): tags.ExportAs
   const assets: NamedId[] = [];
   for (let i: UintSize = 0; i < assetCount; i++) {
     const id: Uint16 = byteStream.readUint16LE();
-    const name: string = byteStream.readNulTerminatedUtf8();
+    const name: string = byteStream.readNulUtf8();
     assets.push({id, name});
   }
   return {
@@ -1104,7 +1111,7 @@ export function parseFileAttributes(byteStream: ReadableByteStream): tags.FileAt
 }
 
 export function parseFrameLabel(byteStream: ReadableByteStream): tags.FrameLabel {
-  const name: string = byteStream.readNulTerminatedUtf8();
+  const name: string = byteStream.readNulUtf8();
   // The isAnchor was introduced in SWF6, check version before reading?
   const isAnchor: boolean = byteStream.available() > 0 && byteStream.readUint8() !== 0;
   return {
@@ -1115,12 +1122,12 @@ export function parseFrameLabel(byteStream: ReadableByteStream): tags.FrameLabel
 }
 
 export function parseImportAssets(byteStream: ReadableByteStream): tags.ImportAssets {
-  const url: string = byteStream.readNulTerminatedUtf8();
+  const url: string = byteStream.readNulUtf8();
   const assetCount: UintSize = byteStream.readUint16LE();
   const assets: NamedId[] = [];
   for (let i: number = 0; i < assetCount; i++) {
     const id: Uint16 = byteStream.readUint16LE();
-    const name: string = byteStream.readNulTerminatedUtf8();
+    const name: string = byteStream.readNulUtf8();
     assets.push({id, name});
   }
   return {
@@ -1131,13 +1138,13 @@ export function parseImportAssets(byteStream: ReadableByteStream): tags.ImportAs
 }
 
 export function parseImportAssets2(byteStream: ReadableByteStream): tags.ImportAssets {
-  const url: string = byteStream.readNulTerminatedUtf8();
+  const url: string = byteStream.readNulUtf8();
   byteStream.skip(2);
   const assetCount: UintSize = byteStream.readUint16LE();
   const assets: NamedId[] = [];
   for (let i: number = 0; i < assetCount; i++) {
     const id: Uint16 = byteStream.readUint16LE();
-    const name: string = byteStream.readNulTerminatedUtf8();
+    const name: string = byteStream.readNulUtf8();
     assets.push({id, name});
   }
   return {
@@ -1148,7 +1155,7 @@ export function parseImportAssets2(byteStream: ReadableByteStream): tags.ImportA
 }
 
 export function parseMetadata(byteStream: ReadableByteStream): tags.Metadata {
-  return {type: TagType.Metadata, metadata: byteStream.readNulTerminatedUtf8()};
+  return {type: TagType.Metadata, metadata: byteStream.readNulUtf8()};
 }
 
 export function parsePlaceObject(byteStream: ReadableByteStream): tags.PlaceObject {
@@ -1198,7 +1205,7 @@ export function parsePlaceObject2(byteStream: ReadableByteStream, swfVersion: Ui
     ? parseColorTransformWithAlpha(byteStream)
     : undefined;
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
-  const name: string | undefined = hasName ? byteStream.readNulTerminatedUtf8() : undefined;
+  const name: string | undefined = hasName ? byteStream.readNulUtf8() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
   const clipActions: ClipAction[] | undefined = hasClipActions
     ? parseClipActionString(byteStream, swfVersion >= 6)
@@ -1243,7 +1250,7 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
   // Skip bit 15
   const depth: Uint16 = byteStream.readUint16LE();
   const className: string | undefined = hasClassName || (hasImage && hasCharacterId)
-    ? byteStream.readNulTerminatedUtf8()
+    ? byteStream.readNulUtf8()
     : undefined;
   const characterId: Uint16 | undefined = hasCharacterId ? byteStream.readUint16LE() : undefined;
   const matrix: Matrix | undefined = hasMatrix ? parseMatrix(byteStream) : undefined;
@@ -1251,7 +1258,7 @@ export function parsePlaceObject3(byteStream: ReadableByteStream, swfVersion: Ui
     ? parseColorTransformWithAlpha(byteStream)
     : undefined;
   const ratio: Uint16 | undefined = hasRatio ? byteStream.readUint16LE() : undefined;
-  const name: string | undefined = hasName ? byteStream.readNulTerminatedUtf8() : undefined;
+  const name: string | undefined = hasName ? byteStream.readNulUtf8() : undefined;
   const clipDepth: Uint16 | undefined = hasClipDepth ? byteStream.readUint16LE() : undefined;
   const filters: Filter[] | undefined = hasFilters ? parseFilterList(byteStream) : undefined;
   const blendMode: BlendMode | undefined = hasBlendMode ? parseBlendMode(byteStream) : undefined;
@@ -1372,7 +1379,7 @@ export function parseStartSound(byteStream: ReadableByteStream): tags.StartSound
 }
 
 export function parseStartSound2(byteStream: ReadableByteStream): tags.StartSound2 {
-  const soundClassName: string = byteStream.readNulTerminatedUtf8();
+  const soundClassName: string = byteStream.readNulUtf8();
   const soundInfo: SoundInfo = parseSoundInfo(byteStream);
   return {type: TagType.StartSound2, soundClassName, soundInfo};
 }
@@ -1382,7 +1389,7 @@ export function parseSymbolClass(byteStream: ReadableByteStream): tags.SymbolCla
   const symbols: NamedId[] = [];
   for (let i: UintSize = 0; i < symbolCount; i++) {
     const id: Uint16 = byteStream.readUint16LE();
-    const name: string = byteStream.readNulTerminatedUtf8();
+    const name: string = byteStream.readNulUtf8();
     symbols.push({id, name});
   }
   return {

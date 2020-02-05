@@ -5,21 +5,21 @@ use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
 use swf_types as ast;
 
-pub fn parse_movie(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
+pub fn parse_swf(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
   use ::std::io::Write;
 
   let (input, signature) = parse_swf_signature(input)?;
   match signature.compression_method {
-    ast::CompressionMethod::None => parse_movie_payload(input, signature.swf_version),
+    ast::CompressionMethod::None => parse_movie(input, signature.swf_version),
     ast::CompressionMethod::Deflate => {
       let mut decoder = ::inflate::InflateWriter::from_zlib(Vec::new());
       decoder.write_all(input).unwrap();
       let payload = decoder.finish().unwrap();
 
-      match parse_movie_payload(&payload[..], signature.swf_version) {
+      match parse_movie(&payload[..], signature.swf_version) {
         Ok((_, movie)) => Ok((&[][..], movie)),
-        Err(::nom::Err::Error((_, e))) => Err(::nom::Err::Error((&[][..], e))),
-        Err(::nom::Err::Failure((_, e))) => Err(::nom::Err::Failure((&[][..], e))),
+        Err(::nom::Err::Error((_, e))) => Err(::nom::Err::Error((&[], e))),
+        Err(::nom::Err::Failure((_, e))) => Err(::nom::Err::Failure((&[], e))),
         Err(::nom::Err::Incomplete(n)) => Err(::nom::Err::Incomplete(n)),
       }
     }
@@ -71,14 +71,14 @@ pub fn parse_header(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Head
   ))
 }
 
-pub fn parse_movie_payload(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
+pub(crate) fn parse_movie(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
   let (input, header) = parse_header(input, swf_version)?;
   let (input, tags) = parse_tag_block_string(input, swf_version)?;
 
   Ok((input, ast::Movie { header, tags }))
 }
 
-pub fn parse_tag_block_string(mut input: &[u8], swf_version: u8) -> NomResult<&[u8], Vec<ast::Tag>> {
+pub(crate) fn parse_tag_block_string(mut input: &[u8], swf_version: u8) -> NomResult<&[u8], Vec<ast::Tag>> {
   let mut result: Vec<ast::Tag> = Vec::new();
   loop {
     input = match parse_tag(input, swf_version) {

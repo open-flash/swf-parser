@@ -33,28 +33,28 @@
     "start": "node build/main/main/main.js"
   },
   "dependencies": {
-    "@open-flash/stream": "^0.2.1",
+    "@open-flash/stream": "^0.3.0",
     "@types/pako": "^1.0.1",
     "incident": "^3.2.0",
-    "pako": "^1.0.10",
+    "pako": "^1.0.11",
     "semantic-types": "^0.1.1",
-    "swf-types": "^0.10.0"
+    "swf-types": "^0.11.0"
   },
   "devDependencies": {
-    "@types/chai": "^4.2.7",
+    "@types/chai": "^4.2.8",
     "@types/gulp": "^4.0.6",
     "@types/minimist": "^1.2.0",
-    "@types/mocha": "^5.2.7",
-    "@types/node": "^13.1.7",
+    "@types/mocha": "^7.0.1",
+    "@types/node": "^13.7.0",
     "chai": "^4.2.0",
     "gulp": "^4.0.2",
     "gulp-cli": "^2.2.0",
     "kryo": "^0.8.1",
     "minimist": "^1.2.0",
     "ts-node": "^8.6.2",
-    "tslint": "^5.20.1",
-    "turbo-gulp": "^0.21.1",
-    "typescript": "^3.7.4"
+    "tslint": "^6.0.0",
+    "turbo-gulp": "^0.22.1",
+    "typescript": "^3.7.5"
   },
   "c88": {
     "match": [

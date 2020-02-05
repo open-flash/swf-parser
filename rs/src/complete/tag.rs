@@ -30,7 +30,7 @@ use nom::IResult as NomResult;
 use std::convert::TryFrom;
 use swf_types as ast;
 use swf_types::text::FontAlignmentZone;
-use swf_types::{ButtonCondAction, Glyph};
+use swf_types::{AbcHeader, ButtonCondAction, Glyph};
 
 /// Parses the tag at the start of `input`.
 ///
@@ -107,13 +107,14 @@ pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> ast::T
     69 => map(parse_file_attributes_tag, ast::Tag::FileAttributes)(input),
     70 => map(|i| parse_place_object3(i, swf_version), ast::Tag::PlaceObject)(input),
     71 => map(parse_import_assets2, ast::Tag::ImportAssets)(input),
+    72 => map(|i| parse_do_abc(i, false), ast::Tag::DoAbc)(input),
     73 => map(parse_define_font_align_zones, ast::Tag::DefineFontAlignZones)(input),
     74 => map(parse_csm_text_settings, ast::Tag::CsmTextSettings)(input),
     75 => map(parse_define_font3, ast::Tag::DefineFont)(input),
     76 => map(parse_symbol_class, ast::Tag::SymbolClass)(input),
     77 => map(parse_metadata, ast::Tag::Metadata)(input),
     78 => map(parse_define_scaling_grid, ast::Tag::DefineScalingGrid)(input),
-    82 => map(parse_do_abc, ast::Tag::DoAbc)(input),
+    82 => map(|i| parse_do_abc(i, true), ast::Tag::DoAbc)(input),
     83 => map(parse_define_shape4, ast::Tag::DefineShape)(input),
     84 => map(parse_define_morph_shape2, ast::Tag::DefineMorphShape)(input),
     86 => map(
@@ -183,7 +184,7 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast:
         id,
         width: image_dimensions.width as u16,
         height: image_dimensions.height as u16,
-        media_type: ast::ImageType::PartialJpeg,
+        media_type: ast::ImageType::SwfPartialJpeg,
         data,
       },
     ))
@@ -310,7 +311,7 @@ pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> NomResult<&[u8]
     Ok(SniffedImageType::Jpeg) => {
       let dimensions = get_jpeg_image_dimensions(data);
       if input.len() > data_len {
-        (ast::ImageType::Ajpeg, dimensions, ajpeg_data)
+        (ast::ImageType::SwfJpeg3, dimensions, ajpeg_data)
       } else {
         (ast::ImageType::Jpeg, dimensions, data)
       }
@@ -347,7 +348,7 @@ pub fn parse_define_bits_jpeg4(input: &[u8]) -> NomResult<&[u8], ast::tags::Defi
   let (_, data) = take(data_len)(input)?;
 
   let (media_type, dimensions, img_data) = match sniff_image_type(data, false) {
-    Ok(SniffedImageType::Jpeg) => (ast::ImageType::Ajpegd, get_jpeg_image_dimensions(data), djpeg_data),
+    Ok(SniffedImageType::Jpeg) => (ast::ImageType::SwfJpeg4, get_jpeg_image_dimensions(data), djpeg_data),
     Ok(SniffedImageType::Png) => (ast::ImageType::Png, get_png_image_dimensions(data), data),
     Ok(SniffedImageType::Gif) => (ast::ImageType::Gif, get_gif_image_dimensions(data), data),
     Err(()) => {
@@ -371,11 +372,11 @@ pub fn parse_define_bits_jpeg4(input: &[u8]) -> NomResult<&[u8], ast::tags::Defi
 }
 
 pub fn parse_define_bits_lossless(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBitmap> {
-  parse_define_bits_lossless_any(input, ast::ImageType::SwfBmp)
+  parse_define_bits_lossless_any(input, ast::ImageType::SwfLossless1)
 }
 
 pub fn parse_define_bits_lossless2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBitmap> {
-  parse_define_bits_lossless_any(input, ast::ImageType::SwfAbmp)
+  parse_define_bits_lossless_any(input, ast::ImageType::SwfLossless2)
 }
 
 fn parse_define_bits_lossless_any(
@@ -387,7 +388,7 @@ fn parse_define_bits_lossless_any(
   let (input, _) = skip(1usize)(input)?; // BitmapFormat
   let (input, width) = parse_le_u16(input)?;
   let (_, height) = parse_le_u16(input)?;
-  let input: &[u8] = &[][..];
+  let input: &[u8] = &[];
 
   Ok((
     input,
@@ -815,16 +816,16 @@ pub fn parse_define_scene_and_frame_label_data_tag(
   let (input, label_count) = map(parse_leb128_u32, |x| usize::try_from(x).unwrap())(input)?;
   let (input, labels) = count(parse_label, label_count)(input)?;
 
-  fn parse_scene(input: &[u8]) -> NomResult<&[u8], ast::tags::Scene> {
+  fn parse_scene(input: &[u8]) -> NomResult<&[u8], ast::control::Scene> {
     let (input, offset) = parse_leb128_u32(input)?;
     let (input, name) = parse_c_string(input)?;
-    Ok((input, ast::tags::Scene { offset, name }))
+    Ok((input, ast::control::Scene { offset, name }))
   }
 
-  fn parse_label(input: &[u8]) -> NomResult<&[u8], ast::tags::Label> {
+  fn parse_label(input: &[u8]) -> NomResult<&[u8], ast::control::Label> {
     let (input, frame) = parse_leb128_u32(input)?;
     let (input, name) = parse_c_string(input)?;
-    Ok((input, ast::tags::Label { frame, name }))
+    Ok((input, ast::control::Label { frame, name }))
   }
 
   Ok((input, ast::tags::DefineSceneAndFrameLabelData { scenes, labels }))
@@ -991,11 +992,16 @@ pub fn parse_define_video_stream(input: &[u8]) -> NomResult<&[u8], ast::tags::De
   ))
 }
 
-pub fn parse_do_abc(input: &[u8]) -> NomResult<&[u8], ast::tags::DoAbc> {
-  let (input, flags) = parse_le_u32(input)?;
-  let (input, name) = parse_c_string(input)?;
+fn parse_do_abc(input: &[u8], has_header: bool) -> NomResult<&[u8], ast::tags::DoAbc> {
+  let (input, header) = if has_header {
+    let (input, flags) = parse_le_u32(input)?;
+    let (input, name) = parse_c_string(input)?;
+    (input, Some(AbcHeader { flags, name }))
+  } else {
+    (input, None)
+  };
   let (input, data) = parse_bytes(input)?;
-  Ok((input, ast::tags::DoAbc { flags, name, data }))
+  Ok((input, ast::tags::DoAbc { header, data }))
 }
 
 pub fn parse_do_action(input: &[u8]) -> NomResult<&[u8], ast::tags::DoAction> {

@@ -40,7 +40,7 @@ mod tests {
 
     let mut ser = serde_json_v8::Serializer::pretty(actual_ast_writer);
     actual_movie.serialize(&mut ser).expect("Failed to write actual AST");
-    ser.into_inner().write_all("\n".as_bytes()).unwrap();
+    ser.into_inner().write_all(b"\n").unwrap();
 
     // assert_eq!(remaining_input, &[] as &[u8]);
 
