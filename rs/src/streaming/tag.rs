@@ -28,9 +28,6 @@ pub(crate) enum StreamingTagError {
 /// In case of error, returns the original input and error description.
 pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], Option<ast::Tag>), StreamingTagError> {
   let base_input = input; // Keep original input to compute lengths.
-  if input.is_empty() {
-    return Err(StreamingTagError::IncompleteHeader);
-  }
   let (input, header) = match parse_tag_header(input) {
     Ok(ok) => ok,
     Err(_) => return Err(StreamingTagError::IncompleteHeader),
@@ -47,7 +44,7 @@ pub(crate) fn parse_tag(input: &[u8], swf_version: u8) -> Result<(&[u8], Option<
     let tag_len = header_len + body_len;
     return Err(StreamingTagError::IncompleteTag(tag_len));
   }
-  let (input, tag_body) = (&input[body_len..], &input[..body_len]);
+  let (tag_body, input) = input.split_at(body_len);
   let tag = parse_tag_body(tag_body, header.code, swf_version);
   Ok((input, Some(tag)))
 }

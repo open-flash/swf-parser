@@ -12,7 +12,7 @@ mod tests {
   use ::swf_types::Movie;
   use ::test_generator::test_resources;
   use nom::IResult as NomResult;
-  use std::io::{Read, Write};
+  use std::io::Write;
   use std::path::Path;
 
   #[test_resources("../tests/movies/*/")]
@@ -28,9 +28,7 @@ mod tests {
       .to_str()
       .expect("Failed to retrieve sample name");
     let movie_path = path.join("main.swf");
-    let mut movie_file = ::std::fs::File::open(movie_path).expect("Failed to open movie");
-    let mut movie_bytes: Vec<u8> = Vec::new();
-    movie_file.read_to_end(&mut movie_bytes).expect("Failed to read movie");
+    let movie_bytes: Vec<u8> = ::std::fs::read(movie_path).expect("Failed to read movie");
 
     let actual_movie = parse_swf(&movie_bytes).expect("Failed to parse movie");
 
