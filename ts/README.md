@@ -16,15 +16,11 @@ Converts bytes to [`swf-types` movies][swf-types].
 
 ```typescript
 import fs from "fs";
-import { Movie } from "swf-types/movie";
+import { Movie } from "swf-types";
 import { parseSwf } from "swf-parser";
 
-function main(): void {
-  const bytes: Uint8Array = fs.readFileSync("movie.swf");
-  const movie: Movie = parseSwf(bytes);
-}
-
-main();
+const bytes: Uint8Array = fs.readFileSync("movie.swf");
+const movie: Movie = parseSwf(bytes);
 ```
 
 ## Contributing
