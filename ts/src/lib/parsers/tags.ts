@@ -1,25 +1,50 @@
 import stream, { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Float32, Sint16, Uint16, Uint2, Uint3, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
+import { Float32, Sint16, Uint2, Uint3, Uint4, Uint8, Uint16, Uint32, UintSize } from "semantic-types";
+import { BlendMode } from "swf-types/lib/blend-mode.js";
 import { ButtonCondAction } from "swf-types/lib/button/button-cond-action.js";
 import { ButtonRecord } from "swf-types/lib/button/button-record.js";
 import { ButtonSound } from "swf-types/lib/button/button-sound.js";
+import { ClipAction } from "swf-types/lib/clip-action.js";
+import { ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
+import { ColorTransform } from "swf-types/lib/color-transform.js";
 import { AbcHeader } from "swf-types/lib/control/abc-header.js";
+import { Label } from "swf-types/lib/control/label.js";
+import { Scene } from "swf-types/lib/control/scene.js";
+import { Filter } from "swf-types/lib/filter.js";
+import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
+import { Glyph } from "swf-types/lib/glyph.js";
 import { ImageType } from "swf-types/lib/image-type.js";
+import { LanguageCode } from "swf-types/lib/language-code.js";
+import { Matrix } from "swf-types/lib/matrix.js";
 import { MorphShape } from "swf-types/lib/morph-shape.js";
+import { NamedId } from "swf-types/lib/named-id.js";
+import { Rect } from "swf-types/lib/rect.js";
+import { Shape } from "swf-types/lib/shape.js";
 import { AudioCodingFormat } from "swf-types/lib/sound/audio-coding-format.js";
 import { SoundInfo } from "swf-types/lib/sound/sound-info.js";
 import { SoundRate } from "swf-types/lib/sound/sound-rate.js";
 import { SoundSize } from "swf-types/lib/sound/sound-size.js";
 import { SoundType } from "swf-types/lib/sound/sound-type.js";
 import { SpriteTag } from "swf-types/lib/sprite-tag.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
 import { TagHeader } from "swf-types/lib/tag-header.js";
-import { TextAlignment } from "swf-types/lib/text/text-alignment.js";
+import { Tag } from "swf-types/lib/tag.js";
+import { TagType } from "swf-types/lib/tags/_type.js";
+import * as tags from "swf-types/lib/tags/index.js";
+import { CsmTableHint } from "swf-types/lib/text/csm-table-hint.js";
 import { EmSquareSize } from "swf-types/lib/text/em-square-size.js";
+import { FontAlignmentZone } from "swf-types/lib/text/font-alignment-zone.js";
+import { FontLayout } from "swf-types/lib/text/font-layout.js";
+import { GridFitting } from "swf-types/lib/text/grid-fitting.js";
+import { TextAlignment } from "swf-types/lib/text/text-alignment.js";
+import { TextRecord } from "swf-types/lib/text/text-record.js";
+import { TextRenderer } from "swf-types/lib/text/text-renderer.js";
 import { VideoCodec } from "swf-types/lib/video/video-codec.js";
 import { VideoDeblocking } from "swf-types/lib/video/video-deblocking.js";
-import { createIncompleteTagError } from "../errors/incomplete-tag.js";
+
 import { createIncompleteTagHeaderError } from "../errors/incomplete-tag-header.js";
+import { createIncompleteTagError } from "../errors/incomplete-tag.js";
 import {
   parseBlockCString,
   parseColorTransform,
@@ -65,36 +90,13 @@ import {
   TextVersion,
 } from "./text.js";
 import { getVideoDeblockingFromCode, parseVideoCodec } from "./video.js";
-import { Tag } from "swf-types/lib/tag.js";
-import { TagType } from "swf-types/lib/tags/_type.js";
-import { GridFitting } from "swf-types/lib/text/grid-fitting.js";
-import { TextRenderer } from "swf-types/lib/text/text-renderer.js";
-import * as tags from "swf-types/lib/tags/index.js";
-import { ColorTransform } from "swf-types/lib/color-transform.js";
-import { Rect } from "swf-types/lib/rect.js";
-import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
-import { Glyph } from "swf-types/lib/glyph.js";
-import { LanguageCode } from "swf-types/lib/language-code.js";
-import { CsmTableHint } from "swf-types/lib/text/csm-table-hint.js";
-import { FontLayout } from "swf-types/lib/text/font-layout.js";
-import { FontAlignmentZone } from "swf-types/lib/text/font-alignment-zone.js";
-import { TextRecord } from "swf-types/lib/text/text-record.js";
-import { Scene } from "swf-types/lib/control/scene.js";
-import { Label } from "swf-types/lib/control/label.js";
-import { Shape } from "swf-types/lib/shape.js";
-import { Matrix } from "swf-types/lib/matrix.js";
-import { NamedId } from "swf-types/lib/named-id.js";
-import { ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
-import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
-import { ClipAction } from "swf-types/lib/clip-action.js";
-import { Filter } from "swf-types/lib/filter.js";
-import { BlendMode } from "swf-types/lib/blend-mode.js";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
  */
 export function parseTagBlockString(byteStream: ReadableByteStream, swfVersion: Uint8): Tag[] {
   const tags: Tag[] = [];
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const tag: Tag | undefined = parseTag(byteStream, swfVersion);
     if (tag === undefined) {

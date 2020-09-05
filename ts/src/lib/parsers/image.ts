@@ -1,6 +1,6 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Uint16, Uint32, Uint8, UintSize } from "semantic-types";
+import { Uint8, Uint16, Uint32, UintSize } from "semantic-types";
 
 export interface ImageDimensions {
   width: number;

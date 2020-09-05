@@ -1,17 +1,18 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Float32, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
-import * as filters from "swf-types/lib/filters/index.js";
-import { parseStraightSRgba8 } from "./basic-data-types.js";
+import { Float32, Uint4, Uint5, Uint8, Uint32, UintSize } from "semantic-types";
 import { BlendMode } from "swf-types/lib/blend-mode.js";
 import { ClipAction } from "swf-types/lib/clip-action.js";
 import { ClipEventFlags } from "swf-types/lib/clip-event-flags.js";
-import { Filter } from "swf-types/lib/filter.js";
-import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
-import { Sfixed16P16 } from "swf-types/lib/fixed-point/sfixed16p16.js";
-import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
-import { FilterType } from "swf-types/lib/filters/_type.js";
 import { ColorStop } from "swf-types/lib/color-stop.js";
+import { Filter } from "swf-types/lib/filter.js";
+import { FilterType } from "swf-types/lib/filters/_type.js";
+import * as filters from "swf-types/lib/filters/index.js";
+import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
+import { Sfixed16P16 } from "swf-types/lib/fixed-point/sfixed16p16.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+
+import { parseStraightSRgba8 } from "./basic-data-types.js";
 
 export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {
   switch (byteStream.readUint8()) {
@@ -53,6 +54,7 @@ export function parseClipActionString(byteStream: ReadableByteStream, extendedEv
   byteStream.skip(2); // Reserved
   byteStream.skip(extendedEvents ? 4 : 2); // All events (union of the events)
   const result: ClipAction[] = [];
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const savedPos: UintSize = byteStream.bytePos;
     const peek: Uint32 = extendedEvents ? byteStream.readFloat32LE() : byteStream.readUint16LE();

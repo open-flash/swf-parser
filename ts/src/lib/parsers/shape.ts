@@ -1,26 +1,27 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Sint32, Uint16, Uint2, Uint5, Uint8, UintSize } from "semantic-types";
+import { Sint32, Uint2, Uint5, Uint8, Uint16, UintSize } from "semantic-types";
+import { CapStyle } from "swf-types/lib/cap-style.js";
+import { FillStyle } from "swf-types/lib/fill-style.js";
+import { FillStyleType } from "swf-types/lib/fill-styles/_type.js";
+import * as fillStyles from "swf-types/lib/fill-styles/index.js";
+import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
+import { Glyph } from "swf-types/lib/glyph.js";
+import { Gradient } from "swf-types/lib/gradient.js";
 import { JoinStyle } from "swf-types/lib/join-style.js";
+import { JoinStyleType } from "swf-types/lib/join-styles/_type.js";
+import { LineStyle } from "swf-types/lib/line-style.js";
+import { Matrix } from "swf-types/lib/matrix.js";
+import { ShapeRecord } from "swf-types/lib/shape-record.js";
+import { ShapeRecordType } from "swf-types/lib/shape-records/_type.js";
+import * as shapeRecords from "swf-types/lib/shape-records/index.js";
 import { ShapeStyles } from "swf-types/lib/shape-styles.js";
+import { Shape } from "swf-types/lib/shape.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { Vector2D } from "swf-types/lib/vector-2d.js";
+
 import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
 import { parseGradient } from "./gradient.js";
-import { Glyph } from "swf-types/lib/glyph.js";
-import { ShapeRecord } from "swf-types/lib/shape-record.js";
-import { Shape } from "swf-types/lib/shape.js";
-import { FillStyle } from "swf-types/lib/fill-style.js";
-import { LineStyle } from "swf-types/lib/line-style.js";
-import * as shapeRecords from "swf-types/lib/shape-records/index.js";
-import * as fillStyles from "swf-types/lib/fill-styles/index.js";
-import { ShapeRecordType } from "swf-types/lib/shape-records/_type.js";
-import { Vector2D } from "swf-types/lib/vector-2d.js";
-import { Matrix } from "swf-types/lib/matrix.js";
-import { FillStyleType } from "swf-types/lib/fill-styles/_type.js";
-import { Gradient } from "swf-types/lib/gradient.js";
-import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
-import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
-import { CapStyle } from "swf-types/lib/cap-style.js";
-import { JoinStyleType } from "swf-types/lib/join-styles/_type.js";
 
 export enum ShapeVersion {
   Shape1 = 1,
@@ -90,6 +91,7 @@ export function parseShapeRecordStringBits(
 ): ShapeRecord[] {
   const result: ShapeRecord[] = [];
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const bytePos: number = bitStream.bytePos;
     const bitPos: number = bitStream.bitPos;
@@ -111,6 +113,7 @@ export function parseShapeRecordStringBits(
       }
     } else {
       let styles: shapeRecords.StyleChange;
+      // eslint-disable-next-line prefer-const
       [styles, [fillBits, lineBits]] = parseStyleChangeBits(bitStream, fillBits, lineBits, shapeVersion);
       result.push(styles);
     }

@@ -1,21 +1,22 @@
 import stream, { ReadableByteStream } from "@open-flash/stream";
 import chai from "chai";
 import fs from "fs";
-import { $Uint32 } from "kryo/lib/integer.js";
 import { IoType } from "kryo";
+import { JSON_READER } from "kryo-json/lib/json-reader.js";
+import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
 import { Float64Type } from "kryo/lib/float64.js";
+import { $Uint32 } from "kryo/lib/integer.js";
 import sysPath from "path";
 import { $ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
 import { $Header } from "swf-types/lib/header.js";
 import { $Matrix } from "swf-types/lib/matrix.js";
 import { $Rect } from "swf-types/lib/rect.js";
 import { $SwfSignature } from "swf-types/lib/swf-signature.js";
+
 import { parseColorTransformWithAlpha, parseMatrix, parseRect } from "../lib/parsers/basic-data-types.js";
 import { parseHeader, parseSwfSignature } from "../lib/parsers/header.js";
 import meta from "./meta.js";
 import { readFile, readTextFile } from "./utils.js";
-import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
-import { JSON_READER } from "kryo-json/lib/json-reader.js";
 
 const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..");
 const SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "various");

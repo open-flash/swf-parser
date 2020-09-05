@@ -1,15 +1,16 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Uint16, Uint7, Uint8, UintSize } from "semantic-types";
+import { Uint7, Uint8, Uint16, UintSize } from "semantic-types";
 import { BlendMode } from "swf-types/lib/blend-mode.js";
-import { ButtonCond } from "swf-types/lib/button/button-cond.js";
 import { ButtonCondAction } from "swf-types/lib/button/button-cond-action.js";
+import { ButtonCond } from "swf-types/lib/button/button-cond.js";
 import { ButtonRecord } from "swf-types/lib/button/button-record.js";
 import { ButtonSound } from "swf-types/lib/button/button-sound.js";
 import { ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
 import { Filter } from "swf-types/lib/filter.js";
 import { Matrix } from "swf-types/lib/matrix.js";
 import { SoundInfo } from "swf-types/lib/sound/sound-info.js";
+
 import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
 import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types.js";
 import { parseBlendMode, parseFilterList } from "./display.js";
@@ -23,6 +24,7 @@ export enum ButtonVersion {
 export function parseButtonRecordString(byteStream: ReadableByteStream, buttonVersion: ButtonVersion): ButtonRecord[] {
   const result: ButtonRecord[] = [];
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (byteStream.available() === 0) {
       throw createIncompleteStreamError();

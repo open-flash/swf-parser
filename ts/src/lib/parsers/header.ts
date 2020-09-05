@@ -1,13 +1,14 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Uint16, Uint32, Uint8 } from "semantic-types";
-import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
-import { parseRect } from "./basic-data-types.js";
-import { SwfSignature } from "swf-types/lib/swf-signature.js";
+import { Uint8,Uint16, Uint32 } from "semantic-types";
 import { CompressionMethod } from "swf-types/lib/compression-method.js";
+import { Ufixed8P8 } from "swf-types/lib/fixed-point/ufixed8p8.js";
 import { Header } from "swf-types/lib/header.js";
 import { Rect } from "swf-types/lib/rect.js";
-import { Ufixed8P8 } from "swf-types/lib/fixed-point/ufixed8p8.js";
+import { SwfSignature } from "swf-types/lib/swf-signature.js";
+
+import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
+import { parseRect } from "./basic-data-types.js";
 
 const UPPER_C: number = "C".charCodeAt(0);
 const UPPER_F: number = "F".charCodeAt(0);

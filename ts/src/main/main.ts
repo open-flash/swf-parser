@@ -1,8 +1,9 @@
 import * as fs from "fs";
+import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
 import * as sysPath from "path";
 import { $Movie, Movie } from "swf-types/lib/movie.js";
+
 import { parseSwf } from "../lib/index.js";
-import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
 
 async function main(): Promise<void> {
   if (process.argv.length < 3) {

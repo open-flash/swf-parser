@@ -1,12 +1,13 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Float16, Sint16, SintSize, Uint16, Uint8, UintSize } from "semantic-types";
-import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
-import { parseGlyph } from "./shape.js";
+import { Float16, Sint16, SintSize, Uint8, Uint16, UintSize } from "semantic-types";
+import { Glyph } from "swf-types/lib/glyph.js";
 import { LanguageCode } from "swf-types/lib/language-code.js";
+import { Rect } from "swf-types/lib/rect.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
 import {CsmTableHint} from "swf-types/lib/text/csm-table-hint.js";
-import { FontAlignmentZone} from "swf-types/lib/text/font-alignment-zone.js";
 import { FontAlignmentZoneData} from "swf-types/lib/text/font-alignment-zone-data.js";
+import { FontAlignmentZone} from "swf-types/lib/text/font-alignment-zone.js";
 import { FontLayout } from "swf-types/lib/text/font-layout.js";
 import { GlyphEntry } from "swf-types/lib/text/glyph-entry.js";
 import { GridFitting } from "swf-types/lib/text/grid-fitting.js";
@@ -14,9 +15,9 @@ import { KerningRecord } from "swf-types/lib/text/kerning-record.js";
 import { TextAlignment } from "swf-types/lib/text/text-alignment.js";
 import { TextRecord } from "swf-types/lib/text/text-record.js";
 import { TextRenderer } from "swf-types/lib/text/text-renderer.js";
-import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
-import { Glyph } from "swf-types/lib/glyph.js";
-import { Rect } from "swf-types/lib/rect.js";
+
+import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
+import { parseGlyph } from "./shape.js";
 
 export enum FontVersion {
   // `Font1` is handled apart as `DefineGlyphFont`.

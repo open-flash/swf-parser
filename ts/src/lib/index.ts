@@ -1,6 +1,7 @@
 import stream from "@open-flash/stream";
 import { Uint8 } from "semantic-types";
 import * as swf from "swf-types";
+
 import { parseSwf as parseSwfStream } from "./parsers/movie.js";
 import { parseTag as parseTagStream } from "./parsers/tags.js";
 

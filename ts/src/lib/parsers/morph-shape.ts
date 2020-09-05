@@ -1,28 +1,29 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
-import { Sint32, Uint16, Uint2, Uint5, UintSize } from "semantic-types";
-import * as fillStyles from "swf-types/lib/fill-styles/index.js";
+import { Sint32, Uint2, Uint5, Uint16, UintSize } from "semantic-types";
 import { CapStyle } from "swf-types/lib/cap-style.js";
+import { FillStyleType } from "swf-types/lib/fill-styles/_type.js";
+import * as fillStyles from "swf-types/lib/fill-styles/index.js";
+import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
 import { JoinStyle } from "swf-types/lib/join-style.js";
 import { JoinStyleType } from "swf-types/lib/join-styles/_type.js";
 import { Matrix } from "swf-types/lib/matrix.js";
 import { MorphFillStyle } from "swf-types/lib/morph-fill-style.js";
 import { MorphGradient } from "swf-types/lib/morph-gradient.js";
 import { MorphLineStyle } from "swf-types/lib/morph-line-style.js";
-import { MorphShape } from "swf-types/lib/morph-shape.js";
 import { MorphShapeRecord } from "swf-types/lib/morph-shape-record.js";
 import { MorphShapeStyles } from "swf-types/lib/morph-shape-styles.js";
+import { MorphShape } from "swf-types/lib/morph-shape.js";
+import { ShapeRecordType } from "swf-types/lib/shape-records/_type.js";
+import { Edge } from "swf-types/lib/shape-records/edge.js";
 import { MorphEdge } from "swf-types/lib/shape-records/morph-edge.js";
 import { MorphStyleChange } from "swf-types/lib/shape-records/morph-style-change.js";
-import { Edge } from "swf-types/lib/shape-records/edge.js";
-import { ShapeRecordType } from "swf-types/lib/shape-records/_type.js";
 import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
 import { Vector2D } from "swf-types/lib/vector-2d.js";
+
 import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types.js";
 import { parseMorphGradient } from "./gradient.js";
 import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape.js";
-import { FillStyleType } from "swf-types/lib/fill-styles/_type.js";
-import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
 
 export enum MorphShapeVersion {
   MorphShape1 = 1,
@@ -96,6 +97,7 @@ export function parseMorphShapeStartRecordStringBits(
 ): MixedShapeRecord[] {
   const result: MixedShapeRecord[] = [];
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const bytePos: number = bitStream.bytePos;
     const bitPos: number = bitStream.bitPos;
@@ -117,6 +119,7 @@ export function parseMorphShapeStartRecordStringBits(
       }
     } else {
       let styles: MorphStyleChange;
+      // eslint-disable-next-line prefer-const
       [styles, [fillBits, lineBits]] = parseMorphStyleChangeBits(bitStream, fillBits, lineBits, morphShapeVersion);
       result.push(styles);
     }
@@ -177,6 +180,7 @@ export function parseMorphShapeEndRecordStringBits(
       }
       const startStyle: MorphStyleChange = startRecord;
       let styleChange: MorphStyleChange;
+      // eslint-disable-next-line prefer-const
       [styleChange, [fillBits, lineBits]] = parseMorphStyleChangeBits(bitStream, fillBits, lineBits, morphShapeVersion);
       if (styleChange.moveTo === undefined) {
         throw new incident.Incident("ExpectedMoveTo");
