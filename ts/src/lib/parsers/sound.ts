@@ -1,10 +1,10 @@
 import { ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Uint16, Uint2, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
-import { AudioCodingFormat } from "swf-types/sound/audio-coding-format";
-import { SoundEnvelope } from "swf-types/sound/sound-envelope";
-import { SoundInfo } from "swf-types/sound/sound-info";
-import { SoundRate } from "swf-types/sound/sound-rate";
+import { AudioCodingFormat } from "swf-types/lib/sound/audio-coding-format.js";
+import { SoundEnvelope } from "swf-types/lib/sound/sound-envelope.js";
+import { SoundInfo } from "swf-types/lib/sound/sound-info.js";
+import { SoundRate } from "swf-types/lib/sound/sound-rate.js";
 
 export function getSoundRateFromCode(soundRateCode: Uint2): SoundRate {
   switch (soundRateCode) {
@@ -17,7 +17,7 @@ export function getSoundRateFromCode(soundRateCode: Uint2): SoundRate {
     case 3:
       return 44000;
     default:
-      throw new Incident("UnexpectedSoundRateCode", {code: soundRateCode});
+      throw new incident.Incident("UnexpectedSoundRateCode", {code: soundRateCode});
   }
 }
 
@@ -40,7 +40,7 @@ export function getAudioCodingFormatFromCode(formatCode: Uint4): AudioCodingForm
     case 11:
       return AudioCodingFormat.Speex;
     default:
-      throw new Incident("UnexpectedFormatCode", {code: formatCode});
+      throw new incident.Incident("UnexpectedAudioCodingFormatCode", {code: formatCode});
   }
 }
 

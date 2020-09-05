@@ -1,8 +1,8 @@
 import * as fs from "fs";
-import { JsonValueWriter } from "kryo/writers/json-value";
 import * as sysPath from "path";
-import { $Movie, Movie } from "swf-types/movie";
-import { movieFromBytes } from "../lib";
+import { $Movie, Movie } from "swf-types/lib/movie.js";
+import { parseSwf } from "../lib/index.js";
+import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
 
 async function main(): Promise<void> {
   if (process.argv.length < 3) {
@@ -12,13 +12,12 @@ async function main(): Promise<void> {
   const filePath: string = process.argv[2];
   const absFilePath: string = sysPath.resolve(filePath);
   const bytes: Uint8Array = fs.readFileSync(absFilePath);
-  const movie: Movie = movieFromBytes(bytes);
-  console.log(JSON.stringify($Movie.write(new JsonValueWriter(), movie), null, 2));
+  const movie: Movie = parseSwf(bytes);
+  console.log(JSON.stringify($Movie.write(JSON_VALUE_WRITER, movie), null, 2));
 }
 
 main()
   .catch((err: Error): never => {
     console.error(err.stack);
     process.exit(1);
-    return undefined as never;
   });

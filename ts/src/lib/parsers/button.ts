@@ -1,19 +1,19 @@
 import { ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Uint16, Uint7, Uint8, UintSize } from "semantic-types";
-import { BlendMode } from "swf-types/blend-mode";
-import { ButtonCond } from "swf-types/button/button-cond";
-import { ButtonCondAction } from "swf-types/button/button-cond-action";
-import { ButtonRecord } from "swf-types/button/button-record";
-import { ButtonSound } from "swf-types/button/button-sound";
-import { ColorTransformWithAlpha } from "swf-types/color-transform-with-alpha";
-import { Filter } from "swf-types/filter";
-import { Matrix } from "swf-types/matrix";
-import { SoundInfo } from "swf-types/sound/sound-info";
-import { createIncompleteStreamError } from "../errors/incomplete-stream";
-import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types";
-import { parseBlendMode, parseFilterList } from "./display";
-import { parseSoundInfo } from "./sound";
+import { BlendMode } from "swf-types/lib/blend-mode.js";
+import { ButtonCond } from "swf-types/lib/button/button-cond.js";
+import { ButtonCondAction } from "swf-types/lib/button/button-cond-action.js";
+import { ButtonRecord } from "swf-types/lib/button/button-record.js";
+import { ButtonSound } from "swf-types/lib/button/button-sound.js";
+import { ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
+import { Filter } from "swf-types/lib/filter.js";
+import { Matrix } from "swf-types/lib/matrix.js";
+import { SoundInfo } from "swf-types/lib/sound/sound-info.js";
+import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
+import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types.js";
+import { parseBlendMode, parseFilterList } from "./display.js";
+import { parseSoundInfo } from "./sound.js";
 
 export enum ButtonVersion {
   Button1 = 1,
@@ -127,7 +127,7 @@ export function parseButtonCond(byteStream: ReadableByteStream): ButtonCond {
     || (13 <= keyPress && keyPress <= 19)
     || (32 <= keyPress && keyPress <= 126)
   )) {
-    throw new Incident("InvalidKeyCode", {code: keyPress});
+    throw new incident.Incident("InvalidKeyCode", {code: keyPress});
   }
 
   return {

@@ -1,60 +1,68 @@
 {
   "name": "swf-parser",
   "version": "0.11.0",
-  "description": "SWF parser loosely based on Shumway",
-  "main": "dist/lib/index.js",
-  "types": "dist/lib/index.d.ts",
-  "private": true,
-  "keywords": [
-    "swf",
-    "parser"
-  ],
+  "description": "SWF parser",
   "licenses": [
     {
       "type": "AGPL-3.0-or-later",
       "url": "https://spdx.org/licenses/AGPL-3.0-or-later.html"
     }
   ],
-  "engines": {
-    "node": ">=13.2"
+  "keywords": [
+    "swf",
+    "parser"
+  ],
+  "homepage": "https://github.com/open-flash/swf-parser",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:open-flash/swf-parser.git"
+  },
+  "type": "module",
+  "main": "./lib/index.js",
+  "module": "./lib/index.js",
+  "files": [
+    "./lib/"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./lib/": "./lib/"
   },
   "scripts": {
-    "build": "gulp lib:build",
-    "watch": "gulp lib:watch",
-    "test": "gulp test",
-    "lint": "gulp lint",
-    "format": "gulp format",
-    "typedoc": "gulp lib:typedoc",
-    "dist": "gulp lib:dist",
-    "prepare": "gulp all:tsconfig.json && gulp tslint.json && gulp dist",
-    "pretest": "gulp lint",
-    "prepublishOnly": "echo \"Use \\`gulp lib:publish\\`\" && exit 1",
-    "prestart": "gulp main:build",
-    "start": "node build/main/main/main.js"
+    "build": "tsc --build src/lib/tsconfig.json",
+    "pretest": "tsc --build src/test/tsconfig.json",
+    "test": "mocha \"test/**/*.spec.js\"",
+    "posttest": "yarn run lint",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "format": "eslint --fix \"./src/**/*.ts\"",
+    "prestart": "tsc --build src/main/tsconfig.json",
+    "start": "node ./main/main.js"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   },
   "dependencies": {
     "@open-flash/stream": "^0.3.0",
     "@types/pako": "^1.0.1",
-    "incident": "^3.2.0",
+    "incident": "^3.2.1",
     "pako": "^1.0.11",
     "semantic-types": "^0.1.1",
     "swf-types": "^0.11.0"
   },
   "devDependencies": {
-    "@types/chai": "^4.2.8",
-    "@types/gulp": "^4.0.6",
-    "@types/minimist": "^1.2.0",
-    "@types/mocha": "^7.0.1",
-    "@types/node": "^13.7.0",
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.3",
+    "@types/node": "^14.6.4",
+    "@typescript-eslint/eslint-plugin": "^4.0.1",
+    "@typescript-eslint/parser": "^4.0.1",
     "chai": "^4.2.0",
-    "gulp": "^4.0.2",
-    "gulp-cli": "^2.2.0",
-    "kryo": "^0.8.1",
-    "minimist": "^1.2.0",
-    "ts-node": "^8.6.2",
-    "tslint": "^6.0.0",
-    "turbo-gulp": "^0.22.1",
-    "typescript": "^3.7.5"
+    "eslint": "^7.8.1",
+    "eslint-plugin-simple-import-sort": "^5.0.3",
+    "furi": "^2.0.0",
+    "kryo": "^0.11.0",
+    "kryo-json": "^0.11.0",
+    "mocha": "^8.1.3",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.0.2"
   },
   "c88": {
     "match": [

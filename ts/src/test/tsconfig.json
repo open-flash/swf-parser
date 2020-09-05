@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": ".",
+    "outDir": "../../test"
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [],
+  "references": [
+    {
+      "path": "../lib"
+    }
+  ]
+}

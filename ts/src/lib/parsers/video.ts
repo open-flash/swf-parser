@@ -1,8 +1,8 @@
 import { ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Uint3, Uint8 } from "semantic-types";
-import { VideoCodec } from "swf-types/video/video-codec";
-import { VideoDeblocking } from "swf-types/video/video-deblocking";
+import { VideoCodec } from "swf-types/lib/video/video-codec.js";
+import { VideoDeblocking } from "swf-types/lib/video/video-deblocking.js";
 
 export function getVideoDeblockingFromCode(videoDeblockingCode: Uint3): VideoDeblocking {
   switch (videoDeblockingCode) {
@@ -19,7 +19,7 @@ export function getVideoDeblockingFromCode(videoDeblockingCode: Uint3): VideoDeb
     case 5:
       return VideoDeblocking.Level4;
     default:
-      throw new Incident("UnexpectedVideoDeblockingCode", {code: videoDeblockingCode});
+      throw new incident.Incident("UnexpectedVideoDeblockingCode", {code: videoDeblockingCode});
   }
 }
 
@@ -46,6 +46,6 @@ export function getVideoCodecFromCode(videoCodecCode: Uint8): VideoCodec {
     case 7:
       return VideoCodec.Avc;
     default:
-      throw new Incident("UnexpectedVideoCodecCode", {code: videoCodecCode});
+      throw new incident.Incident("UnexpectedVideoCodecCode", {code: videoCodecCode});
   }
 }

@@ -1,35 +1,32 @@
-import { ReadableByteStream, ReadableStream } from "@open-flash/stream";
+import stream, { ReadableByteStream } from "@open-flash/stream";
 import chai from "chai";
 import fs from "fs";
-import { $Uint32 } from "kryo/builtins/uint32";
-import { IoType } from "kryo/core";
-import { JsonReader } from "kryo/readers/json";
-import { Float64Type } from "kryo/types/float64";
-import { JsonValueWriter } from "kryo/writers/json-value";
+import { $Uint32 } from "kryo/lib/integer.js";
+import { IoType } from "kryo";
+import { Float64Type } from "kryo/lib/float64.js";
 import sysPath from "path";
-import { $ColorTransformWithAlpha } from "swf-types/color-transform-with-alpha";
-import { $Header } from "swf-types/header";
-import { $Matrix } from "swf-types/matrix";
-import { $Rect } from "swf-types/rect";
-import { $SwfSignature } from "swf-types/swf-signature";
-import { parseColorTransformWithAlpha, parseMatrix, parseRect } from "../lib/parsers/basic-data-types";
-import { parseHeader, parseSwfSignature } from "../lib/parsers/header";
+import { $ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
+import { $Header } from "swf-types/lib/header.js";
+import { $Matrix } from "swf-types/lib/matrix.js";
+import { $Rect } from "swf-types/lib/rect.js";
+import { $SwfSignature } from "swf-types/lib/swf-signature.js";
+import { parseColorTransformWithAlpha, parseMatrix, parseRect } from "../lib/parsers/basic-data-types.js";
+import { parseHeader, parseSwfSignature } from "../lib/parsers/header.js";
 import meta from "./meta.js";
-import { readFile, readTextFile } from "./utils";
+import { readFile, readTextFile } from "./utils.js";
+import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
+import { JSON_READER } from "kryo-json/lib/json-reader.js";
 
-const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..", "..", "..");
+const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..");
 const SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "various");
-
-const JSON_READER: JsonReader = new JsonReader();
-const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 
 for (const group of getSampleGroups()) {
   describe(group.name, function () {
     for (const sample of getSamplesFromGroup(group.name)) {
       it(sample.name, async function () {
         const inputBytes: Uint8Array = await readFile(sample.inputPath);
-        const stream: ReadableByteStream = new ReadableStream(inputBytes);
-        const actualValue: any = group.parser(stream);
+        const s: ReadableByteStream = new stream.ReadableStream(inputBytes);
+        const actualValue: any = group.parser(s);
         const actualJson: string = `${JSON.stringify(group.type.write(JSON_VALUE_WRITER, actualValue), null, 2)}\n`;
 
         chai.assert.isUndefined(group.type.testError!(actualValue));

@@ -9,12 +9,12 @@ export function readTestResource(path: string): Buffer {
 }
 
 export function readTestJson(path: string): any {
-  return JSON.parse(readTestResource(path).toString("utf8"));
+  return JSON.parse(readTestResource(path).toString("utf-8"));
 }
 
 export async function readTextFile(filePath: fs.PathLike): Promise<string> {
   return new Promise<string>((resolve, reject): void => {
-    fs.readFile(filePath, {encoding: "UTF-8"}, (err: NodeJS.ErrnoException | null, data: string): void => {
+    fs.readFile(filePath, {encoding: "utf-8"}, (err: NodeJS.ErrnoException | null, data: string): void => {
       if (err !== null) {
         reject(err);
       } else {

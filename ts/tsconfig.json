@@ -7,7 +7,7 @@
     "alwaysStrict": true,
     "charset": "utf8",
     "checkJs": false,
-    "declaration": false,
+    "declaration": true,
     "disableSizeLimit": false,
     "downlevelIteration": false,
     "emitBOM": false,
@@ -20,14 +20,13 @@
     "inlineSources": false,
     "isolatedModules": false,
     "lib": [
-      "es2017",
-      "esnext.asynciterable"
+      "es2017"
     ],
-    "locale": "en-us",
-    "module": "commonjs",
+    "locale": "en-US",
+    "module": "esNext",
     "moduleResolution": "node",
     "newLine": "lf",
-    "noEmit": false,
+    "noEmit": true,
     "noEmitHelpers": false,
     "noEmitOnError": true,
     "noErrorTruncation": true,
@@ -37,11 +36,11 @@
     "noImplicitThis": true,
     "noStrictGenericChecks": false,
     "noUnusedLocals": true,
-    "noUnusedParameters": false,
+    "noUnusedParameters": true,
     "noImplicitUseStrict": false,
     "noLib": false,
     "noResolve": false,
-    "preserveConstEnums": false,
+    "preserveConstEnums": true,
     "removeComments": false,
     "skipLibCheck": true,
     "sourceMap": true,
@@ -50,9 +49,7 @@
     "suppressExcessPropertyErrors": false,
     "suppressImplicitAnyIndexErrors": false,
     "target": "es2017",
-    "traceResolution": false
-  },
-  "files": [
-    "gulpfile.ts"
-  ]
+    "traceResolution": false,
+    "rootDir": "."
+  }
 }

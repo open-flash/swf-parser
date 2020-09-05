@@ -1,48 +1,25 @@
-// tslint:disable:max-file-line-count
-
-import { ReadableBitStream, ReadableByteStream, ReadableStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import stream, { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
+import incident from "incident";
 import { Float32, Sint16, Uint16, Uint2, Uint3, Uint32, Uint4, Uint8, UintSize } from "semantic-types";
-import {
-  BlendMode,
-  ClipAction,
-  ColorTransform,
-  ColorTransformWithAlpha,
-  Filter,
-  Glyph,
-  Label,
-  LanguageCode,
-  Matrix,
-  NamedId,
-  Rect,
-  Scene,
-  Sfixed8P8,
-  Shape,
-  StraightSRgba8,
-  Tag,
-  tags,
-  TagType,
-  text,
-} from "swf-types";
-import { ButtonCondAction } from "swf-types/button/button-cond-action";
-import { ButtonRecord } from "swf-types/button/button-record";
-import { ButtonSound } from "swf-types/button/button-sound";
-import { AbcHeader } from "swf-types/control/abc-header";
-import { ImageType } from "swf-types/image-type";
-import { MorphShape } from "swf-types/morph-shape";
-import { AudioCodingFormat } from "swf-types/sound/audio-coding-format";
-import { SoundInfo } from "swf-types/sound/sound-info";
-import { SoundRate } from "swf-types/sound/sound-rate";
-import { SoundSize } from "swf-types/sound/sound-size";
-import { SoundType } from "swf-types/sound/sound-type";
-import { SpriteTag } from "swf-types/sprite-tag";
-import { TagHeader } from "swf-types/tag-header";
-import { TextAlignment } from "swf-types/text";
-import { EmSquareSize } from "swf-types/text/em-square-size";
-import { VideoCodec } from "swf-types/video/video-codec";
-import { VideoDeblocking } from "swf-types/video/video-deblocking";
-import { createIncompleteTagError } from "../errors/incomplete-tag";
-import { createIncompleteTagHeaderError } from "../errors/incomplete-tag-header";
+import { ButtonCondAction } from "swf-types/lib/button/button-cond-action.js";
+import { ButtonRecord } from "swf-types/lib/button/button-record.js";
+import { ButtonSound } from "swf-types/lib/button/button-sound.js";
+import { AbcHeader } from "swf-types/lib/control/abc-header.js";
+import { ImageType } from "swf-types/lib/image-type.js";
+import { MorphShape } from "swf-types/lib/morph-shape.js";
+import { AudioCodingFormat } from "swf-types/lib/sound/audio-coding-format.js";
+import { SoundInfo } from "swf-types/lib/sound/sound-info.js";
+import { SoundRate } from "swf-types/lib/sound/sound-rate.js";
+import { SoundSize } from "swf-types/lib/sound/sound-size.js";
+import { SoundType } from "swf-types/lib/sound/sound-type.js";
+import { SpriteTag } from "swf-types/lib/sprite-tag.js";
+import { TagHeader } from "swf-types/lib/tag-header.js";
+import { TextAlignment } from "swf-types/lib/text/text-alignment.js";
+import { EmSquareSize } from "swf-types/lib/text/em-square-size.js";
+import { VideoCodec } from "swf-types/lib/video/video-codec.js";
+import { VideoDeblocking } from "swf-types/lib/video/video-deblocking.js";
+import { createIncompleteTagError } from "../errors/incomplete-tag.js";
+import { createIncompleteTagHeaderError } from "../errors/incomplete-tag-header.js";
 import {
   parseBlockCString,
   parseColorTransform,
@@ -51,9 +28,9 @@ import {
   parseRect,
   parseSRgb8,
   parseStraightSRgba8,
-} from "./basic-data-types";
-import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString, parseButtonSound } from "./button";
-import { parseBlendMode, parseClipActionString, parseFilterList } from "./display";
+} from "./basic-data-types.js";
+import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString, parseButtonSound } from "./button.js";
+import { parseBlendMode, parseClipActionString, parseFilterList } from "./display.js";
 import {
   ERRONEOUS_JPEG_START,
   getGifImageDimensions,
@@ -64,15 +41,15 @@ import {
   JPEG_START,
   PNG_START,
   testImageStart,
-} from "./image";
-import { MorphShapeVersion, parseMorphShape } from "./morph-shape";
-import { parseGlyph, parseShape, ShapeVersion } from "./shape";
+} from "./image.js";
+import { MorphShapeVersion, parseMorphShape } from "./morph-shape.js";
+import { parseGlyph, parseShape, ShapeVersion } from "./shape.js";
 import {
   getAudioCodingFormatFromCode,
   getSoundRateFromCode,
   isUncompressedAudioCodingFormat,
   parseSoundInfo,
-} from "./sound";
+} from "./sound.js";
 import {
   FontInfoVersion,
   FontVersion,
@@ -86,8 +63,32 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
   TextVersion,
-} from "./text";
-import { getVideoDeblockingFromCode, parseVideoCodec } from "./video";
+} from "./text.js";
+import { getVideoDeblockingFromCode, parseVideoCodec } from "./video.js";
+import { Tag } from "swf-types/lib/tag.js";
+import { TagType } from "swf-types/lib/tags/_type.js";
+import { GridFitting } from "swf-types/lib/text/grid-fitting.js";
+import { TextRenderer } from "swf-types/lib/text/text-renderer.js";
+import * as tags from "swf-types/lib/tags/index.js";
+import { ColorTransform } from "swf-types/lib/color-transform.js";
+import { Rect } from "swf-types/lib/rect.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { Glyph } from "swf-types/lib/glyph.js";
+import { LanguageCode } from "swf-types/lib/language-code.js";
+import { CsmTableHint } from "swf-types/lib/text/csm-table-hint.js";
+import { FontLayout } from "swf-types/lib/text/font-layout.js";
+import { FontAlignmentZone } from "swf-types/lib/text/font-alignment-zone.js";
+import { TextRecord } from "swf-types/lib/text/text-record.js";
+import { Scene } from "swf-types/lib/control/scene.js";
+import { Label } from "swf-types/lib/control/label.js";
+import { Shape } from "swf-types/lib/shape.js";
+import { Matrix } from "swf-types/lib/matrix.js";
+import { NamedId } from "swf-types/lib/named-id.js";
+import { ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
+import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
+import { ClipAction } from "swf-types/lib/clip-action.js";
+import { Filter } from "swf-types/lib/filter.js";
+import { BlendMode } from "swf-types/lib/blend-mode.js";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -355,7 +356,7 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, swfVersion
       case 93:
         return parseEnableTelemetry(byteStream);
       default: {
-        throw new Incident("UnknownTagCode", {code: tagCode});
+        throw new incident.Incident("UnknownTagCode", {code: tagCode});
       }
     }
   } catch (e) {
@@ -368,8 +369,8 @@ function parseTagBody(byteStream: ReadableByteStream, tagCode: Uint8, swfVersion
 export function parseCsmTextSettings(byteStream: ReadableByteStream): tags.CsmTextSettings {
   const textId: Uint16 = byteStream.readUint16LE();
   const bitStream: ReadableBitStream = byteStream.asBitStream();
-  const renderer: text.TextRenderer = parseTextRendererBits(bitStream);
-  const fitting: text.GridFitting = parseGridFittingBits(bitStream);
+  const renderer: TextRenderer = parseTextRendererBits(bitStream);
+  const fitting: GridFitting = parseGridFittingBits(bitStream);
   bitStream.align();
   const thickness: Float32 = byteStream.readFloat32LE();
   const sharpness: Float32 = byteStream.readFloat32LE();
@@ -391,9 +392,9 @@ export function parseDefineBits(byteStream: ReadableByteStream, swfVersion: Uint
   let imageDimensions: ImageDimensions;
 
   if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
-    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
   } else {
-    throw new Incident("UnknownBitmapType");
+    throw new incident.Incident("UnknownBitmapType");
   }
 
   return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType: "image/x-swf-partial-jpeg", data};
@@ -408,15 +409,15 @@ export function parseDefineBitsJpeg2(byteStream: ReadableByteStream, swfVersion:
 
   if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
     mediaType = "image/jpeg";
-    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
   } else if (testImageStart(data, PNG_START)) {
     mediaType = "image/png";
-    imageDimensions = getPngImageDimensions(new ReadableStream(data));
+    imageDimensions = getPngImageDimensions(new stream.ReadableStream(data));
   } else if (testImageStart(data, GIF_START)) {
     mediaType = "image/gif";
-    imageDimensions = getGifImageDimensions(new ReadableStream(data));
+    imageDimensions = getGifImageDimensions(new stream.ReadableStream(data));
   } else {
-    throw new Incident("UnknownBitmapType");
+    throw new incident.Incident("UnknownBitmapType");
   }
 
   return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
@@ -434,7 +435,7 @@ export function parseDefineBitsJpeg3(byteStream: ReadableByteStream, swfVersion:
 
   if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
     mediaType = "image/jpeg";
-    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
     if (byteStream.available() > 0) {
       mediaType = "image/x-swf-jpeg3";
       byteStream.bytePos = bytePos;
@@ -442,12 +443,12 @@ export function parseDefineBitsJpeg3(byteStream: ReadableByteStream, swfVersion:
     }
   } else if (testImageStart(data, PNG_START)) {
     mediaType = "image/png";
-    imageDimensions = getPngImageDimensions(new ReadableStream(data));
+    imageDimensions = getPngImageDimensions(new stream.ReadableStream(data));
   } else if (testImageStart(data, GIF_START)) {
     mediaType = "image/gif";
-    imageDimensions = getGifImageDimensions(new ReadableStream(data));
+    imageDimensions = getGifImageDimensions(new stream.ReadableStream(data));
   } else {
-    throw new Incident("UnknownBitmapType");
+    throw new incident.Incident("UnknownBitmapType");
   }
 
   return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
@@ -466,18 +467,18 @@ export function parseDefineBitsJpeg4(byteStream: ReadableByteStream): tags.Defin
   let imageDimensions: ImageDimensions;
 
   if (testImageStart(data, JPEG_START)) {
-    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
     mediaType = "image/x-swf-jpeg4";
     byteStream.bytePos = bytePos;
     data = byteStream.tailBytes();
   } else if (testImageStart(data, PNG_START)) {
     mediaType = "image/png";
-    imageDimensions = getPngImageDimensions(new ReadableStream(data));
+    imageDimensions = getPngImageDimensions(new stream.ReadableStream(data));
   } else if (testImageStart(data, GIF_START)) {
     mediaType = "image/gif";
-    imageDimensions = getGifImageDimensions(new ReadableStream(data));
+    imageDimensions = getGifImageDimensions(new stream.ReadableStream(data));
   } else {
-    throw new Incident("UnknownBitmapType");
+    throw new incident.Incident("UnknownBitmapType");
   }
 
   return {type: TagType.DefineBitmap, id, ...imageDimensions, mediaType, data};
@@ -594,7 +595,7 @@ export function parseDefineEditText(byteStream: ReadableByteStream): tags.Define
   const fontSize: Uint16 | undefined = (hasFont || hasFontClass) ? byteStream.readUint16LE() : undefined;
   const color: StraightSRgba8 | undefined = hasColor ? parseStraightSRgba8(byteStream) : undefined;
   const maxLength: UintSize | undefined = hasMaxLength ? byteStream.readUint16LE() : undefined;
-  const align: text.TextAlignment = hasLayout ? parseTextAlignment(byteStream) : TextAlignment.Left;
+  const align: TextAlignment = hasLayout ? parseTextAlignment(byteStream) : TextAlignment.Left;
   const marginLeft: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const marginRight: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
   const indent: Uint16 = hasLayout ? byteStream.readUint16LE() : 0;
@@ -653,7 +654,7 @@ export function parseDefineFont(byteStream: ReadableByteStream): tags.DefineGlyp
       const startOffset: UintSize = offsets[i];
       const endOffset: UintSize = (i + 1) < offsets.length ? offsets[i + 1] : startLen;
       if (endOffset < startOffset) {
-        throw new Incident("InvalidGlyphFontOffset", {startOffset, endOffset});
+        throw new incident.Incident("InvalidGlyphFontOffset", {startOffset, endOffset});
       }
       const glyphSize: UintSize = endOffset - startOffset;
       byteStream.bytePos = startPos + startOffset;
@@ -724,7 +725,7 @@ function parseDefineFontAny(byteStream: ReadableByteStream, version: FontVersion
   for (let i: number = 0; i < codeUnits.length; i++) {
     codeUnits[i] = useWideCodes ? byteStream.readUint16LE() : byteStream.readUint8();
   }
-  const layout: text.FontLayout | undefined = hasLayout ? parseFontLayout(byteStream, glyphCount) : undefined;
+  const layout: FontLayout | undefined = hasLayout ? parseFontLayout(byteStream, glyphCount) : undefined;
 
   return {
     type: TagType.DefineFont,
@@ -769,9 +770,9 @@ export function parseDefineFont4(byteStream: ReadableByteStream): tags.DefineCff
 export function parseDefineFontAlignZones(byteStream: ReadableByteStream): tags.DefineFontAlignZones {
   const fontId: Uint16 = byteStream.readUint16LE();
   const bitStream: ReadableBitStream = byteStream.asBitStream();
-  const csmTableHint: text.CsmTableHint = parseCsmTableHintBits(bitStream);
+  const csmTableHint: CsmTableHint = parseCsmTableHintBits(bitStream);
   bitStream.align();
-  const zones: text.FontAlignmentZone[] = [];
+  const zones: FontAlignmentZone[] = [];
   while (byteStream.available() > 0) {
     zones.push(parseFontAlignmentZone(byteStream));
   }
@@ -955,7 +956,7 @@ function parseDefineShapeAny(byteStream: ReadableByteStream, shapeVersion: Shape
   // (Skip bits [3, 7])
   const shape: Shape = parseShape(byteStream, shapeVersion);
 
-  // TODO: Update swf-types to use this order for the properties
+  // TODO: Update swf-types/lib to use this order for the properties
   return {
     type: TagType.DefineShape,
     id,
@@ -1014,7 +1015,7 @@ export function parseDefineTextAny(byteStream: ReadableByteStream, version: Text
   const indexBits: UintSize = byteStream.readUint8();
   const advanceBits: UintSize = byteStream.readUint8();
   const hasAlpha: boolean = version >= TextVersion.Text2;
-  const records: text.TextRecord[] = parseTextRecordString(byteStream, hasAlpha, indexBits, advanceBits);
+  const records: TextRecord[] = parseTextRecordString(byteStream, hasAlpha, indexBits, advanceBits);
   return {type: TagType.DefineText, id, bounds, matrix, records};
 }
 

@@ -1,19 +1,17 @@
 import { ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Float32, Uint32, Uint4, Uint5, Uint8, UintSize } from "semantic-types";
-import {
-  BlendMode,
-  ClipAction,
-  ClipEventFlags,
-  ColorStop,
-  Filter,
-  filters,
-  FilterType,
-  Sfixed16P16,
-  Sfixed8P8,
-  StraightSRgba8,
-} from "swf-types";
-import { parseStraightSRgba8 } from "./basic-data-types";
+import * as filters from "swf-types/lib/filters/index.js";
+import { parseStraightSRgba8 } from "./basic-data-types.js";
+import { BlendMode } from "swf-types/lib/blend-mode.js";
+import { ClipAction } from "swf-types/lib/clip-action.js";
+import { ClipEventFlags } from "swf-types/lib/clip-event-flags.js";
+import { Filter } from "swf-types/lib/filter.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { Sfixed16P16 } from "swf-types/lib/fixed-point/sfixed16p16.js";
+import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
+import { FilterType } from "swf-types/lib/filters/_type.js";
+import { ColorStop } from "swf-types/lib/color-stop.js";
 
 export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {
   switch (byteStream.readUint8()) {
@@ -47,7 +45,7 @@ export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {
     case 14:
       return BlendMode.Hardlight;
     default:
-      throw new Incident("UnreachableCode");
+      throw new incident.Incident("UnreachableCode");
   }
 }
 
@@ -155,7 +153,7 @@ export function parseFilter(byteStream: ReadableByteStream): Filter {
     case 7:
       return parseGradientBevelFilter(byteStream);
     default:
-      throw new Incident("UnreachableCode");
+      throw new incident.Incident("UnreachableCode");
   }
 }
 

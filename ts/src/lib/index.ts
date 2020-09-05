@@ -1,8 +1,8 @@
-import { ReadableStream } from "@open-flash/stream";
+import stream from "@open-flash/stream";
 import { Uint8 } from "semantic-types";
 import * as swf from "swf-types";
-import { parseSwf as parseSwfStream } from "./parsers/movie";
-import { parseTag as parseTagStream } from "./parsers/tags";
+import { parseSwf as parseSwfStream } from "./parsers/movie.js";
+import { parseTag as parseTagStream } from "./parsers/tags.js";
 
 export { swf };
 
@@ -13,7 +13,7 @@ export { swf };
  * @returns The parsed Movie
  */
 export function parseSwf(bytes: Uint8Array): swf.Movie {
-  const byteStream: ReadableStream = new ReadableStream(bytes);
+  const byteStream: stream.ReadableStream = new stream.ReadableStream(bytes);
   return parseSwfStream(byteStream);
 }
 
@@ -27,6 +27,6 @@ export function parseSwf(bytes: Uint8Array): swf.Movie {
  * @returns The parsed tag, or `undefined` if an error occurred.
  */
 export function parseTag(bytes: Uint8Array, swfVersion: Uint8): swf.Tag | undefined {
-  const byteStream: ReadableStream = new ReadableStream(bytes);
+  const byteStream: stream.ReadableStream = new stream.ReadableStream(bytes);
   return parseTagStream(byteStream, swfVersion);
 }

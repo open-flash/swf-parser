@@ -1,5 +1,5 @@
 import { ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Uint16, Uint32, Uint8, UintSize } from "semantic-types";
 
 export interface ImageDimensions {
@@ -27,7 +27,7 @@ export function getPngImageDimensions(byteStream: ReadableByteStream): ImageDime
   const chunkType: Uint32 = byteStream.readUint32BE();
   const IHDR_CHUNK_TYPE: Uint32 = 0x49484452;
   if (chunkType !== IHDR_CHUNK_TYPE) {
-    throw new Incident("InvalidPngFile", {byteStream}, "Expected first chunk to be `IHDR`");
+    throw new incident.Incident("InvalidPngFile", {byteStream}, "Expected first chunk to be `IHDR`");
   }
   const width: Uint32 = byteStream.readUint32BE();
   const height: Uint32 = byteStream.readUint32BE();
@@ -99,7 +99,7 @@ export function getJpegImageDimensions(byteStream: ReadableByteStream): ImageDim
     }
   }
   if (width === undefined || height === undefined) {
-    throw new Incident("InvalidJpeg", "Frame dimensions not found");
+    throw new incident.Incident("InvalidJpeg", "Frame dimensions not found");
   }
   return {width, height};
 }

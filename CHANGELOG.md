@@ -2,7 +2,11 @@
 
 ## Rust
 
-- **[Fix]** Don't enable `use-serde` feature from `swf-types`.
+- **[Fix]** Don't enable `use-serde` feature from `swf-types` by default.
+
+## Typescript
+
+- **[Breaking change]** Update to native ESM.
 
 # 0.11.0 (2020-02-05)
 

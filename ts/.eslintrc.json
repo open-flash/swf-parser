@@ -1,0 +1,81 @@
+{
+  "env": {
+    "es6": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended"
+  ],
+  "globals": {
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly"
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2018,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "simple-import-sort"
+  ],
+  "ignorePatterns": [
+    "node_modules"
+  ],
+  "rules": {
+    "block-scoped-var": "error",
+    "curly": [
+      "error",
+      "all"
+    ],
+    "dot-location": [
+      "error",
+      "property"
+    ],
+    "eqeqeq": "error",
+    "indent": [
+      "error",
+      2,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "linebreak-style": [
+      "error",
+      "unix"
+    ],
+    "no-duplicate-imports": "error",
+    "no-eval": "error",
+    "no-label-var": "error",
+    "no-tabs": "error",
+    "no-trailing-spaces": "error",
+    "no-unused-vars": "off",
+    "no-use-before-define": "off",
+    "one-var-declaration-per-line": "error",
+    "quotes": [
+      "error",
+      "double"
+    ],
+    "semi": [
+      "error",
+      "always"
+    ],
+    "semi-spacing": [
+      "error",
+      {
+        "before": false,
+        "after": true
+      }
+    ],
+    "simple-import-sort/sort": "error",
+    "space-before-blocks": [
+      "error",
+      "always"
+    ],
+    "space-infix-ops": "error",
+    "unicode-bom": [
+      "error",
+      "never"
+    ]
+  }
+}

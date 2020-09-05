@@ -1,9 +1,13 @@
 import { ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Uint16, Uint32, Uint8 } from "semantic-types";
-import { CompressionMethod, Header, Rect, SwfSignature, Ufixed8P8 } from "swf-types";
-import { createIncompleteStreamError } from "../errors/incomplete-stream";
-import { parseRect } from "./basic-data-types";
+import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
+import { parseRect } from "./basic-data-types.js";
+import { SwfSignature } from "swf-types/lib/swf-signature.js";
+import { CompressionMethod } from "swf-types/lib/compression-method.js";
+import { Header } from "swf-types/lib/header.js";
+import { Rect } from "swf-types/lib/rect.js";
+import { Ufixed8P8 } from "swf-types/lib/fixed-point/ufixed8p8.js";
 
 const UPPER_C: number = "C".charCodeAt(0);
 const UPPER_F: number = "F".charCodeAt(0);
@@ -28,7 +32,7 @@ export function parseCompressionMethod(byteStream: ReadableByteStream): Compress
   const bytes: Uint8Array = byteStream.takeBytes(3);
   // Read FWS, CWS or ZWS
   if (bytes[1] !== UPPER_W || bytes[2] !== UPPER_S) {
-    throw Incident("InvalidCompressionMethod", {bytes}, "Invalid compression method");
+    throw incident.Incident("InvalidCompressionMethod", {bytes}, "Invalid compression method");
   }
 
   switch (bytes[0]) {
@@ -39,7 +43,7 @@ export function parseCompressionMethod(byteStream: ReadableByteStream): Compress
     case UPPER_Z:
       return CompressionMethod.Lzma;
     default:
-      throw Incident("InvalidCompressionMethod", {bytes},  "Invalid compression method");
+      throw incident.Incident("InvalidCompressionMethod", {bytes},  "Invalid compression method");
   }
 }
 

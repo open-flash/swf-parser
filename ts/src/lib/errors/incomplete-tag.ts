@@ -1,4 +1,4 @@
-import { Incident } from "incident";
+import incident, { Incident } from "incident";
 
 export type Name = "IncompleteTag";
 export const name: Name = "IncompleteTag";
@@ -16,5 +16,5 @@ export function format({needed, available}: Data) {
 }
 
 export function createIncompleteTagError(available: number, needed: number): IncompleteTagError {
-  return new Incident(name, {available, needed}, format);
+  return new incident.Incident(name, {available, needed}, format);
 }

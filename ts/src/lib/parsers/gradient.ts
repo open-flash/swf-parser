@@ -1,10 +1,13 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import { Uint2, Uint4, Uint8 } from "semantic-types";
-import {
-  ColorSpace, ColorStop, Gradient, GradientSpread, MorphColorStop, MorphGradient,
-  StraightSRgba8,
-} from "swf-types";
-import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
+import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
+import { ColorStop } from "swf-types/lib/color-stop.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { Gradient } from "swf-types/lib/gradient.js";
+import { GradientSpread } from "swf-types/lib/gradient-spread.js";
+import { ColorSpace } from "swf-types/lib/color-space.js";
+import { MorphColorStop } from "swf-types/lib/morph-color-stop.js";
+import { MorphGradient } from "swf-types/lib/morph-gradient.js";
 
 export function parseColorStop(byteStream: ReadableByteStream, withAlpha: boolean): ColorStop {
   const ratio: Uint8 = byteStream.readUint8();

@@ -1,4 +1,4 @@
-import { Incident } from "incident";
+import incident, { Incident } from "incident";
 
 export type Name = "IncompleteTagHeader";
 export const name: Name = "IncompleteTagHeader";
@@ -14,5 +14,5 @@ export function format(_: Data) {
 }
 
 export function createIncompleteTagHeaderError(): IncompleteTagHeaderError {
-  return new Incident(name, {}, format);
+  return new incident.Incident(name, {}, format);
 }

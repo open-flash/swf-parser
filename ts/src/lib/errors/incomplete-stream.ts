@@ -1,4 +1,4 @@
-import { Incident } from "incident";
+import incident, { Incident } from "incident";
 
 export type Name = "IncompleteStream";
 export const name: Name = "IncompleteStream";
@@ -15,5 +15,5 @@ export function format({needed}: Data) {
 }
 
 export function createIncompleteStreamError(needed?: number): IncompleteStreamError {
-  return new Incident(name, {needed}, format);
+  return new incident.Incident(name, {needed}, format);
 }

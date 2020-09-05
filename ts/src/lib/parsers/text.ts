@@ -1,9 +1,22 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Float16, Sint16, SintSize, Uint16, Uint8, UintSize } from "semantic-types";
-import { Glyph, LanguageCode, Rect, StraightSRgba8, text } from "swf-types";
-import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types";
-import { parseGlyph } from "./shape";
+import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
+import { parseGlyph } from "./shape.js";
+import { LanguageCode } from "swf-types/lib/language-code.js";
+import {CsmTableHint} from "swf-types/lib/text/csm-table-hint.js";
+import { FontAlignmentZone} from "swf-types/lib/text/font-alignment-zone.js";
+import { FontAlignmentZoneData} from "swf-types/lib/text/font-alignment-zone-data.js";
+import { FontLayout } from "swf-types/lib/text/font-layout.js";
+import { GlyphEntry } from "swf-types/lib/text/glyph-entry.js";
+import { GridFitting } from "swf-types/lib/text/grid-fitting.js";
+import { KerningRecord } from "swf-types/lib/text/kerning-record.js";
+import { TextAlignment } from "swf-types/lib/text/text-alignment.js";
+import { TextRecord } from "swf-types/lib/text/text-record.js";
+import { TextRenderer } from "swf-types/lib/text/text-renderer.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { Glyph } from "swf-types/lib/glyph.js";
+import { Rect } from "swf-types/lib/rect.js";
 
 export enum FontVersion {
   // `Font1` is handled apart as `DefineGlyphFont`.
@@ -22,17 +35,17 @@ export enum TextVersion {
   Text2 = 2,
 }
 
-export function parseGridFittingBits(bitStream: ReadableBitStream): text.GridFitting {
+export function parseGridFittingBits(bitStream: ReadableBitStream): GridFitting {
   const code: UintSize = bitStream.readUint32Bits(3);
   switch (code) {
     case 0:
-      return text.GridFitting.None;
+      return GridFitting.None;
     case 1:
-      return text.GridFitting.Pixel;
+      return GridFitting.Pixel;
     case 2:
-      return text.GridFitting.SubPixel;
+      return GridFitting.SubPixel;
     default:
-      throw new Incident("UnreachableCode");
+      throw new incident.Incident("UnreachableCode");
   }
 }
 
@@ -52,19 +65,19 @@ export function parseLanguageCode(byteStream: ReadableByteStream): LanguageCode 
     case 5:
       return LanguageCode.TraditionalChinese;
     default:
-      throw new Incident("UnreachableCode");
+      throw new incident.Incident("UnreachableCode");
   }
 }
 
-export function parseTextRendererBits(bitStream: ReadableBitStream): text.TextRenderer {
+export function parseTextRendererBits(bitStream: ReadableBitStream): TextRenderer {
   const code: UintSize = bitStream.readUint32Bits(2);
   switch (code) {
     case 0:
-      return text.TextRenderer.Normal;
+      return TextRenderer.Normal;
     case 1:
-      return text.TextRenderer.Advanced;
+      return TextRenderer.Advanced;
     default:
-      throw new Incident("UnreachableCode");
+      throw new incident.Incident("UnreachableCode");
   }
 }
 
@@ -73,8 +86,8 @@ export function parseTextRecordString(
   hasAlpha: boolean,
   indexBits: UintSize,
   advanceBits: UintSize,
-): text.TextRecord[] {
-  const result: text.TextRecord[] = [];
+): TextRecord[] {
+  const result: TextRecord[] = [];
   while (byteStream.peekUint8() !== 0) {
     result.push(parseTextRecord(byteStream, hasAlpha, indexBits, advanceBits));
   }
@@ -87,7 +100,7 @@ export function parseTextRecord(
   hasAlpha: boolean,
   indexBits: UintSize,
   advanceBits: UintSize,
-): text.TextRecord {
+): TextRecord {
   const flags: Uint8 = byteStream.readUint8();
   const hasOffsetX: boolean = (flags & (1 << 0)) !== 0;
   const hasOffsetY: boolean = (flags & (1 << 1)) !== 0;
@@ -106,7 +119,7 @@ export function parseTextRecord(
 
   const entryCount: UintSize = byteStream.readUint8();
   const bitStream: ReadableBitStream = byteStream.asBitStream();
-  const entries: text.GlyphEntry[] = [];
+  const entries: GlyphEntry[] = [];
   for (let i: UintSize = 0; i < entryCount; i++) {
     const index: UintSize = bitStream.readUint32Bits(indexBits);
     const advance: SintSize = bitStream.readSint32Bits(advanceBits);
@@ -116,23 +129,23 @@ export function parseTextRecord(
   return {fontId, color, offsetX, offsetY, fontSize, entries};
 }
 
-export function parseCsmTableHintBits(bitStream: ReadableBitStream): text.CsmTableHint {
+export function parseCsmTableHintBits(bitStream: ReadableBitStream): CsmTableHint {
   switch (bitStream.readUint16Bits(2)) {
     case 0:
-      return text.CsmTableHint.Thin;
+      return CsmTableHint.Thin;
     case 1:
-      return text.CsmTableHint.Medium;
+      return CsmTableHint.Medium;
     case 2:
-      return text.CsmTableHint.Thick;
+      return CsmTableHint.Thick;
     default:
-      throw new Incident("UnreachableCode");
+      throw new incident.Incident("UnreachableCode");
   }
 }
 
-export function parseFontAlignmentZone(byteStream: ReadableByteStream): text.FontAlignmentZone {
+export function parseFontAlignmentZone(byteStream: ReadableByteStream): FontAlignmentZone {
   const zoneDataCount: UintSize = byteStream.readUint8();
   // TODO: Assert zoneDataCount === 2
-  const data: text.FontAlignmentZoneData[] = [];
+  const data: FontAlignmentZoneData[] = [];
   for (let i: number = 0; i < zoneDataCount; i++) {
     data.push(parseFontAlignmentZoneData(byteStream));
   }
@@ -142,7 +155,7 @@ export function parseFontAlignmentZone(byteStream: ReadableByteStream): text.Fon
   return {data, hasX, hasY};
 }
 
-export function parseFontAlignmentZoneData(byteStream: ReadableByteStream): text.FontAlignmentZoneData {
+export function parseFontAlignmentZoneData(byteStream: ReadableByteStream): FontAlignmentZoneData {
   const origin: Float16 = byteStream.readFloat16LE();
   const size: Float16 = byteStream.readFloat16LE();
   return {origin, size};
@@ -166,7 +179,7 @@ export function parseOffsetGlyphs(
   return result;
 }
 
-export function parseFontLayout(byteStream: ReadableByteStream, glyphCount: UintSize): text.FontLayout {
+export function parseFontLayout(byteStream: ReadableByteStream, glyphCount: UintSize): FontLayout {
   const ascent: Uint16 = byteStream.readUint16LE();
   const descent: Uint16 = byteStream.readUint16LE();
   const leading: Uint16 = byteStream.readUint16LE();
@@ -178,31 +191,31 @@ export function parseFontLayout(byteStream: ReadableByteStream, glyphCount: Uint
   for (let i: number = 0; i < bounds.length; i++) {
     bounds[i] = parseRect(byteStream);
   }
-  const kerning: text.KerningRecord[] = new Array(byteStream.readUint16LE());
+  const kerning: KerningRecord[] = new Array(byteStream.readUint16LE());
   for (let i: number = 0; i < kerning.length; i++) {
     kerning[i] = parseKerningRecord(byteStream);
   }
   return {ascent, descent, leading, advances, bounds, kerning};
 }
 
-export function parseKerningRecord(byteStream: ReadableByteStream): text.KerningRecord {
+export function parseKerningRecord(byteStream: ReadableByteStream): KerningRecord {
   const left: Uint16 = byteStream.readUint16LE();
   const right: Uint16 = byteStream.readUint16LE();
   const adjustment: Sint16 = byteStream.readSint16LE();
   return {left, right, adjustment};
 }
 
-export function parseTextAlignment(byteStream: ReadableByteStream): text.TextAlignment {
+export function parseTextAlignment(byteStream: ReadableByteStream): TextAlignment {
   switch (byteStream.readUint8()) {
     case 0:
-      return text.TextAlignment.Left;
+      return TextAlignment.Left;
     case 1:
-      return text.TextAlignment.Right;
+      return TextAlignment.Right;
     case 2:
-      return text.TextAlignment.Center;
+      return TextAlignment.Center;
     case 3:
-      return text.TextAlignment.Justify;
+      return TextAlignment.Justify;
     default:
-      throw new Incident("UnreachableCode");
+      throw new incident.Incident("UnreachableCode");
   }
 }

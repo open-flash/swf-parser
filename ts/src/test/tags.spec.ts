@@ -1,21 +1,18 @@
-import { ReadableByteStream, ReadableStream } from "@open-flash/stream";
+import stream, { ReadableByteStream } from "@open-flash/stream";
 import chai from "chai";
 import fs from "fs";
-import { IoType } from "kryo/core";
-import { JsonReader } from "kryo/readers/json";
-import { JsonValueWriter } from "kryo/writers/json-value";
+import { IoType } from "kryo";
 import sysPath from "path";
-import { Tag } from "swf-types";
-import { $Tag } from "swf-types/tag";
-import { parseTag } from "../lib/parsers/tags";
+import { Tag, $Tag } from "swf-types/lib/tag.js";
+import { parseTag } from "../lib/parsers/tags.js";
 import meta from "./meta.js";
-import { readFile, readTextFile } from "./utils";
+import { readFile, readTextFile } from "./utils.js";
+import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
+import { JSON_READER } from "kryo-json/lib/json-reader.js";
 
-const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..", "..", "..");
+const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..");
 const TAG_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "tags");
 
-const JSON_READER: JsonReader = new JsonReader();
-const JSON_VALUE_WRITER: JsonValueWriter = new JsonValueWriter();
 // `BLACKLIST` can be used to forcefully skip some tests.
 const BLACKLIST: ReadonlySet<string> = new Set([
   // "define-shape/shape1-squares",
@@ -34,8 +31,8 @@ describe("tags", function () {
       for (const sample of getSamplesFromGroup(group)) {
         it(sample.name, async function () {
           const inputBytes: Uint8Array = await readFile(sample.inputPath);
-          const stream: ReadableByteStream = new ReadableStream(inputBytes);
-          const actualValue: Tag = sample.parser(stream);
+          const s: ReadableByteStream = new stream.ReadableStream(inputBytes);
+          const actualValue: Tag = sample.parser(s);
           const actualJson: string = `${JSON.stringify(group.type.write(JSON_VALUE_WRITER, actualValue), null, 2)}\n`;
 
           // await writeTextFile(sample.valuePath, actualJson);

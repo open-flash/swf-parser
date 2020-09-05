@@ -1,25 +1,28 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
-import { Incident } from "incident";
+import incident from "incident";
 import { Sint32, Uint16, Uint2, Uint5, UintSize } from "semantic-types";
-import { fillStyles, FillStyleType, Sfixed8P8 } from "swf-types";
-import { CapStyle } from "swf-types/cap-style";
-import { JoinStyle } from "swf-types/join-style";
-import { JoinStyleType } from "swf-types/join-styles/_type";
-import { Matrix } from "swf-types/matrix";
-import { MorphFillStyle } from "swf-types/morph-fill-style";
-import { MorphGradient } from "swf-types/morph-gradient";
-import { MorphLineStyle } from "swf-types/morph-line-style";
-import { MorphShape } from "swf-types/morph-shape";
-import { MorphShapeRecord } from "swf-types/morph-shape-record";
-import { MorphShapeStyles } from "swf-types/morph-shape-styles";
-import { MorphEdge, MorphStyleChange } from "swf-types/shape-records";
-import { Edge } from "swf-types/shape-records/edge";
-import { ShapeRecordType } from "swf-types/shape-records/_type";
-import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
-import { Vector2D } from "swf-types/vector-2d";
-import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types";
-import { parseMorphGradient } from "./gradient";
-import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape";
+import * as fillStyles from "swf-types/lib/fill-styles/index.js";
+import { CapStyle } from "swf-types/lib/cap-style.js";
+import { JoinStyle } from "swf-types/lib/join-style.js";
+import { JoinStyleType } from "swf-types/lib/join-styles/_type.js";
+import { Matrix } from "swf-types/lib/matrix.js";
+import { MorphFillStyle } from "swf-types/lib/morph-fill-style.js";
+import { MorphGradient } from "swf-types/lib/morph-gradient.js";
+import { MorphLineStyle } from "swf-types/lib/morph-line-style.js";
+import { MorphShape } from "swf-types/lib/morph-shape.js";
+import { MorphShapeRecord } from "swf-types/lib/morph-shape-record.js";
+import { MorphShapeStyles } from "swf-types/lib/morph-shape-styles.js";
+import { MorphEdge } from "swf-types/lib/shape-records/morph-edge.js";
+import { MorphStyleChange } from "swf-types/lib/shape-records/morph-style-change.js";
+import { Edge } from "swf-types/lib/shape-records/edge.js";
+import { ShapeRecordType } from "swf-types/lib/shape-records/_type.js";
+import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { Vector2D } from "swf-types/lib/vector-2d.js";
+import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types.js";
+import { parseMorphGradient } from "./gradient.js";
+import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape.js";
+import { FillStyleType } from "swf-types/lib/fill-styles/_type.js";
+import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
 
 export enum MorphShapeVersion {
   MorphShape1 = 1,
@@ -152,7 +155,7 @@ export function parseMorphShapeEndRecordStringBits(
     const bitPos: number = bitStream.bitPos;
     const head: number = bitStream.readUint16Bits(6);
     if (head === 0) {
-      throw new Incident("MissingMorphShapeEndRecords");
+      throw new incident.Incident("MissingMorphShapeEndRecords");
     } else {
       bitStream.bytePos = bytePos;
       bitStream.bitPos = bitPos;
@@ -161,7 +164,7 @@ export function parseMorphShapeEndRecordStringBits(
     const isEdge: boolean = bitStream.readBoolBits();
     if (isEdge) {
       if (startRecord.type !== ShapeRecordType.Edge) {
-        throw new Incident("UnexpectedEdge");
+        throw new incident.Incident("UnexpectedEdge");
       }
       const startEdge: Edge = startRecord;
       const isStraightEdge: boolean = bitStream.readBoolBits();
@@ -170,20 +173,20 @@ export function parseMorphShapeEndRecordStringBits(
       result.push(asMorphEdge(startEdge, endEdge));
     } else {
       if (startRecord.type !== ShapeRecordType.StyleChange) {
-        throw new Incident("UnexpectedStyleChange");
+        throw new incident.Incident("UnexpectedStyleChange");
       }
       const startStyle: MorphStyleChange = startRecord;
       let styleChange: MorphStyleChange;
       [styleChange, [fillBits, lineBits]] = parseMorphStyleChangeBits(bitStream, fillBits, lineBits, morphShapeVersion);
       if (styleChange.moveTo === undefined) {
-        throw new Incident("ExpectedMoveTo");
+        throw new incident.Incident("ExpectedMoveTo");
       }
       result.push({...startStyle, morphMoveTo: styleChange.moveTo});
     }
   }
   const head: number = bitStream.readUint16Bits(6);
   if (head !== 0) {
-    throw new Incident("ExtraMorphShapeEndRecords");
+    throw new incident.Incident("ExtraMorphShapeEndRecords");
   }
 
   return result;
@@ -409,7 +412,7 @@ export function parseMorphLineStyle2(byteStream: ReadableByteStream): MorphLineS
       join = {type: JoinStyleType.Miter, limit: Sfixed8P8.fromEpsilons(byteStream.readSint16LE())};
       break;
     default:
-      throw new Incident("UnexpectedJoinStyleId", {id: joinStyleId});
+      throw new incident.Incident("UnexpectedJoinStyleId", {id: joinStyleId});
   }
 
   let fill: MorphFillStyle;
