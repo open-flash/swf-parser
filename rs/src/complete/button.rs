@@ -37,8 +37,6 @@ pub fn parse_button_record_string(input: &[u8], version: ButtonVersion) -> NomRe
 }
 
 pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[u8], swf::ButtonRecord> {
-  use nom::combinator::cond;
-
   let (input, flags) = parse_u8(input)?;
   #[allow(clippy::identity_op)]
   let state_up = (flags & (1 << 0)) != 0;
@@ -51,7 +49,11 @@ pub fn parse_button_record(input: &[u8], version: ButtonVersion) -> NomResult<&[
   let (input, character_id) = parse_le_u16(input)?;
   let (input, depth) = parse_le_u16(input)?;
   let (input, matrix) = parse_matrix(input)?;
-  let (input, color_transform) = cond(version >= ButtonVersion::Button2, parse_color_transform_with_alpha)(input)?;
+  let (input, color_transform) = if version >= ButtonVersion::Button2 {
+    parse_color_transform_with_alpha(input)?
+  } else {
+    (input, swf::ColorTransformWithAlpha::default())
+  };
   let (input, filters) = if version >= ButtonVersion::Button2 && has_filter_list {
     parse_filter_list(input)?
   } else {

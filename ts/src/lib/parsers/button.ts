@@ -1,6 +1,7 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
 import { Uint7, Uint8, Uint16, UintSize } from "semantic-types";
+import { Sfixed8P8 } from "swf-types";
 import { BlendMode } from "swf-types/lib/blend-mode.js";
 import { ButtonCondAction } from "swf-types/lib/button/button-cond-action.js";
 import { ButtonCond } from "swf-types/lib/button/button-cond.js";
@@ -53,7 +54,7 @@ export function parseButtonRecord(byteStream: ReadableByteStream, buttonVersion:
   const characterId: Uint16 = byteStream.readUint16LE();
   const depth: Uint16 = byteStream.readUint16LE();
   const matrix: Matrix = parseMatrix(byteStream);
-  let colorTransform: ColorTransformWithAlpha | undefined = undefined;
+  let colorTransform: ColorTransformWithAlpha;
   let filters: Filter[] = [];
   let blendMode: BlendMode = BlendMode.Normal;
   if (buttonVersion >= ButtonVersion.Button2) {
@@ -64,6 +65,17 @@ export function parseButtonRecord(byteStream: ReadableByteStream, buttonVersion:
     if (hasBlendMode) {
       blendMode = parseBlendMode(byteStream);
     }
+  } else {
+    colorTransform = {
+      redMult: Sfixed8P8.fromValue(1),
+      greenMult: Sfixed8P8.fromValue(1),
+      blueMult: Sfixed8P8.fromValue(1),
+      alphaMult: Sfixed8P8.fromValue(1),
+      redAdd: 0,
+      greenAdd: 0,
+      blueAdd: 0,
+      alphaAdd: 0,
+    };
   }
   return {
     stateUp,

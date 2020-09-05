@@ -68,13 +68,6 @@
     incident "^3.2.0"
     semantic-types "^0.1.1"
 
-"@types/bson@^1.0.11":
-  version "1.0.11"
-  resolved "https://registry.yarnpkg.com/@types/bson/-/bson-1.0.11.tgz#c95ad69bb0b3f5c33b4bb6cc86d86cafb273335c"
-  integrity sha512-j+UcCWI+FsbI5/FQP/Kj2CXyplWAz39ktHFkXk84h7dNblKRSoNJs95PZFRd96NQGqsPEPgeclqnznWZr14ZDA==
-  dependencies:
-    "@types/node" "*"
-
 "@types/chai@^4.2.12":
   version "4.2.12"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.2.12.tgz#6160ae454cd89dae05adc3bb97997f488b608201"
@@ -100,7 +93,7 @@
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-8.0.3.tgz#51b21b6acb6d1b923bbdc7725c38f9f455166402"
   integrity sha512-vyxR57nv8NfcU0GZu8EUXZLTbCMupIUwy95LJ6lllN+JRPG25CwMHoB1q5xKh8YKhQnHYRAn4yW2yuHbf/5xgg==
 
-"@types/node@*", "@types/node@^14.6.4":
+"@types/node@^14.6.4":
   version "14.6.4"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.6.4.tgz#a145cc0bb14ef9c4777361b7bbafa5cf8e3acb5a"
   integrity sha512-Wk7nG1JSaMfMpoMJDKUsWYugliB2Vy55pdjLpmLixeyMi7HizW2I/9QoxsPCkXl3dO+ZOVqPumKaDUv5zJu2uQ==
@@ -309,11 +302,6 @@ browser-stdout@1.3.1:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/browser-stdout/-/browser-stdout-1.3.1.tgz#baa559ee14ced73452229bad7326467c61fabd60"
   integrity sha512-qhAVI1+Av2X7qelOfAIYwXONood6XlZE/fXaBSmW/T5SzLAmCgzi+eiWE7fUvbHaeNBQH13UftjpXxsfLkMpgw==
-
-bson@^1.1.0:
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/bson/-/bson-1.1.5.tgz#2aaae98fcdf6750c0848b0cba1ddec3c73060a34"
-  integrity sha512-kDuEzldR21lHciPQAIulLs1LZlCXdLziXI6Mb/TDkwXhb//UORJNPXgcRs2CuO4H0DcMkpfT3/ySsP3unoZjBg==
 
 callsites@^3.0.0:
   version "3.1.0"
@@ -868,7 +856,7 @@ imurmurhash@^0.1.4:
   resolved "https://registry.yarnpkg.com/imurmurhash/-/imurmurhash-0.1.4.tgz#9218b9b2b928a238b13dc4fb6b6d576f231453ea"
   integrity sha1-khi5srkoojixPcT7a21XbyMUU+o=
 
-incident@^3.1.1, incident@^3.2.0, incident@^3.2.1:
+incident@^3.2.0, incident@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/incident/-/incident-3.2.1.tgz#731dbe73cf6a5cdb89adf8fa0825e2ff076b205d"
   integrity sha512-Mejx4QijYGSBAaR8NobH5dhFC7h5q1bIClsAtdoTEl/YzqSYVE/5WgovlYUHqwdBTLHkptQ5bv9nJNsJCJDeXg==
@@ -1041,18 +1029,6 @@ kryo@^0.11.0:
     incident "^3.2.1"
     object-inspect "^1.7.0"
     tslib "^2.0.0"
-
-kryo@^0.8.1:
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/kryo/-/kryo-0.8.1.tgz#2d267b80be9e82739dfbc0a2586ccc93cafd56bf"
-  integrity sha512-7EAfYnIEGZXH+V4pP9ekalnqyx7xAUMgbJkK2SwLytAkPdv+p7W9rUVam0yZDQw439bhLMKKB26XfCOxZGpH/w==
-  dependencies:
-    "@types/bson" "^1.0.11"
-    "@types/object-inspect" "^1.4.0"
-    incident "^3.1.1"
-    object-inspect "^1.6.0"
-  optionalDependencies:
-    bson "^1.1.0"
 
 levn@^0.4.1:
   version "0.4.1"
@@ -1513,13 +1489,13 @@ supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
-swf-types@^0.11.0:
-  version "0.11.0"
-  resolved "https://registry.yarnpkg.com/swf-types/-/swf-types-0.11.0.tgz#6e09f4387ccad6de5e662ee4acc3c570f67f2786"
-  integrity sha512-Q7wjCgCIl2R3yIQy+p95wi/znbASbyezPycRKw9KbjAy+mLHwumUcItmfB4aamtBWTz6TkIFnOiRfrec33Bstw==
+swf-types@^0.12.0:
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/swf-types/-/swf-types-0.12.0.tgz#53291c3a78cb60ef20dbfea08aab303773d2d473"
+  integrity sha512-3adBwIpcIJJjOeLzchyCk9WxmB/3QLmjmq1gSjFud/ncTDqjfe5j1q4lY8IW5v0jOqv6a8Y4RStBnwpvWUYPpQ==
   dependencies:
-    incident "^3.2.0"
-    kryo "^0.8.1"
+    incident "^3.2.1"
+    kryo "^0.11.0"
     semantic-types "^0.1.1"
     ts-tagged "^1.0.0"
 

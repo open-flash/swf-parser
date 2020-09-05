@@ -9,7 +9,7 @@ import { $Tag,Tag } from "swf-types/lib/tag.js";
 
 import { parseTag } from "../lib/parsers/tags.js";
 import meta from "./meta.js";
-import { readFile, readTextFile } from "./utils.js";
+import { readFile, readTextFile, writeTextFile } from "./utils.js";
 
 const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..");
 const TAG_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "tags");
@@ -36,7 +36,7 @@ describe("tags", function () {
           const actualValue: Tag = sample.parser(s);
           const actualJson: string = `${JSON.stringify(group.type.write(JSON_VALUE_WRITER, actualValue), null, 2)}\n`;
 
-          // await writeTextFile(sample.valuePath, actualJson);
+          await writeTextFile(sample.actualPath, actualJson);
 
           chai.assert.isUndefined(group.type.testError!(actualValue));
 
@@ -76,6 +76,7 @@ function* getSampleGroups(): IterableIterator<SampleGroup> {
 interface Sample {
   name: string;
   inputPath: string;
+  actualPath: string;
   valuePath: string;
 
   parser(byteStream: ReadableByteStream): Tag;
@@ -98,6 +99,7 @@ function* getSamplesFromGroup(group: SampleGroup): IterableIterator<Sample> {
     }
 
     const inputPath: string = sysPath.join(testPath, "input.bytes");
+    const actualPath: string = sysPath.join(testPath, "local-value.ts.json");
     const valuePath: string = sysPath.join(testPath, "value.json");
 
     let swfVersion: number;
@@ -113,6 +115,7 @@ function* getSamplesFromGroup(group: SampleGroup): IterableIterator<Sample> {
     yield {
       name: testName,
       inputPath,
+      actualPath,
       valuePath,
       parser: (stream: ReadableByteStream) => parseTag(stream, swfVersion)!,
     };

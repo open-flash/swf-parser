@@ -1,5 +1,7 @@
 # Next
 
+- **[Breaking change]** Update to `swf-types@0.12`.
+
 ## Rust
 
 - **[Fix]** Don't enable `use-serde` feature from `swf-types` by default.

@@ -5,13 +5,13 @@ pub trait StreamBuffer {
   fn new() -> Self;
 
   /// Add unparsed data at the end of the buffer.
-  fn write(&mut self, unparsed_bytes: &[u8]) -> ();
+  fn write(&mut self, unparsed_bytes: &[u8]);
 
   /// Get the unparsed data.
   fn get(&self) -> &[u8];
 
   /// Mark the provided count of bytes as _parsed_.
-  fn clear(&mut self, parsed_size: usize) -> ();
+  fn clear(&mut self, parsed_size: usize);
 }
 
 /// Stream buffer backed a `Vec<u8>`.

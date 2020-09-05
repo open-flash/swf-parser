@@ -198,7 +198,7 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast:
 pub fn parse_define_button(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineButton> {
   let (input, id) = parse_le_u16(input)?;
 
-  let (input, characters) = parse_button_record_string(input, ButtonVersion::Button1)?;
+  let (input, records) = parse_button_record_string(input, ButtonVersion::Button1)?;
   let actions = input.to_vec();
   let cond_action = ButtonCondAction {
     conditions: None,
@@ -210,7 +210,7 @@ pub fn parse_define_button(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineBu
     ast::tags::DefineButton {
       id,
       track_as_menu: false,
-      characters,
+      records,
       actions: vec![cond_action],
     },
   ))
@@ -226,7 +226,7 @@ pub fn parse_define_button2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineB
   // Skip bits [1, 7]
   // TODO: Assert action offset matches
   let (input, action_offset) = map(parse_le_u16, |x| x as usize)(input)?;
-  let (input, characters) = parse_button_record_string(input, ButtonVersion::Button2)?;
+  let (input, records) = parse_button_record_string(input, ButtonVersion::Button2)?;
   let (input, actions) = if action_offset != 0 {
     parse_button2_cond_action_string(input)?
   } else {
@@ -238,7 +238,7 @@ pub fn parse_define_button2(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineB
     ast::tags::DefineButton {
       id,
       track_as_menu,
-      characters,
+      records,
       actions,
     },
   ))

@@ -514,11 +514,11 @@ export function parseDefineButton(byteStream: ReadableByteStream): tags.DefineBu
   const id: Uint16 = byteStream.readUint16LE();
   const trackAsMenu: boolean = false;
 
-  const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button1);
+  const records: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button1);
   const actions: Uint8Array = Uint8Array.from(byteStream.tailBytes());
   const condAction: ButtonCondAction = {actions};
 
-  return {type: TagType.DefineButton, id, trackAsMenu, characters, actions: [condAction]};
+  return {type: TagType.DefineButton, id, trackAsMenu, records, actions: [condAction]};
 }
 
 export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineButton {
@@ -528,7 +528,7 @@ export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineB
   // Skip bits [1, 7]
   const pos: UintSize = byteStream.bytePos;
   const actionOffset: Uint16 = byteStream.readUint16LE();
-  const characters: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button2);
+  const records: ButtonRecord[] = parseButtonRecordString(byteStream, ButtonVersion.Button2);
   let actions: ButtonCondAction[];
   if (actionOffset === 0) {
     actions = [];
@@ -539,7 +539,7 @@ export function parseDefineButton2(byteStream: ReadableByteStream): tags.DefineB
     }
     actions = parseButton2CondActionString(byteStream);
   }
-  return {type: TagType.DefineButton, id, trackAsMenu, characters, actions};
+  return {type: TagType.DefineButton, id, trackAsMenu, records, actions};
 }
 
 export function parseDefineButtonColorTransform(byteStream: ReadableByteStream): tags.DefineButtonColorTransform {
