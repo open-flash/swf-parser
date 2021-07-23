@@ -1,9 +1,9 @@
 import chai from "chai";
 import fs from "fs";
-import { JSON_READER } from "kryo-json/lib/json-reader.js";
-import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
+import { JSON_READER } from "kryo-json/json-reader";
+import { JSON_VALUE_WRITER } from "kryo-json/json-value-writer";
 import sysPath from "path";
-import { $Movie, Movie } from "swf-types/lib/movie.js";
+import { $Movie, Movie } from "swf-types/movie";
 
 import { parseSwf } from "../lib/index.js";
 import meta from "./meta.js";

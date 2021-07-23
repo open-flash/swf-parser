@@ -1,47 +1,47 @@
-import stream, { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
+import { ReadableBitStream, ReadableByteStream, ReadableStream } from "@open-flash/stream";
 import incident from "incident";
 import { Float32, Sint16, Uint2, Uint3, Uint4, Uint8, Uint16, Uint32, UintSize } from "semantic-types";
-import { BlendMode } from "swf-types/lib/blend-mode.js";
-import { ButtonCondAction } from "swf-types/lib/button/button-cond-action.js";
-import { ButtonRecord } from "swf-types/lib/button/button-record.js";
-import { ButtonSound } from "swf-types/lib/button/button-sound.js";
-import { ClipAction } from "swf-types/lib/clip-action.js";
-import { ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
-import { ColorTransform } from "swf-types/lib/color-transform.js";
-import { AbcHeader } from "swf-types/lib/control/abc-header.js";
-import { Label } from "swf-types/lib/control/label.js";
-import { Scene } from "swf-types/lib/control/scene.js";
-import { Filter } from "swf-types/lib/filter.js";
-import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
-import { Glyph } from "swf-types/lib/glyph.js";
-import { ImageType } from "swf-types/lib/image-type.js";
-import { LanguageCode } from "swf-types/lib/language-code.js";
-import { Matrix } from "swf-types/lib/matrix.js";
-import { MorphShape } from "swf-types/lib/morph-shape.js";
-import { NamedId } from "swf-types/lib/named-id.js";
-import { Rect } from "swf-types/lib/rect.js";
-import { Shape } from "swf-types/lib/shape.js";
-import { AudioCodingFormat } from "swf-types/lib/sound/audio-coding-format.js";
-import { SoundInfo } from "swf-types/lib/sound/sound-info.js";
-import { SoundRate } from "swf-types/lib/sound/sound-rate.js";
-import { SoundSize } from "swf-types/lib/sound/sound-size.js";
-import { SoundType } from "swf-types/lib/sound/sound-type.js";
-import { SpriteTag } from "swf-types/lib/sprite-tag.js";
-import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
-import { TagHeader } from "swf-types/lib/tag-header.js";
-import { Tag } from "swf-types/lib/tag.js";
-import { TagType } from "swf-types/lib/tags/_type.js";
-import * as tags from "swf-types/lib/tags/index.js";
-import { CsmTableHint } from "swf-types/lib/text/csm-table-hint.js";
-import { EmSquareSize } from "swf-types/lib/text/em-square-size.js";
-import { FontAlignmentZone } from "swf-types/lib/text/font-alignment-zone.js";
-import { FontLayout } from "swf-types/lib/text/font-layout.js";
-import { GridFitting } from "swf-types/lib/text/grid-fitting.js";
-import { TextAlignment } from "swf-types/lib/text/text-alignment.js";
-import { TextRecord } from "swf-types/lib/text/text-record.js";
-import { TextRenderer } from "swf-types/lib/text/text-renderer.js";
-import { VideoCodec } from "swf-types/lib/video/video-codec.js";
-import { VideoDeblocking } from "swf-types/lib/video/video-deblocking.js";
+import { BlendMode } from "swf-types/blend-mode";
+import { ButtonCondAction } from "swf-types/button/button-cond-action";
+import { ButtonRecord } from "swf-types/button/button-record";
+import { ButtonSound } from "swf-types/button/button-sound";
+import { ClipAction } from "swf-types/clip-action";
+import { ColorTransformWithAlpha } from "swf-types/color-transform-with-alpha";
+import { ColorTransform } from "swf-types/color-transform";
+import { AbcHeader } from "swf-types/control/abc-header";
+import { Label } from "swf-types/control/label";
+import { Scene } from "swf-types/control/scene";
+import { Filter } from "swf-types/filter";
+import { Sfixed8P8 } from "swf-types/fixed-point/sfixed8p8";
+import { Glyph } from "swf-types/glyph";
+import { ImageType } from "swf-types/image-type";
+import { LanguageCode } from "swf-types/language-code";
+import { Matrix } from "swf-types/matrix";
+import { MorphShape } from "swf-types/morph-shape";
+import { NamedId } from "swf-types/named-id";
+import { Rect } from "swf-types/rect";
+import { Shape } from "swf-types/shape";
+import { AudioCodingFormat } from "swf-types/sound/audio-coding-format";
+import { SoundInfo } from "swf-types/sound/sound-info";
+import { SoundRate } from "swf-types/sound/sound-rate";
+import { SoundSize } from "swf-types/sound/sound-size";
+import { SoundType } from "swf-types/sound/sound-type";
+import { SpriteTag } from "swf-types/sprite-tag";
+import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
+import { TagHeader } from "swf-types/tag-header";
+import { Tag } from "swf-types/tag";
+import { TagType } from "swf-types/tags/_type";
+import * as tags from "swf-types/tags/index";
+import { CsmTableHint } from "swf-types/text/csm-table-hint";
+import { EmSquareSize } from "swf-types/text/em-square-size";
+import { FontAlignmentZone } from "swf-types/text/font-alignment-zone";
+import { FontLayout } from "swf-types/text/font-layout";
+import { GridFitting } from "swf-types/text/grid-fitting";
+import { TextAlignment } from "swf-types/text/text-alignment";
+import { TextRecord } from "swf-types/text/text-record";
+import { TextRenderer } from "swf-types/text/text-renderer";
+import { VideoCodec } from "swf-types/video/video-codec";
+import { VideoDeblocking } from "swf-types/video/video-deblocking";
 
 import { createIncompleteTagHeaderError } from "../errors/incomplete-tag-header.js";
 import { createIncompleteTagError } from "../errors/incomplete-tag.js";
@@ -394,7 +394,7 @@ export function parseDefineBits(byteStream: ReadableByteStream, swfVersion: Uint
   let imageDimensions: ImageDimensions;
 
   if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
-    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
   } else {
     throw new incident.Incident("UnknownBitmapType");
   }
@@ -411,13 +411,13 @@ export function parseDefineBitsJpeg2(byteStream: ReadableByteStream, swfVersion:
 
   if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
     mediaType = "image/jpeg";
-    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
   } else if (testImageStart(data, PNG_START)) {
     mediaType = "image/png";
-    imageDimensions = getPngImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getPngImageDimensions(new ReadableStream(data));
   } else if (testImageStart(data, GIF_START)) {
     mediaType = "image/gif";
-    imageDimensions = getGifImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getGifImageDimensions(new ReadableStream(data));
   } else {
     throw new incident.Incident("UnknownBitmapType");
   }
@@ -437,7 +437,7 @@ export function parseDefineBitsJpeg3(byteStream: ReadableByteStream, swfVersion:
 
   if (testImageStart(data, JPEG_START) || (swfVersion < 8 && testImageStart(data, ERRONEOUS_JPEG_START))) {
     mediaType = "image/jpeg";
-    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
     if (byteStream.available() > 0) {
       mediaType = "image/x-swf-jpeg3";
       byteStream.bytePos = bytePos;
@@ -445,10 +445,10 @@ export function parseDefineBitsJpeg3(byteStream: ReadableByteStream, swfVersion:
     }
   } else if (testImageStart(data, PNG_START)) {
     mediaType = "image/png";
-    imageDimensions = getPngImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getPngImageDimensions(new ReadableStream(data));
   } else if (testImageStart(data, GIF_START)) {
     mediaType = "image/gif";
-    imageDimensions = getGifImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getGifImageDimensions(new ReadableStream(data));
   } else {
     throw new incident.Incident("UnknownBitmapType");
   }
@@ -469,16 +469,16 @@ export function parseDefineBitsJpeg4(byteStream: ReadableByteStream): tags.Defin
   let imageDimensions: ImageDimensions;
 
   if (testImageStart(data, JPEG_START)) {
-    imageDimensions = getJpegImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getJpegImageDimensions(new ReadableStream(data));
     mediaType = "image/x-swf-jpeg4";
     byteStream.bytePos = bytePos;
     data = byteStream.tailBytes();
   } else if (testImageStart(data, PNG_START)) {
     mediaType = "image/png";
-    imageDimensions = getPngImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getPngImageDimensions(new ReadableStream(data));
   } else if (testImageStart(data, GIF_START)) {
     mediaType = "image/gif";
-    imageDimensions = getGifImageDimensions(new stream.ReadableStream(data));
+    imageDimensions = getGifImageDimensions(new ReadableStream(data));
   } else {
     throw new incident.Incident("UnknownBitmapType");
   }

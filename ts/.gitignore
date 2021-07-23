@@ -23,6 +23,14 @@
 ###############################################################################
 # Node dependencies directory
 node_modules/
+# Yarn without Zero-Installs
+# https://yarnpkg.com/advanced/qa#which-files-should-be-gitignored
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
 
 ###############################################################################
 # Local configuration                                                         #

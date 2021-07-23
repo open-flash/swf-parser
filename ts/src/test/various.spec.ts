@@ -1,17 +1,17 @@
-import stream, { ReadableByteStream } from "@open-flash/stream";
+import { ReadableStream, ReadableByteStream } from "@open-flash/stream";
 import chai from "chai";
 import fs from "fs";
 import { IoType } from "kryo";
-import { JSON_READER } from "kryo-json/lib/json-reader.js";
-import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
-import { Float64Type } from "kryo/lib/float64.js";
-import { $Uint32 } from "kryo/lib/integer.js";
+import { JSON_READER } from "kryo-json/json-reader";
+import { JSON_VALUE_WRITER } from "kryo-json/json-value-writer";
+import { Float64Type } from "kryo/float64";
+import { $Uint32 } from "kryo/integer";
 import sysPath from "path";
-import { $ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
-import { $Header } from "swf-types/lib/header.js";
-import { $Matrix } from "swf-types/lib/matrix.js";
-import { $Rect } from "swf-types/lib/rect.js";
-import { $SwfSignature } from "swf-types/lib/swf-signature.js";
+import { $ColorTransformWithAlpha } from "swf-types/color-transform-with-alpha";
+import { $Header } from "swf-types/header";
+import { $Matrix } from "swf-types/matrix";
+import { $Rect } from "swf-types/rect";
+import { $SwfSignature } from "swf-types/swf-signature";
 
 import { parseColorTransformWithAlpha, parseMatrix, parseRect } from "../lib/parsers/basic-data-types.js";
 import { parseHeader, parseSwfSignature } from "../lib/parsers/header.js";
@@ -26,7 +26,7 @@ for (const group of getSampleGroups()) {
     for (const sample of getSamplesFromGroup(group.name)) {
       it(sample.name, async function () {
         const inputBytes: Uint8Array = await readFile(sample.inputPath);
-        const s: ReadableByteStream = new stream.ReadableStream(inputBytes);
+        const s: ReadableByteStream = new ReadableStream(inputBytes);
         const actualValue: any = group.parser(s);
         const actualJson: string = `${JSON.stringify(group.type.write(JSON_VALUE_WRITER, actualValue), null, 2)}\n`;
 

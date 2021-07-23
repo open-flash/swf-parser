@@ -1,11 +1,11 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import incident from "incident";
 import { Uint8,Uint16, Uint32 } from "semantic-types";
-import { CompressionMethod } from "swf-types/lib/compression-method.js";
-import { Ufixed8P8 } from "swf-types/lib/fixed-point/ufixed8p8.js";
-import { Header } from "swf-types/lib/header.js";
-import { Rect } from "swf-types/lib/rect.js";
-import { SwfSignature } from "swf-types/lib/swf-signature.js";
+import { CompressionMethod } from "swf-types/compression-method";
+import { Ufixed8P8 } from "swf-types/fixed-point/ufixed8p8";
+import { Header } from "swf-types/header";
+import { Rect } from "swf-types/rect";
+import { SwfSignature } from "swf-types/swf-signature";
 
 import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
 import { parseRect } from "./basic-data-types.js";
