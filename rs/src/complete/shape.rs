@@ -284,7 +284,7 @@ pub fn parse_fill_style(input: &[u8], with_alpha: bool) -> NomResult<&[u8], swf:
     0x41 => map(|i| parse_bitmap_fill(i, false, true), swf::FillStyle::Bitmap)(input),
     0x42 => map(|i| parse_bitmap_fill(i, true, false), swf::FillStyle::Bitmap)(input),
     0x43 => map(|i| parse_bitmap_fill(i, false, false), swf::FillStyle::Bitmap)(input),
-    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   }
 }
 
@@ -419,9 +419,9 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], swf::LineStyle> {
   // (Skip bits [11, 15])
 
   let start_cap =
-    cap_style_from_code(start_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    cap_style_from_code(start_cap_style_code).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let end_cap =
-    cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
 
   let (input, join) = match join_style_code {
     0 => (input, swf::JoinStyle::Round),
@@ -430,7 +430,7 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], swf::LineStyle> {
       let (input, limit) = parse_le_u16(input)?;
       (input, swf::JoinStyle::Miter(swf::join_styles::Miter { limit }))
     }
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
 
   let (input, fill) = if has_fill {
@@ -445,14 +445,14 @@ pub fn parse_line_style2(input: &[u8]) -> NomResult<&[u8], swf::LineStyle> {
     input,
     swf::LineStyle {
       width,
-      fill,
-      pixel_hinting,
-      no_v_scale,
-      no_h_scale,
-      no_close,
-      join,
       start_cap,
       end_cap,
+      join,
+      no_h_scale,
+      no_v_scale,
+      no_close,
+      pixel_hinting,
+      fill,
     },
   ))
 }

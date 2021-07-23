@@ -16,7 +16,7 @@ pub fn video_deblocking_from_code(video_deblocking_id: u8) -> Result<ast::VideoD
 
 pub fn parse_videoc_codec(input: &[u8]) -> NomResult<&[u8], ast::VideoCodec> {
   let (input, codec_id) = parse_u8(input)?;
-  let codec = video_codec_from_code(codec_id).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+  let codec = video_codec_from_code(codec_id).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   Ok((input, codec))
 }
 

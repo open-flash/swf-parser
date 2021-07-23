@@ -42,7 +42,7 @@ pub(crate) fn grid_fitting_from_code(grid_fitting_code: u8) -> Result<swf::text:
 pub fn parse_csm_table_hint_bits(input: (&[u8], usize)) -> NomResult<(&[u8], usize), swf::text::CsmTableHint> {
   let (input, code) = parse_u32_bits(input, 2)?;
   let csm_table_hint =
-    csm_table_hint_from_code(code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    csm_table_hint_from_code(code).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   Ok((input, csm_table_hint))
 }
 
@@ -216,7 +216,7 @@ pub fn parse_offset_glyphs(
       let end_offset = offsets.get(i + 1).cloned().unwrap_or(end_offset);
       let glyph_input_size: usize = match end_offset.checked_sub(start_offset) {
         Some(x) => x,
-        None => return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+        None => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify))),
       };
       let (_, glyph_input) = offset_take(start_offset, glyph_input_size)(input)?;
       glyph_input
@@ -276,6 +276,6 @@ pub fn parse_text_alignment(input: &[u8]) -> NomResult<&[u8], swf::text::TextAli
     1 => Ok((input, swf::text::TextAlignment::Right)),
     2 => Ok((input, swf::text::TextAlignment::Center)),
     3 => Ok((input, swf::text::TextAlignment::Justify)),
-    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   }
 }

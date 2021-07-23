@@ -87,7 +87,7 @@ fn parse_movie(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Movie> {
 fn parse_header(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast::Header> {
   match crate::streaming::movie::parse_header(input, swf_version) {
     Ok(ok) => Ok(ok),
-    Err(nom::Err::Incomplete(_)) => Err(nom::Err::Error((input, nom::error::ErrorKind::Complete))),
+    Err(nom::Err::Incomplete(_)) => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Complete))),
     Err(e) => Err(e),
   }
 }

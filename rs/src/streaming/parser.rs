@@ -126,12 +126,15 @@ enum InnerTagParser {
   Lzma(LzmaStream<FlatBuffer>),
 }
 
+// TODO: Implement proper error type
+pub struct ParseTagsError;
+
 impl TagParser {
   /// Appends the provided bytes to the internal buffer and tries to parse most of the tags.
   /// Return `None` if it has finished parsing the movie.
   ///
   /// TODO: `impl Iterator<Item=Tag>` instead of `Vec<Tag>`
-  pub fn tags(&mut self, bytes: &[u8]) -> Result<Option<Vec<Tag>>, ()> {
+  pub fn tags(&mut self, bytes: &[u8]) -> Result<Option<Vec<Tag>>, ParseTagsError> {
     match &mut self.0 {
       InnerTagParser::Simple(ref mut stream) => {
         stream.write(bytes);
@@ -190,7 +193,7 @@ impl<B: StreamBuffer> SimpleStream<B> {
   /// Returns `Ok(None)` if parsing is complete (there are no more tags).
   /// Returns `Ok(Some(Vec<Tag>))` when some tags are available. `Vec` is non-empty.
   /// Returns `Err(())` when there's not enough data or an error occurs.
-  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ()> {
+  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ParseTagsError> {
     if self.is_end {
       return Ok(None);
     }
@@ -226,7 +229,7 @@ impl<B: StreamBuffer> SimpleStream<B> {
       if is_end {
         Ok(None)
       } else {
-        Err(())
+        Err(ParseTagsError)
       }
     } else {
       Ok(Some(tags))
@@ -284,7 +287,7 @@ impl<B: StreamBuffer> DeflateStream<B> {
   /// Returns `Ok(None)` if parsing is complete (there are no more tags).
   /// Returns `Ok(Some(Vec<Tag>))` when some tags are available. `Vec` is non-empty.
   /// Returns `Err(())` when there's not enough data or an error occurs.
-  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ()> {
+  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ParseTagsError> {
     self.simple.tags()
   }
 }
@@ -322,7 +325,7 @@ impl<B: StreamBuffer> LzmaStream<B> {
     unimplemented!()
   }
 
-  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ()> {
+  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ParseTagsError> {
     self.simple.tags()
   }
 }

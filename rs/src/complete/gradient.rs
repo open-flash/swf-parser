@@ -32,13 +32,13 @@ pub fn parse_gradient(input: &[u8], with_alpha: bool) -> NomResult<&[u8], swf::G
     0 => swf::GradientSpread::Pad,
     1 => swf::GradientSpread::Reflect,
     2 => swf::GradientSpread::Repeat,
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
 
   let color_space = match color_space_code {
     0 => swf::ColorSpace::SRgb,
     1 => swf::ColorSpace::LinearRgb,
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
 
   let (input, colors) = nom::multi::count(|i| parse_color_stop(i, with_alpha), color_count as usize)(input)?;
@@ -80,13 +80,13 @@ pub fn parse_morph_gradient(input: &[u8], with_alpha: bool) -> NomResult<&[u8], 
     0 => swf::GradientSpread::Pad,
     1 => swf::GradientSpread::Reflect,
     2 => swf::GradientSpread::Repeat,
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
 
   let color_space = match color_space_code {
     0 => swf::ColorSpace::SRgb,
     1 => swf::ColorSpace::LinearRgb,
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
 
   let (input, colors) = nom::multi::count(|i| parse_morph_color_stop(i, with_alpha), color_count as usize)(input)?;

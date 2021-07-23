@@ -6,11 +6,12 @@ use nom::{IResult as NomResult, Needed};
 use swf_fixed::{Sfixed16P16, Sfixed8P8, Ufixed8P8};
 use swf_types as swf;
 use swf_types::LanguageCode;
+use std::num::NonZeroUsize;
 
 /// Parse the bit-encoded representation of a bool (1 bit)
 pub fn parse_bool_bits((input_slice, bit_pos): (&[u8], usize)) -> NomResult<(&[u8], usize), bool> {
   if input_slice.is_empty() {
-    Err(::nom::Err::Incomplete(Needed::Size(1)))
+    Err(::nom::Err::Incomplete(Needed::Size(NonZeroUsize::new(1).unwrap())))
   } else {
     let res: bool = input_slice[0] & (1 << (7 - bit_pos)) > 0;
     if bit_pos == 7 {
@@ -33,7 +34,7 @@ pub fn parse_block_c_string(input: &[u8]) -> NomResult<&[u8], String> {
 
   match std::str::from_utf8(raw) {
     Ok(checked) => Ok((&[], checked.to_string())),
-    Err(_) => Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+    Err(_) => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify))),
   }
 }
 
@@ -47,7 +48,7 @@ pub fn parse_c_string(input: &[u8]) -> NomResult<&[u8], String> {
 
   match std::str::from_utf8(raw) {
     Ok(checked) => Ok((input, checked.to_string())),
-    Err(_) => Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+    Err(_) => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify))),
   }
 }
 
@@ -221,7 +222,7 @@ pub fn skip_bits((input_slice, bit_pos): (&[u8], usize), n: usize) -> NomResult<
   let final_bit_pos = (bit_pos + n) % 8;
   if available_bits < n {
     let needed_bytes = skipped_full_bytes + if final_bit_pos > 0 { 1 } else { 0 };
-    Err(::nom::Err::Incomplete(Needed::Size(needed_bytes)))
+    Err(::nom::Err::Incomplete(Needed::Size(NonZeroUsize::new(needed_bytes).unwrap())))
   } else {
     Ok(((&input_slice[skipped_full_bytes..], final_bit_pos), ()))
   }
@@ -247,7 +248,7 @@ pub fn parse_language_code(input: &[u8]) -> NomResult<&[u8], swf::LanguageCode> 
     3 => swf::LanguageCode::Korean,
     4 => swf::LanguageCode::SimplifiedChinese,
     5 => swf::LanguageCode::TraditionalChinese,
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
   Ok((input, lang))
 }
@@ -391,7 +392,7 @@ mod tests {
   #[test]
   fn test_parse_encoded_le_u32() {
     {
-      assert_eq!(parse_leb128_u32(&[][..]), Err(::nom::Err::Incomplete(Needed::Size(1))));
+      assert_eq!(parse_leb128_u32(&[][..]), Err(::nom::Err::Incomplete(Needed::Size(NonZeroUsize::new(1).unwrap()))));
     }
     {
       let input = vec![0x00];
@@ -413,7 +414,7 @@ mod tests {
       let input = vec![0x80];
       assert_eq!(
         parse_leb128_u32(&input[..]),
-        Err(::nom::Err::Incomplete(Needed::Size(1)))
+        Err(::nom::Err::Incomplete(Needed::Size(NonZeroUsize::new(1).unwrap())))
       );
     }
     {
@@ -432,7 +433,7 @@ mod tests {
       let input = vec![0x80, 0x80, 0x80, 0x80];
       assert_eq!(
         parse_leb128_u32(&input[..]),
-        Err(::nom::Err::Incomplete(Needed::Size(1)))
+        Err(::nom::Err::Incomplete(Needed::Size(NonZeroUsize::new(1).unwrap())))
       );
     }
     {
