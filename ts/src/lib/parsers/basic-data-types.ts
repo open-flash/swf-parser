@@ -1,13 +1,13 @@
 import { ReadableBitStream, ReadableByteStream } from "@open-flash/stream";
 import { Sint16, UintSize } from "semantic-types";
-import { ColorTransformWithAlpha } from "swf-types/lib/color-transform-with-alpha.js";
-import { ColorTransform } from "swf-types/lib/color-transform.js";
-import { Sfixed8P8 } from "swf-types/lib/fixed-point/sfixed8p8.js";
-import { Sfixed16P16 } from "swf-types/lib/fixed-point/sfixed16p16.js";
-import { Matrix } from "swf-types/lib/matrix.js";
-import { Rect } from "swf-types/lib/rect.js";
-import { SRgb8 } from "swf-types/lib/s-rgb8.js";
-import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { ColorTransformWithAlpha } from "swf-types/color-transform-with-alpha";
+import { ColorTransform } from "swf-types/color-transform";
+import { Sfixed8P8 } from "swf-types/fixed-point/sfixed8p8";
+import { Sfixed16P16 } from "swf-types/fixed-point/sfixed16p16";
+import { Matrix } from "swf-types/matrix";
+import { Rect } from "swf-types/rect";
+import { SRgb8 } from "swf-types/s-rgb8";
+import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
 
 /// Parse a sequence of bytes up to the end of input or first nul-byte. If there
 /// is a nul-byte, it is consumed but not included in the result.

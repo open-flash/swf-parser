@@ -1,11 +1,11 @@
-import stream, { ReadableByteStream } from "@open-flash/stream";
+import { ReadableStream, ReadableByteStream } from "@open-flash/stream";
 import chai from "chai";
 import fs from "fs";
 import { IoType } from "kryo";
-import { JSON_READER } from "kryo-json/lib/json-reader.js";
-import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
+import { JSON_READER } from "kryo-json/json-reader";
+import { JSON_VALUE_WRITER } from "kryo-json/json-value-writer";
 import sysPath from "path";
-import { $Tag,Tag } from "swf-types/lib/tag.js";
+import { $Tag,Tag } from "swf-types/tag";
 
 import { parseTag } from "../lib/parsers/tags.js";
 import meta from "./meta.js";
@@ -32,7 +32,7 @@ describe("tags", function () {
       for (const sample of getSamplesFromGroup(group)) {
         it(sample.name, async function () {
           const inputBytes: Uint8Array = await readFile(sample.inputPath);
-          const s: ReadableByteStream = new stream.ReadableStream(inputBytes);
+          const s: ReadableByteStream = new ReadableStream(inputBytes);
           const actualValue: Tag = sample.parser(s);
           const actualJson: string = `${JSON.stringify(group.type.write(JSON_VALUE_WRITER, actualValue), null, 2)}\n`;
 

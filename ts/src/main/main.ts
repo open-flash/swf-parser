@@ -1,7 +1,7 @@
 import * as fs from "fs";
-import { JSON_VALUE_WRITER } from "kryo-json/lib/json-value-writer.js";
+import { JSON_VALUE_WRITER } from "kryo-json/json-value-writer";
 import * as sysPath from "path";
-import { $Movie, Movie } from "swf-types/lib/movie.js";
+import { $Movie, Movie } from "swf-types/movie";
 
 import { parseSwf } from "../lib/index.js";
 

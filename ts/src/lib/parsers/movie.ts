@@ -1,12 +1,12 @@
-import stream from "@open-flash/stream";
+import { ReadableStream } from "@open-flash/stream";
 import incident from "incident";
 import pako from "pako";
 import { Uint8 } from "semantic-types";
-import { CompressionMethod } from "swf-types/lib/compression-method.js";
-import { Header } from "swf-types/lib/header.js";
-import { Movie } from "swf-types/lib/movie.js";
-import { SwfSignature } from "swf-types/lib/swf-signature.js";
-import { Tag } from "swf-types/lib/tag.js";
+import { CompressionMethod } from "swf-types/compression-method";
+import { Header } from "swf-types/header";
+import { Movie } from "swf-types/movie";
+import { SwfSignature } from "swf-types/swf-signature";
+import { Tag } from "swf-types/tag";
 
 import { parseHeader, parseSwfSignature } from "./header.js";
 import { parseTagBlockString } from "./tags.js";
@@ -16,7 +16,7 @@ import { parseTagBlockString } from "./tags.js";
  *
  * @param byteStream SWF stream to parse
  */
-export function parseSwf(byteStream: stream.ReadableStream): Movie {
+export function parseSwf(byteStream: ReadableStream): Movie {
   const signature: SwfSignature = parseSwfSignature(byteStream);
   switch (signature.compressionMethod) {
     case CompressionMethod.None: {
@@ -25,7 +25,7 @@ export function parseSwf(byteStream: stream.ReadableStream): Movie {
     case CompressionMethod.Deflate: {
       const tail: Uint8Array = byteStream.tailBytes();
       const payload: Uint8Array = pako.inflate(tail);
-      const payloadStream: stream.ReadableStream = new stream.ReadableStream(payload);
+      const payloadStream: ReadableStream = new ReadableStream(payload);
       return parseMovie(payloadStream, signature.swfVersion);
     }
     case CompressionMethod.Lzma: {
@@ -45,7 +45,7 @@ export function parseSwf(byteStream: stream.ReadableStream): Movie {
  * @param byteStream Movie bytestream
  * @param swfVersion Parsed movie.
  */
-export function parseMovie(byteStream: stream.ReadableStream, swfVersion: Uint8): Movie {
+export function parseMovie(byteStream: ReadableStream, swfVersion: Uint8): Movie {
   const header: Header = parseHeader(byteStream, swfVersion);
   const tags: Tag[] = parseTagBlockString(byteStream, swfVersion);
   return {header, tags};

@@ -20,10 +20,10 @@
     "inlineSources": false,
     "isolatedModules": false,
     "lib": [
-      "es2017"
+      "es2020"
     ],
     "locale": "en-US",
-    "module": "esNext",
+    "module": "es2020",
     "moduleResolution": "node",
     "newLine": "lf",
     "noEmit": true,
@@ -48,7 +48,7 @@
     "strictNullChecks": true,
     "suppressExcessPropertyErrors": false,
     "suppressImplicitAnyIndexErrors": false,
-    "target": "es2017",
+    "target": "es2020",
     "traceResolution": false,
     "rootDir": "."
   }

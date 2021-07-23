@@ -1,12 +1,12 @@
 import { ReadableByteStream } from "@open-flash/stream";
 import { Uint2, Uint4, Uint8 } from "semantic-types";
-import { ColorSpace } from "swf-types/lib/color-space.js";
-import { ColorStop } from "swf-types/lib/color-stop.js";
-import { GradientSpread } from "swf-types/lib/gradient-spread.js";
-import { Gradient } from "swf-types/lib/gradient.js";
-import { MorphColorStop } from "swf-types/lib/morph-color-stop.js";
-import { MorphGradient } from "swf-types/lib/morph-gradient.js";
-import { StraightSRgba8 } from "swf-types/lib/straight-s-rgba8.js";
+import { ColorSpace } from "swf-types/color-space";
+import { ColorStop } from "swf-types/color-stop";
+import { GradientSpread } from "swf-types/gradient-spread";
+import { Gradient } from "swf-types/gradient";
+import { MorphColorStop } from "swf-types/morph-color-stop";
+import { MorphGradient } from "swf-types/morph-gradient";
+import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
 
 import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
 
