@@ -48,7 +48,7 @@ pub fn parse_morph_shape_bits(
 }
 
 fn parse_style_bits_len(input: &[u8]) -> NomResult<&[u8], StyleBits> {
-  use nom::bits::bits;;
+  use nom::bits::bits;
   bits(parse_style_bits_len_bits)(input)
 }
 
@@ -204,7 +204,7 @@ fn parse_morph_shape_end_record_string_bits(
     match parse_u16_bits(current_input, 6) {
       Ok((_, 0)) => {
         // Missing morph shape end record
-        return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+        return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)));
       }
       Ok((_, _)) => {}
       Err(e) => return Err(e),
@@ -242,7 +242,7 @@ fn parse_morph_shape_end_record_string_bits(
       MixedShapeRecord::MorphStyleChange(style_change)
     };
     let morph_shape_record = as_morph_shape_record(start_record, end_record)
-      .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+      .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
     result.push(morph_shape_record);
   }
 
@@ -325,7 +325,7 @@ pub fn parse_morph_fill_style(input: &[u8]) -> NomResult<&[u8], swf::MorphFillSt
       |i| parse_morph_bitmap_fill(i, false, false),
       swf::MorphFillStyle::Bitmap,
     )(input),
-    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   }
 }
 
@@ -459,16 +459,16 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], swf::MorphLineS
   let no_close = (flags & (1 << 10)) != 0;
   // (Skip bits [11, 15])
   let start_cap =
-    cap_style_from_code(start_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    cap_style_from_code(start_cap_style_code).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let end_cap =
-    cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    cap_style_from_code(end_cap_style_code).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let (input, join) = match join_style_code {
     0 => (input, swf::JoinStyle::Round),
     1 => (input, swf::JoinStyle::Bevel),
     2 => map(parse_le_u16, |limit| {
       swf::JoinStyle::Miter(swf::join_styles::Miter { limit })
     })(input)?,
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
   let (input, fill) = if has_fill {
     parse_morph_fill_style(input)?
@@ -486,14 +486,14 @@ pub fn parse_morph_line_style2(input: &[u8]) -> NomResult<&[u8], swf::MorphLineS
     swf::MorphLineStyle {
       width,
       morph_width,
-      fill,
-      pixel_hinting,
-      no_v_scale,
-      no_h_scale,
-      no_close,
-      join,
       start_cap,
       end_cap,
+      join,
+      no_h_scale,
+      no_v_scale,
+      no_close,
+      pixel_hinting,
+      fill,
     },
   ))
 }

@@ -18,8 +18,8 @@ pub fn parse_swf(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
 
       match parse_movie(&payload[..], signature.swf_version) {
         Ok((_, movie)) => Ok((&[][..], movie)),
-        Err(::nom::Err::Error((_, e))) => Err(::nom::Err::Error((&[], e))),
-        Err(::nom::Err::Failure((_, e))) => Err(::nom::Err::Failure((&[], e))),
+        Err(::nom::Err::Error(e)) => Err(::nom::Err::Error(nom::error::Error::new(&[], e.code))),
+        Err(::nom::Err::Failure(e)) => Err(::nom::Err::Failure(nom::error::Error::new(&[], e.code))),
         Err(::nom::Err::Incomplete(n)) => Err(::nom::Err::Incomplete(n)),
       }
     }
@@ -51,7 +51,7 @@ pub fn parse_compression_method(input: &[u8]) -> NomResult<&[u8], ast::Compressi
     b"FWS" => Ok((input, ast::CompressionMethod::None)),
     b"CWS" => Ok((input, ast::CompressionMethod::Deflate)),
     b"ZWS" => Ok((input, ast::CompressionMethod::Lzma)),
-    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   }
 }
 

@@ -25,7 +25,7 @@ pub fn parse_blend_mode(input: &[u8]) -> NomResult<&[u8], swf::BlendMode> {
     12 => swf::BlendMode::Erase,
     13 => swf::BlendMode::Overlay,
     14 => swf::BlendMode::Hardlight,
-    _ => return Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
   Ok((input, blend_mode))
 }
@@ -147,7 +147,7 @@ pub fn parse_filter(input: &[u8]) -> NomResult<&[u8], swf::Filter> {
     5 => map(parse_convolution_filter, swf::Filter::Convolution)(input),
     6 => map(parse_color_matrix_filter, swf::Filter::ColorMatrix)(input),
     7 => map(parse_gradient_bevel_filter, swf::Filter::GradientBevel)(input),
-    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   }
 }
 

@@ -50,9 +50,9 @@ mod tests {
     assert_eq!(actual_movie, expected_movie);
   }
 
-  macro_rules! test_various_parser_impl {
-    ($name:ident, $glob:expr, $parser:ident, $type:ty) => {
-      #[test_resources($glob)]
+  macro_rules! test_various_parser_impl_any {
+    ($(#[$meta:meta])* $name:ident<$type:ty>, $parser:path, $check: expr $(,)?) => {
+      $(#[$meta])*
       fn $name(path: &str) {
         let path: &Path = Path::new(path);
         let _name = path
@@ -65,83 +65,71 @@ mod tests {
         let input_path = path.join("input.bytes");
         let input_bytes: Vec<u8> = ::std::fs::read(input_path).expect("Failed to read input");
 
-        let (remaining_bytes, actual_value): (&[u8], $type) = $parser(&input_bytes).expect("Failed to parse");
+        let (remaining_bytes, actual_value): (&[u8], $type) = ($parser)(&input_bytes).expect("Failed to parse");
 
         let expected_path = path.join("value.json");
         let expected_file = ::std::fs::File::open(expected_path).expect("Failed to open expected value file");
         let expected_reader = ::std::io::BufReader::new(expected_file);
         let expected_value = serde_json_v8::from_reader::<_, $type>(expected_reader).expect("Failed to read AST");
 
-        assert_eq!(actual_value, expected_value);
+        #[allow(clippy::redundant_closure_call)]
+        ($check)(actual_value, expected_value);
         assert_eq!(remaining_bytes, &[] as &[u8]);
       }
     };
   }
 
-  // A variant of the previous macro that uses `.is` instead of `.eq` to check for bit-pattern equality
-  macro_rules! test_various_parser_is_impl {
-    ($name:ident, $glob:expr, $parser:ident, $type:ty) => {
-      use crate::swf_types::float_is::Is;
-
-      #[test_resources($glob)]
-      fn $name(path: &str) {
-        let path: &Path = Path::new(path);
-        let _name = path
-          .components()
-          .last()
-          .unwrap()
-          .as_os_str()
-          .to_str()
-          .expect("Failed to retrieve sample name");
-        let input_path = path.join("input.bytes");
-        let input_bytes: Vec<u8> = ::std::fs::read(input_path).expect("Failed to read input");
-
-        let (remaining_bytes, actual_value): (&[u8], $type) = $parser(&input_bytes).expect("Failed to parse");
-
-        let expected_path = path.join("value.json");
-        let expected_file = ::std::fs::File::open(expected_path).expect("Failed to open expected value file");
-        let expected_reader = ::std::io::BufReader::new(expected_file);
-        let expected_value = serde_json_v8::from_reader::<_, $type>(expected_reader).expect("Failed to read AST");
-
-        assert!(actual_value.is(&expected_value));
-        assert_eq!(remaining_bytes, &[] as &[u8]);
-      }
+  macro_rules! test_various_parser_impl_eq {
+    ($(#[$meta:meta])* $name:ident<$type:ty>, $parser:path $(,)?) => {
+      test_various_parser_impl_any!(
+        $(#[$meta])* $name<$type>,
+        $parser,
+        |actual_value, expected_value| { assert_eq!(actual_value, expected_value) },
+      );
     };
   }
 
-  use crate::streaming::basic_data_types::parse_le_f16;
-  test_various_parser_is_impl!(test_parse_le_f16, "../tests/various/float16-le/*/", parse_le_f16, f32);
-
-  use crate::streaming::movie::parse_header;
-  use swf_types::Header;
-
-  fn parse_header34(input: &[u8]) -> NomResult<&[u8], Header> {
-    parse_header(input, 34)
+  macro_rules! test_various_parser_impl_is {
+    ($(#[$meta:meta])* $name:ident<$type:ty>, $parser:path $(,)?) => {
+      test_various_parser_impl_any!(
+        $(#[$meta])* $name<$type>,
+        $parser,
+        |actual_value: $type, expected_value: $type| { assert!(crate::swf_types::float_is::Is::is(&actual_value, &expected_value)) },
+      );
+    };
   }
-  test_various_parser_impl!(test_parse_header, "../tests/various/header/*/", parse_header34, Header);
 
-  use crate::streaming::basic_data_types::parse_matrix;
-  use swf_types::Matrix;
-  test_various_parser_impl!(test_parse_matrix, "../tests/various/matrix/*/", parse_matrix, Matrix);
-
-  use crate::streaming::basic_data_types::parse_rect;
-  use swf_types::Rect;
-  test_various_parser_impl!(test_parse_rect, "../tests/various/rect/*/", parse_rect, Rect);
-
-  use crate::streaming::movie::parse_swf_signature;
-  use swf_types::SwfSignature;
-  test_various_parser_impl!(
-    test_parse_swf_signature,
-    "../tests/various/swf-signature/*/",
-    parse_swf_signature,
-    SwfSignature
+  test_various_parser_impl_is!(
+    #[test_resources("../tests/various/float16-le/*/")] test_parse_le_f16<f32>,
+    crate::streaming::basic_data_types::parse_le_f16,
   );
 
-  use crate::streaming::basic_data_types::parse_leb128_u32;
-  test_various_parser_impl!(
-    test_parse_leb128_u32,
-    "../tests/various/uint32-leb128/*/",
-    parse_leb128_u32,
-    u32
+  test_various_parser_impl_eq!(
+    #[test_resources("../tests/various/matrix/*/")] test_parse_matrix<swf_types::Matrix>,
+    crate::streaming::basic_data_types::parse_matrix,
+  );
+
+  fn parse_header34(input: &[u8]) -> NomResult<&[u8], swf_types::Header> {
+    crate::streaming::movie::parse_header(input, 34)
+  }
+
+  test_various_parser_impl_eq!(
+    #[test_resources("../tests/various/header/*/")] test_parse_header<swf_types::Header>,
+    parse_header34,
+  );
+
+  test_various_parser_impl_eq!(
+    #[test_resources("../tests/various/rect/*/")] test_parse_rect<swf_types::Rect>,
+    crate::streaming::basic_data_types::parse_rect,
+  );
+
+  test_various_parser_impl_eq!(
+    #[test_resources("../tests/various/swf-signature/*/")] test_parse_swf_signature<swf_types::SwfSignature>,
+    crate::streaming::movie::parse_swf_signature,
+  );
+
+  test_various_parser_impl_eq!(
+    #[test_resources("../tests/various/uint32-leb128/*/")] test_parse_leb128_u32<u32>,
+    crate::streaming::basic_data_types::parse_leb128_u32,
   );
 }

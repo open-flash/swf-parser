@@ -127,7 +127,7 @@ pub(crate) fn parse_tag_body(input: &[u8], code: u16, swf_version: u8) -> ast::T
     90 => map(parse_define_bits_jpeg4, ast::Tag::DefineBitmap)(input),
     91 => map(parse_define_font4, ast::Tag::DefineCffFont)(input),
     93 => map(parse_enable_telemetry, ast::Tag::Telemetry)(input),
-    _ => Err(nom::Err::Error((input, nom::error::ErrorKind::Switch))),
+    _ => Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch))),
   };
   match result {
     Ok((_, tag)) => tag,
@@ -143,9 +143,9 @@ pub fn parse_csm_text_settings(input: &[u8]) -> NomResult<&[u8], ast::tags::CsmT
   let (input, flags) = parse_u8(input)?;
   // Skip bits [0, 2]
   let fitting = grid_fitting_from_code((flags >> 3) & 0b111)
-    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let renderer = text_renderer_from_code((flags >> 6) & 0b11)
-    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let (input, thickness) = parse_le_f32(input)?;
   let (input, sharpness) = parse_le_f32(input)?;
   // TODO: Skip 1 byte / assert 1 byte is available
@@ -176,7 +176,7 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast:
 
   if is_sniffed_jpeg(&data, swf_version < 8) {
     let image_dimensions =
-      get_jpeg_image_dimensions(&data).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
+      get_jpeg_image_dimensions(&data).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)))?;
     // TODO: avoid conversions
     Ok((
       input,
@@ -191,7 +191,7 @@ pub fn parse_define_bits(input: &[u8], swf_version: u8) -> NomResult<&[u8], ast:
   } else {
     // UnknownBitmapType
     // TODO: Better error
-    Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)))
+    Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)))
   }
 }
 
@@ -281,11 +281,11 @@ pub fn parse_define_bits_jpeg2(input: &[u8], swf_version: u8) -> NomResult<&[u8]
     Ok(SniffedImageType::Gif) => (ast::ImageType::Gif, get_gif_image_dimensions(&data)),
     Err(()) => {
       // UnknownBitmapType
-      return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+      return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)));
     }
   };
 
-  let dimensions = dimensions.map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
+  let dimensions = dimensions.map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)))?;
 
   Ok((
     input,
@@ -320,11 +320,11 @@ pub fn parse_define_bits_jpeg3(input: &[u8], swf_version: u8) -> NomResult<&[u8]
     Ok(SniffedImageType::Gif) => (ast::ImageType::Gif, get_gif_image_dimensions(data), data),
     Err(()) => {
       // UnknownBitmapType
-      return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+      return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)));
     }
   };
 
-  let dimensions = dimensions.map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
+  let dimensions = dimensions.map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)))?;
 
   Ok((
     &[],
@@ -353,11 +353,11 @@ pub fn parse_define_bits_jpeg4(input: &[u8]) -> NomResult<&[u8], ast::tags::Defi
     Ok(SniffedImageType::Gif) => (ast::ImageType::Gif, get_gif_image_dimensions(data), data),
     Err(()) => {
       // UnknownBitmapType
-      return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+      return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)));
     }
   };
 
-  let dimensions = dimensions.map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Verify)))?;
+  let dimensions = dimensions.map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)))?;
 
   Ok((
     &[],
@@ -507,7 +507,7 @@ pub fn parse_define_font(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineGlyp
         let end_offset = offsets.get(i + 1).cloned().unwrap_or(saved_input_len);
         let glyph_input_size: usize = match end_offset.checked_sub(start_offset) {
           Some(x) => x,
-          None => return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify))),
+          None => return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify))),
         };
         let (_, glyph_input) = offset_take(start_offset, glyph_input_size)(saved_input)?;
         glyph_input
@@ -870,9 +870,9 @@ fn parse_define_shape_any(input: &[u8], version: ShapeVersion) -> NomResult<&[u8
       id,
       bounds,
       edge_bounds,
-      has_scaling_strokes,
-      has_non_scaling_strokes,
       has_fill_winding,
+      has_non_scaling_strokes,
+      has_scaling_strokes,
       shape,
     },
   ))
@@ -897,9 +897,9 @@ fn parse_define_sound(input: &[u8]) -> NomResult<&[u8], ast::tags::DefineSound> 
     ast::SoundSize::SoundSize8
   };
   let sound_rate =
-    sound_rate_from_code((flags >> 2) & 0b11).map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    sound_rate_from_code((flags >> 2) & 0b11).map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let format = audio_coding_format_from_code((flags >> 4) & 0b1111)
-    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let (input, sample_count) = parse_le_u32(input)?;
   let (input, data) = parse_bytes(input)?;
 
@@ -948,7 +948,7 @@ pub fn parse_define_text_any(input: &[u8], version: TextVersion) -> NomResult<&[
   let (input, advance_bits) = map(parse_u8, usize::from)(input)?;
   let has_alpha = version >= TextVersion::Text2;
   if index_bits > 32 || advance_bits > 32 {
-    return Err(nom::Err::Error((input, nom::error::ErrorKind::Verify)));
+    return Err(nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Verify)));
   }
   let (input, records) = parse_text_record_string(input, has_alpha, index_bits, advance_bits)?;
 
@@ -974,7 +974,7 @@ pub fn parse_define_video_stream(input: &[u8]) -> NomResult<&[u8], ast::tags::De
   #[allow(clippy::identity_op)]
   let use_smoothing = (flags & (1 << 0)) != 0;
   let deblocking = video_deblocking_from_code((flags >> 1) & 0b111)
-    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   // Bits [4, 7] are reserved
   let (input, codec) = parse_videoc_codec(input)?;
 
@@ -1331,7 +1331,7 @@ fn parse_sound_stream_head_any(input: &[u8]) -> NomResult<&[u8], ast::tags::Soun
     ast::SoundSize::SoundSize8
   };
   let playback_sound_rate = sound_rate_from_code(((flags >> 2) & 0b11) as u8)
-    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   // Bits [4, 7] are reserved
   let stream_sound_type = if (flags & (1 << 8)) != 0 {
     ast::SoundType::Stereo
@@ -1344,9 +1344,9 @@ fn parse_sound_stream_head_any(input: &[u8]) -> NomResult<&[u8], ast::tags::Soun
     ast::SoundSize::SoundSize8
   };
   let stream_sound_rate = sound_rate_from_code(((flags >> 10) & 0b11) as u8)
-    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let stream_format = audio_coding_format_from_code(((flags >> 12) & 0b1111) as u8)
-    .map_err(|_| nom::Err::Error((input, nom::error::ErrorKind::Switch)))?;
+    .map_err(|_| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::Switch)))?;
   let (input, stream_sample_count) = parse_le_u16(input)?;
   let (input, latency_seek) = cond(stream_format == ast::AudioCodingFormat::Mp3, parse_le_i16)(input)?;
   Ok((

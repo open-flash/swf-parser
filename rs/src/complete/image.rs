@@ -24,13 +24,13 @@ const PNG_IHDR_CHUNK_TYPE: u32 = 0x49_48_44_52;
 pub fn get_png_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
   // Skip PNG signature (8 bytes) and IHDR (Image Header) chunk size (4 bytes)
   let (input, ()) = skip::<_, _, ()>(12usize)(input).map_err(|_| ())?;
-  let (input, chunk_type) = parse_be_u32::<()>(input).map_err(|_| ())?;
+  let (input, chunk_type) = parse_be_u32::<&[u8], ()>(input).map_err(|_| ())?;
   if chunk_type != PNG_IHDR_CHUNK_TYPE {
     // Expected chunk type to be IHDR (Image Header)
     return Err(());
   }
-  let (input, width) = parse_be_u32::<()>(input).map_err(|_| ())?;
-  let (_, height) = parse_be_u32::<()>(input).map_err(|_| ())?;
+  let (input, width) = parse_be_u32::<&[u8], ()>(input).map_err(|_| ())?;
+  let (_, height) = parse_be_u32::<&[u8], ()>(input).map_err(|_| ())?;
 
   Ok(ImageDimensions {
     width: width as usize,
@@ -153,8 +153,8 @@ fn is_jpeg_sof(code: u8) -> bool {
 pub fn get_gif_image_dimensions(input: &[u8]) -> Result<ImageDimensions, ()> {
   // Skip GIF header (6 bytes): signature (3 bytes) and version (3 bytes)
   let (input, ()) = skip::<_, _, ()>(6usize)(input).map_err(|_| ())?;
-  let (input, width) = parse_be_u16::<()>(input).map_err(|_| ())?;
-  let (_, height) = parse_be_u16::<()>(input).map_err(|_| ())?;
+  let (input, width) = parse_be_u16::<_, ()>(input).map_err(|_| ())?;
+  let (_, height) = parse_be_u16::<_, ()>(input).map_err(|_| ())?;
 
   Ok(ImageDimensions {
     width: width as usize,

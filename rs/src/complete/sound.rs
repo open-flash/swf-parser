@@ -26,12 +26,9 @@ pub fn audio_coding_format_from_code(audio_codec_code: u8) -> Result<swf::AudioC
   }
 }
 
+// TODO: Move this to a method on `swf::AudioCodingFormat`
 pub fn is_uncompressed_audio_coding_format(format: swf::AudioCodingFormat) -> bool {
-  match format {
-    swf::AudioCodingFormat::UncompressedNativeEndian => true,
-    swf::AudioCodingFormat::UncompressedLittleEndian => true,
-    _ => false,
-  }
+  matches!(format, swf::AudioCodingFormat::UncompressedNativeEndian | swf::AudioCodingFormat::UncompressedLittleEndian)
 }
 
 pub fn parse_sound_info(input: &[u8]) -> NomResult<&[u8], swf::SoundInfo> {
