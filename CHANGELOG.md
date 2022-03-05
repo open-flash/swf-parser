@@ -1,3 +1,10 @@
+# Next
+
+## Rust
+
+- **[Feature]** Add LZMA support to `streaming::movie::parse_swf`.
+- **[Change]** Compression support can be opted-out by disabling the corresponding features.
+
 # 0.13.0 (2021-07-23)
 
 ## Rust

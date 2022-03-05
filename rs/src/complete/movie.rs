@@ -1,5 +1,7 @@
 use crate::complete::parse_tag;
 use crate::streaming::movie::parse_swf_signature;
+use crate::streaming::decompress;
+use ast::CompressionMethod;
 use nom::IResult as NomResult;
 use swf_types as ast;
 
@@ -17,6 +19,11 @@ pub enum SwfParseError {
   /// This error occurs either if there is not enough data to even parse
   /// the signature or if the compression method is invalid.
   InvalidSignature,
+
+  /// Indicates that the compression method used by the payload isn't supported.
+  ///
+  /// This can only happen when the corresponding Cargo feature is disabled.
+  UnsupportedCompression(CompressionMethod),
 
   /// Indicates a failure to decompress the payload.
   ///
@@ -43,34 +50,25 @@ pub fn parse_swf(input: &[u8]) -> Result<ast::Movie, SwfParseError> {
     Err(_) => return Err(SwfParseError::InvalidSignature),
   };
 
-  let mut movie_buffer: Vec<u8>;
-
-  let movie_bytes: &[u8] = match signature.compression_method {
-    ast::CompressionMethod::None => input,
-    ast::CompressionMethod::Deflate => {
-      movie_buffer = match inflate::inflate_bytes_zlib(input) {
-        Ok(uncompressed) => uncompressed,
-        Err(_) => return Err(SwfParseError::InvalidPayload),
-      };
-      &movie_buffer
-    }
-    ast::CompressionMethod::Lzma => {
-      let mut payload_reader = std::io::BufReader::new(input);
-      movie_buffer = Vec::new();
-      match lzma_rs::lzma_decompress(&mut payload_reader, &mut movie_buffer) {
-        Ok(_) => (),
-        Err(_) => return Err(SwfParseError::InvalidPayload),
-      }
-      &movie_buffer
-    }
+  let result = match signature.compression_method {
+    CompressionMethod::None => decompress::decompress_none(input),
+    #[cfg(feature="deflate")]
+    CompressionMethod::Deflate => decompress::decompress_zlib(input),
+    #[cfg(feature="lzma")]
+    CompressionMethod::Lzma => decompress::decompress_lzma(input),
+    #[allow(unreachable_patterns)]
+    method => return Err(SwfParseError::UnsupportedCompression(method)),
   };
 
-  let (_, movie) = match parse_movie(movie_bytes, signature.swf_version) {
-    Ok(ok) => ok,
-    Err(_) => return Err(SwfParseError::InvalidHeader),
-  };
+  let (_input, payload) = result.map_err(|_| SwfParseError::InvalidPayload)?;
 
-  Ok(movie)
+  // TODO: should we check that the input was fully consumed?
+  // TODO: check decompressed payload length against signature?
+
+  match parse_movie(&payload, signature.swf_version) {
+    Ok((_, movie)) => Ok(movie),
+    Err(_) => Err(SwfParseError::InvalidHeader),
+  }
 }
 
 /// Parses a completely loaded movie.
