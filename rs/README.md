@@ -24,6 +24,15 @@ fn main() {
 }
 ```
 
+## Features
+
+SWF decompression is provided by the following features, enabled by default:
+
+- `deflate`: enable support for `CompressionMethod::Deflate`, using the [`inflate`](https://github.com/image-rs/inflate) crate.
+- `lzma`: enable support for `CompressionMethod::Lzma`, using the [`lzma-rs`](https://github.com/gendx/lzma-rs) crate.
+
+Disabling these features will cause the SWF parsing functions to fail when passed the corresponding `CompressionMethod`.
+
 ## Contributing
 
 This repo uses Git submodules for its test samples:

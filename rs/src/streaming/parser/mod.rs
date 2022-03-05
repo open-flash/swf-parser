@@ -1,9 +1,19 @@
 use crate::stream_buffer::{FlatBuffer, StreamBuffer};
-use crate::streaming::movie::{parse_header, parse_swf_signature};
-use crate::streaming::tag::parse_tag;
-use inflate::InflateStream;
+use crate::streaming::movie::parse_swf_signature;
 use swf_types::CompressionMethod;
-use swf_types::{Header as SwfHeader, SwfSignature, Tag};
+use swf_types::{Header as SwfHeader, Tag};
+
+mod simple;
+#[cfg(feature="deflate")]
+mod deflate;
+#[cfg(feature="lzma")]
+mod lzma;
+
+use simple::SimpleStream;
+#[cfg(feature="deflate")]
+use deflate::DeflateStream;
+#[cfg(feature="lzma")]
+use lzma::LzmaStream;
 
 /// Streaming parser currently parsing the SWF header
 ///
@@ -22,9 +32,11 @@ enum InnerHeaderParser {
   Simple(SimpleStream<FlatBuffer>),
   /// Finished parsing the signature, started parsing the `Deflate`-compressed
   /// payload
+  #[cfg(feature="deflate")]
   Deflate(DeflateStream<FlatBuffer>),
   /// Finished parsing the signature, started parsing the `LZMA`-compressed
   /// payload
+  #[cfg(feature="lzma")]
   Lzma(LzmaStream<FlatBuffer>),
 }
 
@@ -47,28 +59,40 @@ impl HeaderParser {
   pub fn header(self, bytes: &[u8]) -> Result<(SwfHeader, TagParser), Self> {
     match self.0 {
       InnerHeaderParser::Signature(mut buffer) => {
-        buffer.extend_from_slice(bytes);
-        let (input, signature) = match parse_swf_signature(&buffer) {
-          Ok(ok) => ok,
-          Err(nom::Err::Incomplete(_)) => return Err(Self(InnerHeaderParser::Signature(buffer))),
-          Err(nom::Err::Error(_)) | Err(nom::Err::Failure(_)) => {
-            return Err(Self(InnerHeaderParser::Signature(buffer)));
-          }
-        };
-        let buffer: FlatBuffer = FlatBuffer::new();
-
-        match signature.compression_method {
-          CompressionMethod::None => {
-            HeaderParser::simple_header(SimpleStream::new(buffer, signature.swf_version), input)
-          }
-          CompressionMethod::Lzma => HeaderParser::lzma_header(LzmaStream::new(buffer, &signature), input),
-          CompressionMethod::Deflate => HeaderParser::deflate_header(DeflateStream::new(buffer, &signature), input),
-        }
+        let (input, parser) = Self::parser_from_signature(&mut buffer, bytes)?;
+        parser.header(input)
       }
       InnerHeaderParser::Simple(stream) => HeaderParser::simple_header(stream, bytes),
+      #[cfg(feature="lzma")]
       InnerHeaderParser::Lzma(stream) => HeaderParser::lzma_header(stream, bytes),
+      #[cfg(feature="deflate")]
       InnerHeaderParser::Deflate(stream) => HeaderParser::deflate_header(stream, bytes),
     }
+  }
+
+  fn parser_from_signature<'a>(buffer: &'a mut Vec<u8>, bytes: &[u8]) -> Result<(&'a [u8], Self), Self> {
+    buffer.extend_from_slice(bytes);
+
+    // Weird dance to avoid borrowck issues.
+    let consumed_and_sig = parse_swf_signature(&*buffer).map(|(remaining, signature)| {
+      (buffer.len() - remaining.len(), signature)
+    });
+    let (input, signature) = match consumed_and_sig {
+      Ok((off, signature)) => (&buffer[off..], signature),
+      Err(_) => return Err(Self(InnerHeaderParser::Signature(std::mem::take(buffer)))),
+    };
+
+    let buffer: FlatBuffer = FlatBuffer::new();
+    let parser = match signature.compression_method {
+      CompressionMethod::None => InnerHeaderParser::Simple(SimpleStream::new(buffer, signature)),
+      #[cfg(feature="lzma")]
+      CompressionMethod::Lzma => InnerHeaderParser::Lzma(LzmaStream::new(buffer, signature)),
+      #[cfg(feature="deflate")]
+      CompressionMethod::Deflate => InnerHeaderParser::Deflate(DeflateStream::new(buffer, signature)),
+      #[allow(unreachable_patterns)]
+      method => panic!("Unsupported compression method: {:?}", method),
+    };
+    Ok((input, Self(parser)))
   }
 
   /// Finish parsing the header from an uncompressed payload.
@@ -81,6 +105,7 @@ impl HeaderParser {
   }
 
   /// Finish parsing the header from a LZMA-compressed payload.
+  #[cfg(feature="lzma")]
   fn lzma_header(mut stream: LzmaStream<FlatBuffer>, bytes: &[u8]) -> Result<(SwfHeader, TagParser), Self> {
     stream.write(bytes);
     match stream.header() {
@@ -90,6 +115,7 @@ impl HeaderParser {
   }
 
   /// Finish parsing the header from a deflate-compressed payload.
+  #[cfg(feature="deflate")]
   fn deflate_header(mut stream: DeflateStream<FlatBuffer>, bytes: &[u8]) -> Result<(SwfHeader, TagParser), Self> {
     stream.write(bytes);
     match stream.header() {
@@ -121,8 +147,10 @@ enum InnerTagParser {
   /// Parse tags from an uncompressed stream
   Simple(SimpleStream<FlatBuffer>),
   /// Parse tags from a deflate-compressed stream
+  #[cfg(feature="deflate")]
   Deflate(DeflateStream<FlatBuffer>),
   /// Parse tags from a LZMA-compressed stream
+#[cfg(feature="lzma")]
   Lzma(LzmaStream<FlatBuffer>),
 }
 
@@ -140,193 +168,17 @@ impl TagParser {
         stream.write(bytes);
         stream.tags()
       }
+      #[cfg(feature="deflate")]
       InnerTagParser::Deflate(ref mut stream) => {
         stream.write(bytes);
         stream.tags()
       }
+      #[cfg(feature="lzma")]
       InnerTagParser::Lzma(ref mut stream) => {
         stream.write(bytes);
         stream.tags()
       }
     }
-  }
-}
-
-/// State of the uncompressed payload parser
-struct SimpleStream<B: StreamBuffer> {
-  buffer: B,
-  swf_version: u8,
-  is_end: bool,
-}
-
-impl<B: StreamBuffer> SimpleStream<B> {
-  pub(crate) fn new(buffer: B, swf_version: u8) -> Self {
-    Self {
-      buffer,
-      swf_version,
-      is_end: false,
-    }
-  }
-
-  /// Appends data to the internal buffer.
-  pub(crate) fn write(&mut self, bytes: &[u8]) {
-    self.buffer.write(bytes);
-  }
-
-  /// Finishes parsing the SWF header from the internal buffer.
-  pub(crate) fn header(mut self) -> Result<(SwfHeader, Self), Self> {
-    let buffer: &[u8] = self.buffer.get();
-    let (remaining, header) = match parse_header(buffer, self.swf_version) {
-      Ok(ok) => ok,
-      Err(nom::Err::Incomplete(_)) => return Err(self),
-      Err(nom::Err::Error(_)) | Err(nom::Err::Failure(_)) => return Err(self),
-    };
-    let parsed_len: usize = buffer.len() - remaining.len();
-
-    self.buffer.clear(parsed_len);
-
-    Ok((header, self))
-  }
-
-  /// Parses the available tags from the internal buffer.
-  ///
-  /// Returns `Ok(None)` if parsing is complete (there are no more tags).
-  /// Returns `Ok(Some(Vec<Tag>))` when some tags are available. `Vec` is non-empty.
-  /// Returns `Err(())` when there's not enough data or an error occurs.
-  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ParseTagsError> {
-    if self.is_end {
-      return Ok(None);
-    }
-
-    let buffer: &[u8] = self.buffer.get();
-
-    let mut input: &[u8] = buffer;
-    let mut tags: Vec<Tag> = Vec::new();
-    let is_end: bool = loop {
-      match parse_tag(input, self.swf_version) {
-        Ok((_, None)) => {
-          input = &[][..];
-          break true;
-        }
-        Ok((next_input, Some(tag))) => {
-          tags.push(tag);
-          input = next_input;
-        }
-        Err(_) => {
-          break false;
-        }
-      };
-    };
-
-    if is_end {
-      self.is_end = true;
-    }
-
-    let parsed_len: usize = buffer.len() - input.len();
-    self.buffer.clear(parsed_len);
-
-    if tags.is_empty() {
-      if is_end {
-        Ok(None)
-      } else {
-        Err(ParseTagsError)
-      }
-    } else {
-      Ok(Some(tags))
-    }
-  }
-}
-
-/// State of the `Deflate` payload parser
-struct DeflateStream<B: StreamBuffer> {
-  inflater: InflateStream,
-  simple: SimpleStream<B>,
-}
-
-impl<B: StreamBuffer> DeflateStream<B> {
-  pub(crate) fn new(buffer: B, signature: &SwfSignature) -> Self {
-    let inflater = inflate::InflateStream::from_zlib();
-    let simple = SimpleStream::new(B::new(), signature.swf_version);
-    let mut deflate_stream = Self { inflater, simple };
-    deflate_stream.write(buffer.get());
-    deflate_stream
-  }
-
-  /// Appends data to the internal buffer.
-  pub(crate) fn write(&mut self, mut bytes: &[u8]) {
-    while !bytes.is_empty() {
-      match self.inflater.update(bytes) {
-        Ok((read_count, chunk)) => {
-          bytes = &bytes[read_count..];
-          self.simple.write(chunk);
-        }
-        Err(e) => panic!("Failed to write Deflate payload {}", e),
-      }
-    }
-  }
-
-  /// Finishes parsing the SWF header from the internal buffer.
-  pub(crate) fn header(self) -> Result<(SwfHeader, Self), Self> {
-    match self.simple.header() {
-      Ok((header, simple)) => Ok((
-        header,
-        Self {
-          inflater: self.inflater,
-          simple,
-        },
-      )),
-      Err(simple) => Err(Self {
-        inflater: self.inflater,
-        simple,
-      }),
-    }
-  }
-
-  /// Parses the available tags from the internal buffer.
-  ///
-  /// Returns `Ok(None)` if parsing is complete (there are no more tags).
-  /// Returns `Ok(Some(Vec<Tag>))` when some tags are available. `Vec` is non-empty.
-  /// Returns `Err(())` when there's not enough data or an error occurs.
-  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ParseTagsError> {
-    self.simple.tags()
-  }
-}
-
-// TODO: Send PR to lzma-rs to support LZMA stream parsing
-struct LzmaParser {}
-
-impl LzmaParser {
-  pub fn new() -> Self {
-    unimplemented!();
-  }
-}
-
-/// State of the `Deflate` payload parser
-struct LzmaStream<B: StreamBuffer> {
-  #[allow(dead_code)]
-  lzma_parser: LzmaParser,
-  simple: SimpleStream<B>,
-}
-
-impl<B: StreamBuffer> LzmaStream<B> {
-  pub(crate) fn new(buffer: B, signature: &SwfSignature) -> Self {
-    let lzma_parser = LzmaParser::new();
-    let simple = SimpleStream::new(B::new(), signature.swf_version);
-    let mut stream = Self { lzma_parser, simple };
-    stream.write(buffer.get());
-    stream
-  }
-
-  pub(crate) fn write(&mut self, mut _bytes: &[u8]) {
-    unimplemented!()
-  }
-
-  pub(crate) fn header(self) -> Result<(SwfHeader, Self), Self> {
-    unimplemented!()
-  }
-
-  pub(crate) fn tags(&mut self) -> Result<Option<Vec<Tag>>, ParseTagsError> {
-    self.simple.tags()
   }
 }
 
@@ -337,10 +189,10 @@ mod tests {
 
   #[test]
   fn test_stream_parse_blank() {
-    let movie_ast_bytes: &[u8] = include_bytes!("../../../tests/movies/blank/ast.json");
+    let movie_ast_bytes: &[u8] = include_bytes!("../../../../tests/movies/blank/ast.json");
     let expected: Movie = serde_json_v8::from_slice::<Movie>(movie_ast_bytes).expect("Failed to read AST");
 
-    let movie_bytes: &[u8] = include_bytes!("../../../tests/movies/blank/main.swf");
+    let movie_bytes: &[u8] = include_bytes!("../../../../tests/movies/blank/main.swf");
     let mut movie_bytes = movie_bytes.iter().copied().enumerate();
 
     let mut parser = HeaderParser::new();

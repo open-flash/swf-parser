@@ -1,29 +1,33 @@
 use crate::streaming::basic_data_types::{parse_le_ufixed8_p8, parse_rect};
 use crate::streaming::tag::parse_tag;
+use crate::streaming::decompress;
 use nom::number::streaming::{le_u16 as parse_le_u16, le_u32 as parse_le_u32, le_u8 as parse_u8};
 use nom::{IResult as NomResult, Needed};
 use std::convert::TryFrom;
 use swf_types as ast;
 
 pub fn parse_swf(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
-  use ::std::io::Write;
-
   let (input, signature) = parse_swf_signature(input)?;
-  match signature.compression_method {
-    ast::CompressionMethod::None => parse_movie(input, signature.swf_version),
-    ast::CompressionMethod::Deflate => {
-      let mut decoder = ::inflate::InflateWriter::from_zlib(Vec::new());
-      decoder.write_all(input).unwrap();
-      let payload = decoder.finish().unwrap();
 
-      match parse_movie(&payload[..], signature.swf_version) {
-        Ok((_, movie)) => Ok((&[][..], movie)),
-        Err(::nom::Err::Error(e)) => Err(::nom::Err::Error(nom::error::Error::new(&[], e.code))),
-        Err(::nom::Err::Failure(e)) => Err(::nom::Err::Failure(nom::error::Error::new(&[], e.code))),
-        Err(::nom::Err::Incomplete(n)) => Err(::nom::Err::Incomplete(n)),
-      }
-    }
-    ast::CompressionMethod::Lzma => unimplemented!(),
+  let result = match signature.compression_method {
+    ast::CompressionMethod::None => decompress::decompress_none(input),
+    #[cfg(feature="deflate")]
+    ast::CompressionMethod::Deflate => decompress::decompress_zlib(input),
+    #[cfg(feature="lzma")]
+    ast::CompressionMethod::Lzma => decompress::decompress_lzma(input),
+    #[allow(unreachable_patterns)]
+    method => panic!("Unsupported compression method: {:?}", method),
+  };
+  let (input, payload) = result.unwrap();
+
+  // TODO: check decompressed payload length against signature?
+
+  match parse_movie(&payload, signature.swf_version) {
+    // TODO: should we assert that the payload is fully consumed?
+    Ok((_payload, movie)) => Ok((input, movie)),
+    Err(nom::Err::Error(e)) => Err(nom::Err::Error(nom::error::Error::new(&[], e.code))),
+    Err(nom::Err::Failure(e)) => Err(nom::Err::Failure(nom::error::Error::new(&[], e.code))),
+    Err(nom::Err::Incomplete(n)) => Err(nom::Err::Incomplete(n)),
   }
 }
 
