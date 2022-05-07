@@ -5,16 +5,51 @@
 
 # SWF Parser
 
-[![npm](https://img.shields.io/npm/v/swf-parser.svg)](https://www.npmjs.com/package/swf-parser)
-[![crates.io](https://img.shields.io/crates/v/swf-parser.svg)](https://crates.io/crates/swf-parser)
-[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
-[![Build status](https://img.shields.io/travis/com/open-flash/swf-parser/master.svg)](https://travis-ci.com/open-flash/swf-parser)
+[![GitHub repository](https://img.shields.io/badge/GitHub-open--flash%2Fswf--parser-informational.svg)](https://github.com/open-flash/swf-parser)
 
 SWF parser implemented in Rust and Typescript (Node and browser).
 Converts bytes to [`swf-types` movies][swf-types].
 
-- [Rust implementation](./rs/README.md)
-- [Typescript implementation](./ts/README.md)
+<table>
+<thead>
+  <tr>
+    <th>Implementation</th>
+    <th>Package</th>
+    <th>Checks</th>
+    <th>Documentation</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>
+      <a href="./rs/README.md">Rust</a>
+    </td>
+    <td>
+      <a href="https://crates.io/crates/swf-parser"><img src="https://img.shields.io/crates/v/swf-parser" alt="crates.io crate"/></a>
+    </td>
+    <td>
+      <a href="https://github.com/open-flash/swf-parser/actions/workflows/check-rs.yml"><img src="https://img.shields.io/github/workflow/status/open-flash/swf-parser/check-rs/main"  alt="Rust checks status"/></a>
+    </td>
+    <td>
+      <a href="https://docs.rs/swf-parser"><img src="https://img.shields.io/badge/docs.rs-swf--parser-informational" alt="docs.rs/swf-parser"></a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <a href="./ts/README.md">TypeScript</a>
+    </td>
+    <td>
+      <a href="https://www.npmjs.com/package/swf-parser"><img src="https://img.shields.io/npm/v/swf-parser" alt="npm package"/></a>
+    </td>
+    <td>
+      <a href="https://github.com/open-flash/swf-parser/actions/workflows/check-ts.yml"><img src="https://img.shields.io/github/workflow/status/open-flash/swf-parser/check-ts/main"  alt="TypeScript checks status"/></a>
+    </td>
+    <td>
+      <a href="./ts/src/lib">Source Code ¯\_(ツ)_/¯</a>
+    </td>
+  </tr>
+</tbody>
+</table>
 
 This library is part of the [Open Flash][ofl] project.
 

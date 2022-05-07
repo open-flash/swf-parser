@@ -3,7 +3,7 @@ name = "swf-parser"
 version = "0.13.0"
 authors = ["Charles Samborski <demurgos@demurgos.net>"]
 description = "SWF parser"
-documentation = "https://github.com/open-flash/swf-parser"
+documentation = "https://docs.rs/swf-parser"
 homepage = "https://github.com/open-flash/swf-parser"
 repository = "https://github.com/open-flash/swf-parser"
 readme = "./README.md"
@@ -11,9 +11,6 @@ keywords = ["parser", "swf", "flash"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
 rust-version = "1.60.0"
-
-[badges]
-travis-ci = { repository = "open-flash/swf-parser", branch = "master" }
 
 [lib]
 name = "swf_parser"

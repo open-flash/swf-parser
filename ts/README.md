@@ -3,11 +3,11 @@
     alt="Open Flash logo" title="Open Flash" align="right" width="64" height="64" />
 </a>
 
-# SWF Parser (Typescript)
+# SWF Parser (TypeScript)
 
-[![npm](https://img.shields.io/npm/v/swf-parser.svg)](https://www.npmjs.com/package/swf-parser)
-[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
-[![Build status](https://img.shields.io/travis/com/open-flash/swf-parser/master.svg)](https://travis-ci.com/open-flash/swf-parser)
+[![GitHub repository](https://img.shields.io/badge/GitHub-open--flash%2Fswf--parser-informational.svg)](https://github.com/open-flash/swf-parser)
+<a href="https://www.npmjs.com/package/swf-parser"><img src="https://img.shields.io/npm/v/swf-parser" alt="npm package"/></a>
+<a href="https://github.com/open-flash/swf-parser/actions/workflows/check-ts.yml"><img src="https://img.shields.io/github/workflow/status/open-flash/swf-parser/check-ts/main"  alt="TypeScript checks status"/></a>
 
 SWF parser implemented in Typescript, for Node and browsers.
 Converts bytes to [`swf-types` movies][swf-types].
@@ -39,9 +39,9 @@ dependencies. **The commands must be run from the `ts` directory.**
 
 ```
 cd ts
-npm install
+yarn install
 # work your changes...
-npm test
+yarn test
 ```
 
 Prefer non-`master` branches when sending a PR so your changes can be rebased if

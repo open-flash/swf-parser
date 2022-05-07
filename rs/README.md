@@ -5,9 +5,10 @@
 
 # SWF Parser (Rust)
 
-[![crates.io](https://img.shields.io/crates/v/swf-parser.svg)](https://crates.io/crates/swf-parser)
-[![GitHub repository](https://img.shields.io/badge/Github-open--flash%2Fswf--parser-blue.svg)](https://github.com/open-flash/swf-parser)
-[![Build status](https://img.shields.io/travis/com/open-flash/swf-parser/master.svg)](https://travis-ci.com/open-flash/swf-parser)
+[![GitHub repository](https://img.shields.io/badge/GitHub-open--flash%2Fswf--parser-informational.svg)](https://github.com/open-flash/swf-parser)
+<a href="https://crates.io/crates/swf-parser"><img src="https://img.shields.io/crates/v/swf-parser" alt="crates.io crate"/></a>
+<a href="https://github.com/open-flash/swf-parser/actions/workflows/check-rs.yml"><img src="https://img.shields.io/github/workflow/status/open-flash/swf-parser/check-rs/main"  alt="Rust checks status"/></a>
+<a href="https://docs.rs/swf-parser"><img src="https://img.shields.io/badge/docs.rs-swf--parser-informational" alt="docs.rs/swf-parser"></a>
 
 SWF parser implemented in Rust.
 Converts bytes to [`swf-types` movies][swf-types].
