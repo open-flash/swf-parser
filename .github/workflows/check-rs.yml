@@ -1,0 +1,41 @@
+name: "Check the Rust implementation"
+
+on:
+  push:
+    branches: [ "main", "gh-actions" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        rust-version: ["1.60.0", "stable"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Rust ${{ matrix.rust-version }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+          components: rustfmt, clippy
+
+      - name: Annotate commit with clippy warnings
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: "--all-targets --all-features -- -D warnings"
+
+      - name: Build and test
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          out-type: "lcov"
+          args: "--count"
+
+      - name: Upload coverage report to codecov.io
+        uses: codecov/codecov-action@v2
+        with:
+          files: "./lcov.info"
