@@ -12,8 +12,8 @@ jobs:
 
     strategy:
       matrix:
-        # Support policy: Current + any LTS above 14.13.1.
-        node-version: ["14.13.1", "16", "18"]
+        # Support policy: Current and all LTS.
+        node-version: ["14", "16", "18"]
 
     steps:
       - uses: actions/checkout@v3
