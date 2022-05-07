@@ -1,4 +1,4 @@
-name: "Check the TypeScript implementation"
+name: "check-ts"
 
 on:
   push:

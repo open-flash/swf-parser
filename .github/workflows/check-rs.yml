@@ -1,4 +1,4 @@
-name: "Check the Rust implementation"
+name: "check-rs"
 
 on:
   push:
