@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::complete::parse_tag;
 use crate::streaming::movie::parse_swf_signature;
 use crate::streaming::decompress;
@@ -37,6 +39,22 @@ pub enum SwfParseError {
   /// The movie header corresponds to the first few bytes of the payload.
   /// This error occurs if there is not enough data to parse the header.
   InvalidHeader,
+}
+
+impl std::error::Error for SwfParseError {}
+
+impl fmt::Display for SwfParseError {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      SwfParseError::InvalidSignature => f.write_str("invalid SWF signature"),
+      SwfParseError::UnsupportedCompression(comp) => {
+        f.write_str("unsupported SWF compression: ")?;
+        fmt::Debug::fmt(comp, f)
+      }
+      SwfParseError::InvalidPayload => f.write_str("invalid SWF payload"),
+      SwfParseError::InvalidHeader => f.write_str("invalid SWF header"),
+    }
+  }
 }
 
 /// Parses a completely loaded SWF file.
