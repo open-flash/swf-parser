@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::stream_buffer::{FlatBuffer, StreamBuffer};
 use crate::streaming::movie::parse_swf_signature;
 use swf_types::CompressionMethod;
@@ -46,6 +48,21 @@ pub enum HeaderParserError {
   MissingFeature(&'static str),
   /// Other error (todo: replace this variant to provide more details)
   Other,
+}
+
+impl std::error::Error for HeaderParserError {}
+
+impl fmt::Display for HeaderParserError {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+        HeaderParserError::MissingFeature(feat) => write!(
+          f,
+          "unsupported compression type in SWF header: compile `swf-parser` with the `{}` feature",
+          feat,
+        ),
+        HeaderParserError::Other => f.write_str("couldn't parse SWF header"),
+    }
+  }
 }
 
 impl HeaderParser {
@@ -165,7 +182,16 @@ enum InnerTagParser {
 }
 
 // TODO: Implement proper error type
+#[derive(Debug)]
 pub struct ParseTagsError;
+
+impl std::error::Error for ParseTagsError {}
+
+impl fmt::Display for ParseTagsError {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.write_str("failed to parse SWF tag")
+  }
+}
 
 impl TagParser {
   /// Appends the provided bytes to the internal buffer and tries to parse most of the tags.
