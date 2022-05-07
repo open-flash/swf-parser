@@ -2,7 +2,7 @@ name: "Check the TypeScript implementation"
 
 on:
   push:
-    branches: [ "main", "gh-actions" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 

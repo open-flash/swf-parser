@@ -1,13 +1,21 @@
 # Next
 
+- **[Breaking change]** Require Rust `1.60.0`.
+- **[Internal]** Migrate from Travis CI to GitHub Actions.
+
 ## Rust
 
-- **[Breaking change]** Require Rust `1.60.0`.
 - **[Feature]** You may opt out from compression support. Compression is now
   provided by the enabled-by-default features `deflate` and `lzma`.
 - **[Feature]** Add support streaming support for movies using the `Deflate`
   compression method.
 - **[Fix]** Update dependencies ([#147](https://github.com/open-flash/swf-types/issues/147)).
+
+# Typescript
+
+- **[Breaking change]** Compile to `.mjs`.
+- **[Fix]** Update dependencies.
+- **[Internal]** Use Yarn's Plug'n'Play linker.
 
 # 0.13.0 (2021-07-23)
 
