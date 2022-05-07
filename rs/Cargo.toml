@@ -9,7 +9,8 @@ repository = "https://github.com/open-flash/swf-parser"
 readme = "./README.md"
 keywords = ["parser", "swf", "flash"]
 license = "AGPL-3.0-or-later"
-edition = "2018"
+edition = "2021"
+rust-version = "1.60.0"
 
 [badges]
 travis-ci = { repository = "open-flash/swf-parser", branch = "master" }
@@ -18,28 +19,27 @@ travis-ci = { repository = "open-flash/swf-parser", branch = "master" }
 name = "swf_parser"
 path = "src/lib.rs"
 
-[features]
-default = ["deflate", "lzma"]
-deflate = ["inflate"]
-lzma = ["lzma-rs"]
-
 [dependencies]
 half = "1.8.2"
-memchr = "2.4.1"
-nom = "7.1.1"
-swf-fixed = "0.1.5"
-swf-types = { version = "0.13.0", default-features = false }
 inflate = { version = "0.4.5", optional = true }
 lzma-rs = { version = "0.2.0", optional = true }
+memchr = "2.5.0"
+nom = "7.1.1"
+swf-fixed = "0.1.5"
+swf-types = { version = "0.14.0", default-features = false }
 
 [dev-dependencies]
-serde = "1.0.136"
+serde = "1.0.137"
 serde_json_v8 = "0.1.1"
-swf-types = { version = "0.13.0", default-features = true }
+swf-types = { version = "0.14.0", features = ["serde"] }
 test-generator = "0.3.0"
 
-# [replace]
-# "swf-types:0.9.0" = { git="https://github.com/open-flash/swf-types.git", rev = "524f19adc098d83900e94bbe693887a63b50786d" }
+[features]
+default = ["deflate", "lzma"]
+# Enable support for SWF movies compressed with declate
+deflate = ["dep:inflate"]
+# Enable support for SWF movies compressed with LZMA
+lzma = ["dep:lzma-rs"]
 
 # When testing larger files, increasing `opt-level` provides a significant speed-up.
 # [profile.test]

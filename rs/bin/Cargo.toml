@@ -1,6 +1,6 @@
 [package]
 name = "swf-parser-bin"
-version = "0.1.0"
+version = "0.14.0"
 authors = ["Charles Samborski <demurgos@demurgos.net>"]
 description = "SWF parser"
 documentation = "https://github.com/open-flash/swf-parser"
@@ -9,13 +9,14 @@ repository = "https://github.com/open-flash/swf-parser"
 readme = "../README.md"
 keywords = ["parser", "swf", "flash"]
 license = "AGPL-3.0-or-later"
-edition = "2018"
+edition = "2021"
+rust-version = "1.60.0"
 
 [[bin]]
 name = "swf-parser"
 path = "src/main.rs"
 
 [dependencies]
-serde_json_v8 = "^0.0.1"
-swf-parser = { path = "../" }
-swf-types = "^0.10.0"
+serde_json_v8 = "^0.1.1"
+swf-parser = { path = "../." }
+swf-types = "^0.14.0"
