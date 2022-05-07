@@ -24,10 +24,12 @@ jobs:
           components: rustfmt, clippy
 
       - name: Annotate commit with clippy warnings
-        uses: actions-rs/clippy-check@v1
+        # Use `actions-rs/clippy` once `working-directory` is supported (PR #158)
+        uses: reinismu/clippy-check@ce65cdb6b7d4419dcd2e3b2125134b89c1dadecf
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: "--manifest-path ./rs/Cargo.toml --all-targets --all-features -- -D warnings"
+          args: "--all-targets --all-features -- -D warnings"
+          working-directory: "rs"
 
       - name: Build and test
         uses: actions-rs/tarpaulin@v0.1
