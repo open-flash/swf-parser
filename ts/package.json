@@ -19,14 +19,14 @@
   },
   "scripts": {
     "clean": "rimraf \"./@(lib|main|test)\"",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "format": "eslint --fix \"./src/**/*.ts\"",
+    "lint": "eslint \"./src/**/*.mts\"",
+    "format": "eslint --fix \"./src/**/*.mts\"",
     "build": "tsc --build src/lib/tsconfig.json",
     "prepack": "yarn run build",
     "test:build": "tsc --build src/test/tsconfig.json",
-    "test": "yarn run test:build && mocha \"test/**/*.spec.js\"",
+    "test": "yarn run test:build && mocha \"test/**/*.spec.mjs\"",
     "main:build": "tsc --build src/main/tsconfig.json",
-    "start": "yarn run main:build && node ./main/main.js"
+    "start": "yarn run main:build && node ./main/main.mjs"
   },
   "engines": {
     "node": ">=14.13.1"

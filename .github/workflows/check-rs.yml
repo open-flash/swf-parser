@@ -1,0 +1,45 @@
+name: "Check the Rust implementation"
+
+on:
+  push:
+    branches: [ "main", "gh-actions" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        rust-version: ["1.60.0", "stable"]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Use Rust ${{ matrix.rust-version }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+          components: rustfmt, clippy
+
+      - name: Annotate commit with clippy warnings
+        # Use `actions-rs/clippy` once `working-directory` is supported (PR #158)
+        uses: reinismu/clippy-check@ce65cdb6b7d4419dcd2e3b2125134b89c1dadecf
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: "--all-targets --all-features -- -D warnings"
+          working-directory: "rs"
+
+      - name: Build and test
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          out-type: "lcov"
+          args: "--manifest-path ./rs/Cargo.toml --count"
+
+      - name: Upload coverage report to codecov.io
+        uses: codecov/codecov-action@v2
+        with:
+          files: "./lcov.info"

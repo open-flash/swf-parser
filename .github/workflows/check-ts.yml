@@ -1,0 +1,34 @@
+name: "Check the TypeScript implementation"
+
+on:
+  push:
+    branches: [ "main", "gh-actions" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        # Support policy: Current and all LTS.
+        node-version: ["14", "16", "18"]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "yarn"
+          cache-dependency-path: "ts/yarn.lock"
+
+      - name: Build and test
+        run: |
+          cd ts
+          yarn install
+          yarn test
