@@ -12,7 +12,7 @@
     "downlevelIteration": false,
     "emitBOM": false,
     "emitDecoratorMetadata": true,
-    "esModuleInterop": true,
+    "esModuleInterop": false,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": false,
@@ -20,11 +20,11 @@
     "inlineSources": false,
     "isolatedModules": false,
     "lib": [
-      "es2020"
+      "es2021"
     ],
     "locale": "en-US",
-    "module": "es2020",
-    "moduleResolution": "node",
+    "module": "node12",
+    "moduleResolution": "node12",
     "newLine": "lf",
     "noEmit": true,
     "noEmitHelpers": false,
@@ -48,7 +48,7 @@
     "strictNullChecks": true,
     "suppressExcessPropertyErrors": false,
     "suppressImplicitAnyIndexErrors": false,
-    "target": "es2020",
+    "target": "es2021",
     "traceResolution": false,
     "rootDir": "."
   }

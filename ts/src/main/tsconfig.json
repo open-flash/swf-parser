@@ -6,7 +6,7 @@
     "outDir": "../../main"
   },
   "include": [
-    "**/*.ts"
+    "**/*.mts"
   ],
   "exclude": [],
   "references": [

@@ -20,8 +20,8 @@ import { Shape } from "swf-types/shape";
 import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
 import { Vector2D } from "swf-types/vector-2d";
 
-import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
-import { parseGradient } from "./gradient.js";
+import { parseMatrix, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.mjs";
+import { parseGradient } from "./gradient.mjs";
 
 export enum ShapeVersion {
   Shape1 = 1,

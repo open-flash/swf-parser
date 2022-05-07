@@ -7,9 +7,9 @@ import { JSON_VALUE_WRITER } from "kryo-json/json-value-writer";
 import sysPath from "path";
 import { $Tag,Tag } from "swf-types/tag";
 
-import { parseTag } from "../lib/parsers/tags.js";
-import meta from "./meta.js";
-import { readFile, readTextFile, writeTextFile } from "./utils.js";
+import { parseTag } from "../lib/parsers/tags.mjs";
+import meta from "./meta.mjs";
+import { readFile, readTextFile, writeTextFile } from "./utils.mjs";
 
 const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..");
 const TAG_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "tags");

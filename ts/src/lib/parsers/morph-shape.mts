@@ -21,9 +21,9 @@ import { MorphStyleChange } from "swf-types/shape-records/morph-style-change";
 import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
 import { Vector2D } from "swf-types/vector-2d";
 
-import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types.js";
-import { parseMorphGradient } from "./gradient.js";
-import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape.js";
+import { parseMatrix, parseStraightSRgba8 } from "./basic-data-types.mjs";
+import { parseMorphGradient } from "./gradient.mjs";
+import { capStyleFromId, parseCurvedEdgeBits, parseListLength, parseStraightEdgeBits } from "./shape.mjs";
 
 export enum MorphShapeVersion {
   MorphShape1 = 1,

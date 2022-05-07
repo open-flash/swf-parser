@@ -5,6 +5,13 @@
 - **[Feature]** Add LZMA support to `streaming::movie::parse_swf`.
 - **[Change]** Compression support can be opted-out by disabling the corresponding features.
 
+# Typescript
+
+- **[Breaking change]** Update to `swf-types@0.14`.
+- **[Breaking change]** Compile to `.mjs`.
+- **[Fix]** Update dependencies.
+- **[Internal]** Use Yarn's Plug'n'Play linker.
+
 # 0.13.0 (2021-07-23)
 
 ## Rust

@@ -8,7 +8,7 @@ import { MorphColorStop } from "swf-types/morph-color-stop";
 import { MorphGradient } from "swf-types/morph-gradient";
 import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
 
-import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
+import { parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.mjs";
 
 export function parseColorStop(byteStream: ReadableByteStream, withAlpha: boolean): ColorStop {
   const ratio: Uint8 = byteStream.readUint8();
@@ -25,9 +25,9 @@ export function parseGradient(byteStream: ReadableByteStream, withAlpha: boolean
   const flags: Uint8 = byteStream.readUint8();
   // The spec says that spreadId and colorSpaceId should be ignored for shapeVersion < Shape4
   // and color count should be capped at 8. We're ignoring it for the moment.
-  const spreadId: Uint2 = <Uint2> ((flags & ((1 << 8) - 1)) >>> 6);
-  const colorSpaceId: Uint2 = <Uint2> ((flags & ((1 << 6) - 1)) >>> 4);
-  const colorCount: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
+  const spreadId: Uint2 = ((flags & ((1 << 8) - 1)) >>> 6) as Uint2;
+  const colorSpaceId: Uint2 = ((flags & ((1 << 6) - 1)) >>> 4) as Uint2;
+  const colorCount: Uint4 = (flags & ((1 << 4) - 1)) as Uint4;
   let spread: GradientSpread;
   switch (spreadId) {
     case 0:
@@ -72,9 +72,9 @@ export function parseMorphColorStop(byteStream: ReadableByteStream, withAlpha: b
 
 export function parseMorphGradient(byteStream: ReadableByteStream, withAlpha: boolean): MorphGradient {
   const flags: Uint8 = byteStream.readUint8();
-  const spreadId: Uint2 = <Uint2> ((flags & ((1 << 8) - 1)) >>> 6);
-  const colorSpaceId: Uint2 = <Uint2> ((flags & ((1 << 6) - 1)) >>> 4);
-  const colorCount: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
+  const spreadId: Uint2 = ((flags & ((1 << 8) - 1)) >>> 6) as Uint2;
+  const colorSpaceId: Uint2 = ((flags & ((1 << 6) - 1)) >>> 4) as Uint2;
+  const colorCount: Uint4 = (flags & ((1 << 4) - 1)) as Uint4;
   let spread: GradientSpread;
   switch (spreadId) {
     case 0:

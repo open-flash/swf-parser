@@ -16,8 +16,8 @@ import { TextAlignment } from "swf-types/text/text-alignment";
 import { TextRecord } from "swf-types/text/text-record";
 import { TextRenderer } from "swf-types/text/text-renderer";
 
-import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.js";
-import { parseGlyph } from "./shape.js";
+import { parseRect, parseSRgb8, parseStraightSRgba8 } from "./basic-data-types.mjs";
+import { parseGlyph } from "./shape.mjs";
 
 export enum FontVersion {
   // `Font1` is handled apart as `DefineGlyphFont`.

@@ -7,7 +7,7 @@
     "outDir": "../../lib"
   },
   "include": [
-    "./**/*.ts"
+    "./**/*.mts"
   ],
   "exclude": [],
   "references": []

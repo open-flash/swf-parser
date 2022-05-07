@@ -13,10 +13,10 @@ import { $Matrix } from "swf-types/matrix";
 import { $Rect } from "swf-types/rect";
 import { $SwfSignature } from "swf-types/swf-signature";
 
-import { parseColorTransformWithAlpha, parseMatrix, parseRect } from "../lib/parsers/basic-data-types.js";
-import { parseHeader, parseSwfSignature } from "../lib/parsers/header.js";
-import meta from "./meta.js";
-import { readFile, readTextFile } from "./utils.js";
+import { parseColorTransformWithAlpha, parseMatrix, parseRect } from "../lib/parsers/basic-data-types.mjs";
+import { parseHeader, parseSwfSignature } from "../lib/parsers/header.mjs";
+import meta from "./meta.mjs";
+import { readFile, readTextFile } from "./utils.mjs";
 
 const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..");
 const SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "various");

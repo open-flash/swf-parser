@@ -12,10 +12,10 @@ import { Filter } from "swf-types/filter";
 import { Matrix } from "swf-types/matrix";
 import { SoundInfo } from "swf-types/sound/sound-info";
 
-import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
-import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types.js";
-import { parseBlendMode, parseFilterList } from "./display.js";
-import { parseSoundInfo } from "./sound.js";
+import { createIncompleteStreamError } from "../errors/incomplete-stream.mjs";
+import { parseColorTransformWithAlpha, parseMatrix } from "./basic-data-types.mjs";
+import { parseBlendMode, parseFilterList } from "./display.mjs";
+import { parseSoundInfo } from "./sound.mjs";
 
 export enum ButtonVersion {
   Button1 = 1,

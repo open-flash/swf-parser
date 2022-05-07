@@ -5,9 +5,9 @@ import { JSON_VALUE_WRITER } from "kryo-json/json-value-writer";
 import sysPath from "path";
 import { $Movie, Movie } from "swf-types/movie";
 
-import { parseSwf } from "../lib/index.js";
-import meta from "./meta.js";
-import { readFile, readTextFile, writeTextFile } from "./utils.js";
+import { parseSwf } from "../lib/index.mjs";
+import meta from "./meta.mjs";
+import { readFile, readTextFile, writeTextFile } from "./utils.mjs";
 
 const PROJECT_ROOT: string = sysPath.join(meta.dirname, "..");
 const MOVIE_SAMPLES_ROOT: string = sysPath.join(PROJECT_ROOT, "..", "tests", "movies");

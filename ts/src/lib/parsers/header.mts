@@ -7,8 +7,8 @@ import { Header } from "swf-types/header";
 import { Rect } from "swf-types/rect";
 import { SwfSignature } from "swf-types/swf-signature";
 
-import { createIncompleteStreamError } from "../errors/incomplete-stream.js";
-import { parseRect } from "./basic-data-types.js";
+import { createIncompleteStreamError } from "../errors/incomplete-stream.mjs";
+import { parseRect } from "./basic-data-types.mjs";
 
 const UPPER_C: number = "C".charCodeAt(0);
 const UPPER_F: number = "F".charCodeAt(0);

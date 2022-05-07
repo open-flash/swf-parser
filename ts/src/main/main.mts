@@ -3,7 +3,7 @@ import { JSON_VALUE_WRITER } from "kryo-json/json-value-writer";
 import * as sysPath from "path";
 import { $Movie, Movie } from "swf-types/movie";
 
-import { parseSwf } from "../lib/index.js";
+import { parseSwf } from "../lib/index.mjs";
 
 async function main(): Promise<void> {
   if (process.argv.length < 3) {

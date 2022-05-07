@@ -12,7 +12,7 @@ import { Sfixed8P8 } from "swf-types/fixed-point/sfixed8p8";
 import { Sfixed16P16 } from "swf-types/fixed-point/sfixed16p16";
 import { StraightSRgba8 } from "swf-types/straight-s-rgba8";
 
-import { parseStraightSRgba8 } from "./basic-data-types.js";
+import { parseStraightSRgba8 } from "./basic-data-types.mjs";
 
 export function parseBlendMode(byteStream: ReadableByteStream): BlendMode {
   switch (byteStream.readUint8()) {
@@ -168,7 +168,7 @@ export function parseBevelFilter(byteStream: ReadableByteStream): filters.Bevel 
   const distance: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
   const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
-  const passes: Uint4 = <Uint4> (flags & 0b1111);
+  const passes: Uint4 = (flags & 0b1111) as Uint4;
   const onTop: boolean = (flags & (1 << 4)) !== 0;
   const compositeSource: boolean = (flags & (1 << 5)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
@@ -195,7 +195,7 @@ export function parseBlurFilter(byteStream: ReadableByteStream): filters.Blur {
   const blurY: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
   const flags: Uint8 = byteStream.readUint8();
   // Skip bits [0, 2]
-  const passes: Uint5 = <Uint5> ((flags >>> 3) & 0x1f);
+  const passes: Uint5 = ((flags >>> 3) & 0x1f) as Uint5;
   return {
     filter: FilterType.Blur,
     blurX,
@@ -307,7 +307,7 @@ export function parseGradientBevelFilter(byteStream: ReadableByteStream): filter
   const distance: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
   const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
-  const passes: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
+  const passes: Uint4 = (flags & ((1 << 4) - 1)) as Uint4;
   const onTop: boolean = (flags & (1 << 4)) !== 0;
   const compositeSource: boolean = (flags & (1 << 5)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;
@@ -343,7 +343,7 @@ export function parseGradientGlowFilter(byteStream: ReadableByteStream): filters
   const distance: Sfixed16P16 = Sfixed16P16.fromEpsilons(byteStream.readSint32LE());
   const strength: Sfixed8P8 = Sfixed8P8.fromEpsilons(byteStream.readSint16LE());
   const flags: Uint8 = byteStream.readUint8();
-  const passes: Uint4 = <Uint4> (flags & ((1 << 4) - 1));
+  const passes: Uint4 = (flags & ((1 << 4) - 1)) as Uint4;
   const onTop: boolean = (flags & (1 << 4)) !== 0;
   const compositeSource: boolean = (flags & (1 << 5)) !== 0;
   const knockout: boolean = (flags & (1 << 6)) !== 0;

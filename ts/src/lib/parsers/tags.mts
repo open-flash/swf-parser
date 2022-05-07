@@ -43,8 +43,8 @@ import { TextRenderer } from "swf-types/text/text-renderer";
 import { VideoCodec } from "swf-types/video/video-codec";
 import { VideoDeblocking } from "swf-types/video/video-deblocking";
 
-import { createIncompleteTagHeaderError } from "../errors/incomplete-tag-header.js";
-import { createIncompleteTagError } from "../errors/incomplete-tag.js";
+import { createIncompleteTagHeaderError } from "../errors/incomplete-tag-header.mjs";
+import { createIncompleteTagError } from "../errors/incomplete-tag.mjs";
 import {
   parseBlockCString,
   parseColorTransform,
@@ -53,9 +53,9 @@ import {
   parseRect,
   parseSRgb8,
   parseStraightSRgba8,
-} from "./basic-data-types.js";
-import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString, parseButtonSound } from "./button.js";
-import { parseBlendMode, parseClipActionString, parseFilterList } from "./display.js";
+} from "./basic-data-types.mjs";
+import { ButtonVersion, parseButton2CondActionString, parseButtonRecordString, parseButtonSound } from "./button.mjs";
+import { parseBlendMode, parseClipActionString, parseFilterList } from "./display.mjs";
 import {
   ERRONEOUS_JPEG_START,
   getGifImageDimensions,
@@ -66,15 +66,15 @@ import {
   JPEG_START,
   PNG_START,
   testImageStart,
-} from "./image.js";
-import { MorphShapeVersion, parseMorphShape } from "./morph-shape.js";
-import { parseGlyph, parseShape, ShapeVersion } from "./shape.js";
+} from "./image.mjs";
+import { MorphShapeVersion, parseMorphShape } from "./morph-shape.mjs";
+import { parseGlyph, parseShape, ShapeVersion } from "./shape.mjs";
 import {
   getAudioCodingFormatFromCode,
   getSoundRateFromCode,
   isUncompressedAudioCodingFormat,
   parseSoundInfo,
-} from "./sound.js";
+} from "./sound.mjs";
 import {
   FontInfoVersion,
   FontVersion,
@@ -88,8 +88,8 @@ import {
   parseTextRecordString,
   parseTextRendererBits,
   TextVersion,
-} from "./text.js";
-import { getVideoDeblockingFromCode, parseVideoCodec } from "./video.js";
+} from "./text.mjs";
+import { getVideoDeblockingFromCode, parseVideoCodec } from "./video.mjs";
 
 /**
  * Read tags until the end of the stream or "end-of-tags".
@@ -123,7 +123,10 @@ export function parseTag(byteStream: ReadableByteStream, swfVersion: Uint8): Tag
   }
   try {
     return tryParseTag(byteStream, swfVersion);
-  } catch (e) {
+  } catch (e: unknown) {
+    if (!(e instanceof Error)) {
+      throw e;
+    }
     if (e.name === "IncompleteTagHeaderError" || e.name === "IncompleteTagError") {
       const data: Uint8Array = byteStream.tailBytes();
       return {type: TagType.Raw, data};

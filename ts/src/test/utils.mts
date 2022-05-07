@@ -1,7 +1,7 @@
 import fs from "fs";
 import sysPath from "path";
 
-import meta from "./meta.js";
+import meta from "./meta.mjs";
 
 export const testResourcesRoot: string = meta.dirname;
 

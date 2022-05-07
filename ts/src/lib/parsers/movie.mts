@@ -8,8 +8,8 @@ import { Movie } from "swf-types/movie";
 import { SwfSignature } from "swf-types/swf-signature";
 import { Tag } from "swf-types/tag";
 
-import { parseHeader, parseSwfSignature } from "./header.js";
-import { parseTagBlockString } from "./tags.js";
+import { parseHeader, parseSwfSignature } from "./header.mjs";
+import { parseTagBlockString } from "./tags.mjs";
 
 /**
  * Parses a completely loaded SWF file.
