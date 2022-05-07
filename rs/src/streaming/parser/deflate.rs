@@ -1,7 +1,6 @@
 use crate::stream_buffer::StreamBuffer;
 use inflate::InflateStream;
 use swf_types::{Header as SwfHeader, SwfSignature, Tag};
-
 use super::{ParseTagsError, SimpleStream};
 
 /// State of the `Deflate` payload parser

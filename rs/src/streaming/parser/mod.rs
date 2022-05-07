@@ -40,6 +40,14 @@ enum InnerHeaderParser {
   Lzma(LzmaStream<FlatBuffer>),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum HeaderParserError {
+  /// Failed to parse the header due to a disabled feature in `swf-parser`
+  MissingFeature(&'static str),
+  /// Other error (todo: replace this variant to provide more details)
+  Other,
+}
+
 impl HeaderParser {
   /// Creates a new empty streaming parser.
   pub fn new() -> Self {
@@ -56,21 +64,21 @@ impl HeaderParser {
   ///
   /// Note: this method consumes `self` to prevent from trying to parse the SWF
   /// header multiple times.
-  pub fn header(self, bytes: &[u8]) -> Result<(SwfHeader, TagParser), Self> {
+  pub fn header(self, bytes: &[u8]) -> Result<(SwfHeader, TagParser), (Self, HeaderParserError)> {
     match self.0 {
       InnerHeaderParser::Signature(mut buffer) => {
         let (input, parser) = Self::parser_from_signature(&mut buffer, bytes)?;
         parser.header(input)
       }
-      InnerHeaderParser::Simple(stream) => HeaderParser::simple_header(stream, bytes),
+      InnerHeaderParser::Simple(stream) => HeaderParser::simple_header(stream, bytes).map_err(|this| (this, HeaderParserError::Other)),
       #[cfg(feature="lzma")]
-      InnerHeaderParser::Lzma(stream) => HeaderParser::lzma_header(stream, bytes),
+      InnerHeaderParser::Lzma(stream) => HeaderParser::lzma_header(stream, bytes).map_err(|this| (this, HeaderParserError::Other)),
       #[cfg(feature="deflate")]
-      InnerHeaderParser::Deflate(stream) => HeaderParser::deflate_header(stream, bytes),
+      InnerHeaderParser::Deflate(stream) => HeaderParser::deflate_header(stream, bytes).map_err(|this| (this, HeaderParserError::Other)),
     }
   }
 
-  fn parser_from_signature<'a>(buffer: &'a mut Vec<u8>, bytes: &[u8]) -> Result<(&'a [u8], Self), Self> {
+  fn parser_from_signature<'a>(buffer: &'a mut Vec<u8>, bytes: &[u8]) -> Result<(&'a [u8], Self), (Self, HeaderParserError)> {
     buffer.extend_from_slice(bytes);
 
     // Weird dance to avoid borrowck issues.
@@ -79,7 +87,7 @@ impl HeaderParser {
     });
     let (input, signature) = match consumed_and_sig {
       Ok((off, signature)) => (&buffer[off..], signature),
-      Err(_) => return Err(Self(InnerHeaderParser::Signature(std::mem::take(buffer)))),
+      Err(_) => return Err((Self(InnerHeaderParser::Signature(std::mem::take(buffer))), HeaderParserError::Other)),
     };
 
     let buffer: FlatBuffer = FlatBuffer::new();
@@ -87,10 +95,12 @@ impl HeaderParser {
       CompressionMethod::None => InnerHeaderParser::Simple(SimpleStream::new(buffer, signature)),
       #[cfg(feature="lzma")]
       CompressionMethod::Lzma => InnerHeaderParser::Lzma(LzmaStream::new(buffer, signature)),
+      #[cfg(not(feature="lzma"))]
+      CompressionMethod::Lzma => return Err((Self(InnerHeaderParser::Signature(std::mem::take(buffer))), HeaderParserError::MissingFeature("lzma"))),
       #[cfg(feature="deflate")]
       CompressionMethod::Deflate => InnerHeaderParser::Deflate(DeflateStream::new(buffer, signature)),
-      #[allow(unreachable_patterns)]
-      method => panic!("Unsupported compression method: {:?}", method),
+      #[cfg(not(feature="deflate"))]
+      CompressionMethod::Deflate => return Err((Self(InnerHeaderParser::Signature(std::mem::take(buffer))), HeaderParserError::MissingFeature("deflate"))),
     };
     Ok((input, Self(parser)))
   }
@@ -197,14 +207,15 @@ mod tests {
 
     let mut parser = HeaderParser::new();
     let mut header_output: Option<(SwfHeader, TagParser)> = None;
-    while let Some((index, byte)) = movie_bytes.next() {
+    for (index, byte) in movie_bytes.by_ref() {
       match parser.header(&[byte]) {
         Ok((header, tag_parser)) => {
           assert_eq!(index, 20);
           header_output = Some((header, tag_parser));
           break;
         }
-        Err(next_parser) => parser = next_parser,
+        Err((next_parser, HeaderParserError::Other)) => parser = next_parser,
+        Err((_, e)) => panic!("{e:?}"),
       }
     }
     assert!(header_output.is_some());

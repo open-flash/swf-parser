@@ -11,12 +11,8 @@ pub fn parse_swf(input: &[u8]) -> NomResult<&[u8], ast::Movie> {
 
   let result = match signature.compression_method {
     ast::CompressionMethod::None => decompress::decompress_none(input),
-    #[cfg(feature="deflate")]
     ast::CompressionMethod::Deflate => decompress::decompress_zlib(input),
-    #[cfg(feature="lzma")]
     ast::CompressionMethod::Lzma => decompress::decompress_lzma(input),
-    #[allow(unreachable_patterns)]
-    method => panic!("Unsupported compression method: {:?}", method),
   };
   let (input, payload) = result.unwrap();
 
