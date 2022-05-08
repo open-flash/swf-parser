@@ -1,4 +1,4 @@
-# Next
+# 0.14.0 (2022-05-08)
 
 - **[Breaking change]** Require Rust `1.60.0`.
 - **[Internal]** Migrate from Travis CI to GitHub Actions.
