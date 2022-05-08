@@ -57,7 +57,7 @@
   },
   "type": "module",
   "exports": {
-    ".": "./lib/index.js",
+    ".": "./lib/index.mjs",
     "./*": "./lib/*.mjs"
   },
   "files": [

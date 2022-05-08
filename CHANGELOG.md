@@ -1,3 +1,9 @@
+# Next
+
+# Typescript
+
+- **[Fix]** Fix main package export.
+
 # 0.14.0 (2022-05-08)
 
 - **[Breaking change]** Require Rust `1.60.0`.
